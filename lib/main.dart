@@ -150,15 +150,31 @@ class SplashScreen extends StatefulWidget {
   _SplashScreenState createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  double _opacity = 0.0;
+
   @override
   void initState() {
     super.initState();
 
+    // מתחילים אנימציית פייד-אין
+    Future.delayed(Duration(milliseconds: 100), () {
+      setState(() {
+        _opacity = 1.0;
+      });
+    });
+
+    // מעבר אוטומטי אחרי 3 שניות
     Future.delayed(Duration(seconds: 3), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => HomeScreen()),
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          transitionDuration: Duration(milliseconds: 800),
+          pageBuilder: (_, __, ___) => HomeScreen(),
+          transitionsBuilder: (_, animation, __, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        ),
       );
     });
 
@@ -171,7 +187,11 @@ class _SplashScreenState extends State<SplashScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: Center(
-        child: Image.asset('assets/siba5.png', width: 250, height: 250),
+        child: AnimatedOpacity(
+          duration: Duration(seconds: 2),
+          opacity: _opacity,
+          child: Image.asset('assets/siba5.png', width: 250, height: 250),
+        ),
       ),
     );
   }

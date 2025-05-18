@@ -43,3 +43,5 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+appshiba-daebb-firebase-adminsdk-fbsvc-b9a1e75860.json

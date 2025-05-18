@@ -16,27 +16,49 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   double _opacity = 0.0;
+  bool _isImageLoaded = false;
 
   @override
   void initState() {
     super.initState();
 
-    // Trigger fade-in animation when the screen loads
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      precacheImage(AssetImage('assets/siba4.png'), context).then((_) {
-        if (mounted) {
-          // אנימציה חלקה יותר עם delay
-          Future.delayed(Duration(milliseconds: 300), () {
+    // טעינת התמונה בצורה אסינכרונית ללא חסימת UI
+    _loadBackgroundImage();
+  }
+
+  Future<void> _loadBackgroundImage() async {
+    try {
+      // טעינה מוקדמת של התמונה ללא חסימת ה-UI
+      final imageProvider = AssetImage('assets/siba4.png');
+      await precacheImage(imageProvider, context);
+
+      if (mounted) {
+        setState(() {
+          _isImageLoaded = true;
+        });
+
+        // התחלת האנימציה לאחר שהתמונה טעונה
+        Future.delayed(Duration(milliseconds: 100), () {
+          if (mounted) {
             setState(() {
               _opacity = 1.0;
             });
-          });
-        }
-      });
-    });
+          }
+        });
+      }
+    } catch (e) {
+      // במקרה של שגיאה, עדיין נאפשר למסך להופיע
+      if (mounted) {
+        setState(() {
+          _isImageLoaded = true;
+          _opacity = 1.0;
+        });
+      }
+    }
   }
 
   final List<Map<String, dynamic>> bubbles = [
+    // הרשימה נשארה כפי שהיא
     {
       'label': 'שבת',
       'icon': Icons.wine_bar,
@@ -112,18 +134,19 @@ class _HomeScreenState extends State<HomeScreen> {
         curve: Curves.easeInOut,
         child: Stack(
           children: [
-            // רקע תמונה
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage('assets/siba4.png'),
-                    fit: BoxFit.cover,
+            // רקע תמונה - מוצג רק לאחר טעינה
+            if (_isImageLoaded)
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    image: DecorationImage(
+                      image: AssetImage('assets/siba4.png'),
+                      fit: BoxFit.cover,
+                    ),
                   ),
+                  child: Container(color: Colors.grey.withOpacity(0.3)),
                 ),
-                child: Container(color: Colors.grey.withOpacity(0.3)),
               ),
-            ),
             SafeArea(
               child: Column(
                 children: [
@@ -132,63 +155,49 @@ class _HomeScreenState extends State<HomeScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Column(
                       children: [
-                        SlideTransition(
-                          position: Tween<Offset>(
-                            begin: Offset(0, -0.5),
-                            end: Offset.zero,
-                          ).animate(
-                            CurvedAnimation(
-                              parent: ModalRoute.of(context)!.animation!,
-                              curve: Curves.easeOutQuart,
-                            ),
+                        AnimatedDefaultTextStyle(
+                          duration: Duration(milliseconds: 500),
+                          style: GoogleFonts.alef(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 28,
+                            color:
+                                _isImageLoaded
+                                    ? Colors.white
+                                    : Colors.transparent,
+                            shadows:
+                                _isImageLoaded
+                                    ? [
+                                      Shadow(
+                                        blurRadius: 5,
+                                        color: Colors.black45,
+                                        offset: Offset(1, 1),
+                                      ),
+                                    ]
+                                    : [],
                           ),
-                          child: FadeTransition(
-                            opacity: ModalRoute.of(context)!.animation!,
-                            child: Text(
-                              'כשרות דת והלכה',
-                              style: GoogleFonts.alef(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 28,
-                                color: Colors.white,
-                                shadows: [
-                                  Shadow(
-                                    blurRadius: 5,
-                                    color: Colors.black45,
-                                    offset: Offset(1, 1),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
+                          child: Text('כשרות דת והלכה'),
                         ),
                         SizedBox(height: 4),
-                        SlideTransition(
-                          position: Tween<Offset>(
-                            begin: Offset(0, -0.3),
-                            end: Offset.zero,
-                          ).animate(
-                            CurvedAnimation(
-                              parent: ModalRoute.of(context)!.animation!,
-                              curve: Curves.easeOutQuart,
-                            ),
+                        AnimatedDefaultTextStyle(
+                          duration: Duration(milliseconds: 500),
+                          style: GoogleFonts.rubikDirt(
+                            fontSize: 16,
+                            color:
+                                _isImageLoaded
+                                    ? Colors.black
+                                    : Colors.transparent,
+                            shadows:
+                                _isImageLoaded
+                                    ? [
+                                      Shadow(
+                                        blurRadius: 3,
+                                        color: Colors.black45,
+                                        offset: Offset(1, 1),
+                                      ),
+                                    ]
+                                    : [],
                           ),
-                          child: FadeTransition(
-                            opacity: ModalRoute.of(context)!.animation!,
-                            child: Text(
-                              'מרכז רפואי שיבא תל השומר',
-                              style: GoogleFonts.rubikDirt(
-                                fontSize: 16,
-                                color: Colors.black,
-                                shadows: [
-                                  Shadow(
-                                    blurRadius: 3,
-                                    color: Colors.black45,
-                                    offset: Offset(1, 1),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
+                          child: Text('מרכז רפואי שיבא תל השומר'),
                         ),
                       ],
                     ),
@@ -197,6 +206,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   // בועות עם אנימציות מדורגות
                   Expanded(
                     child: SingleChildScrollView(
+                      physics:
+                          BouncingScrollPhysics(), // אנימציית גלילה חלקה יותר
                       child: Directionality(
                         textDirection: TextDirection.rtl,
                         child: Padding(
@@ -217,13 +228,32 @@ class _HomeScreenState extends State<HomeScreen> {
                                     onTap: () {
                                       Navigator.push(
                                         context,
-                                        MaterialPageRoute(
-                                          builder:
-                                              (context) => bubble['screen'],
+                                        PageRouteBuilder(
+                                          pageBuilder:
+                                              (
+                                                context,
+                                                animation,
+                                                secondaryAnimation,
+                                              ) => bubble['screen'],
+                                          transitionsBuilder: (
+                                            context,
+                                            animation,
+                                            secondaryAnimation,
+                                            child,
+                                          ) {
+                                            return FadeTransition(
+                                              opacity: animation,
+                                              child: child,
+                                            );
+                                          },
+                                          transitionDuration: Duration(
+                                            milliseconds: 300,
+                                          ),
                                         ),
                                       );
                                     },
                                     delay: Duration(milliseconds: 100 * index),
+                                    isImageLoaded: _isImageLoaded,
                                   );
                                 }).toList(),
                           ),
@@ -233,57 +263,66 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
 
                   // טקסט תחתון עם אנימציה
-                  SlideTransition(
-                    position: Tween<Offset>(
-                      begin: Offset(0, 0.5),
-                      end: Offset.zero,
-                    ).animate(
-                      CurvedAnimation(
-                        parent: ModalRoute.of(context)!.animation!,
-                        curve: Curves.easeOutQuart,
-                      ),
-                    ),
-                    child: FadeTransition(
-                      opacity: ModalRoute.of(context)!.animation!,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ChatScreen(),
+                  AnimatedOpacity(
+                    opacity: _isImageLoaded ? 1.0 : 0.0,
+                    duration: Duration(milliseconds: 500),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                PageRouteBuilder(
+                                  pageBuilder:
+                                      (
+                                        context,
+                                        animation,
+                                        secondaryAnimation,
+                                      ) => ChatScreen(),
+                                  transitionsBuilder: (
+                                    context,
+                                    animation,
+                                    secondaryAnimation,
+                                    child,
+                                  ) {
+                                    return FadeTransition(
+                                      opacity: animation,
+                                      child: child,
+                                    );
+                                  },
+                                  transitionDuration: Duration(
+                                    milliseconds: 300,
                                   ),
-                                );
-                              },
-                              child: FaIcon(
-                                FontAwesomeIcons.whatsapp,
-                                size: 30,
-                                color: Colors.green[800]!.withOpacity(0.7),
-                              ),
-                            ),
-                            SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                '* באם יש משהו לא ברור מספיק ניתן להתכתב עם רב המרכז הרפואי בענין.',
-                                style: GoogleFonts.notoRashiHebrew(
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                  shadows: [
-                                    Shadow(
-                                      blurRadius: 3,
-                                      color: Colors.black45,
-                                      offset: Offset(1, 1),
-                                    ),
-                                  ],
                                 ),
-                                textDirection: TextDirection.rtl,
-                              ),
+                              );
+                            },
+                            child: FaIcon(
+                              FontAwesomeIcons.whatsapp,
+                              size: 30,
+                              color: Colors.green[800]!.withOpacity(0.7),
                             ),
-                          ],
-                        ),
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '* באם יש משהו לא ברור מספיק ניתן להתכתב עם רב המרכז הרפואי בענין.',
+                              style: GoogleFonts.davidLibre(
+                                fontSize: 16,
+                                color: Colors.black,
+                                shadows: [
+                                  Shadow(
+                                    blurRadius: 3,
+                                    color: Colors.black45,
+                                    offset: Offset(1, 1),
+                                  ),
+                                ],
+                              ),
+                              textDirection: TextDirection.rtl,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -297,7 +336,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-/// בועה עם אנימציות משופרות
 class _AnimatedBubbleItem extends StatefulWidget {
   final String label;
   final IconData icon;
@@ -305,6 +343,7 @@ class _AnimatedBubbleItem extends StatefulWidget {
   final double size;
   final VoidCallback onTap;
   final Duration delay;
+  final bool isImageLoaded;
 
   const _AnimatedBubbleItem({
     Key? key,
@@ -314,6 +353,7 @@ class _AnimatedBubbleItem extends StatefulWidget {
     required this.size,
     required this.onTap,
     this.delay = Duration.zero,
+    required this.isImageLoaded,
   }) : super(key: key);
 
   @override
@@ -334,24 +374,36 @@ class _AnimatedBubbleItemState extends State<_AnimatedBubbleItem>
       duration: Duration(milliseconds: 800),
     );
 
-    // אנימציית קפיצה חלקה
     _scale = Tween<double>(
       begin: 0.7,
       end: 1.0,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
 
-    // אנימציית שקיפות
     _opacity = Tween<double>(
       begin: 0.0,
       end: 1.0,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
 
-    // התחלת האנימציה לאחר delay
-    Future.delayed(widget.delay, () {
-      if (mounted) {
-        _controller.forward();
-      }
-    });
+    // התחלת האנימציה רק לאחר שהתמונה טעונה ובהתאם לעיכוב
+    if (widget.isImageLoaded) {
+      Future.delayed(widget.delay, () {
+        if (mounted) {
+          _controller.forward();
+        }
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _AnimatedBubbleItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isImageLoaded && !oldWidget.isImageLoaded) {
+      Future.delayed(widget.delay, () {
+        if (mounted) {
+          _controller.forward();
+        }
+      });
+    }
   }
 
   @override

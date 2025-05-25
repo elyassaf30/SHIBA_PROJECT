@@ -7,7 +7,6 @@ import 'package:rabbi_shiba/screens/chet_screen.dart';
 import 'package:rabbi_shiba/screens/user_to_synagogue_map.dart';
 import 'package:rabbi_shiba/screens/shabbat_screen.dart'; // ← הוספתי את מסך יום שישי
 import 'package:flutter/scheduler.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rabbi_shiba/screens/entrance_screen.dart';

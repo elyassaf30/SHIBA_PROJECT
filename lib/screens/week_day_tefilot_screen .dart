@@ -85,15 +85,46 @@ class _WeekdayTefilotScreenState extends State<WeekdayTefilotScreen> {
       final data = List<Map<String, dynamic>>.from(response);
       Map<String, List<Map<String, dynamic>>> grouped = {};
 
-      for (var item in data) {
-        final type = item['סוג תפילה'] ?? 'לא צוין';
+      // Group tefilot by type
+      for (var tefila in data) {
+        final type = tefila['סוג תפילה'] ?? 'לא ידוע';
         if (!grouped.containsKey(type)) {
           grouped[type] = [];
         }
-        grouped[type]!.add(item);
+        grouped[type]!.add(tefila);
       }
 
-      setState(() => groupedTefilot = grouped);
+      // Sort each group by time ascending
+      grouped.forEach((key, value) {
+        value.sort((a, b) {
+          final timeA = a['שעה'] ?? '';
+          final timeB = b['שעה'] ?? '';
+          try {
+            final parsedA = TimeOfDay(
+              hour: int.parse(timeA.split(':')[0]),
+              minute: int.parse(timeA.split(':')[1]),
+            );
+            final parsedB = TimeOfDay(
+              hour: int.parse(timeB.split(':')[0]),
+              minute: int.parse(timeB.split(':')[1]),
+            );
+            return parsedA.hour != parsedB.hour
+                ? parsedA.hour.compareTo(parsedB.hour)
+                : parsedA.minute.compareTo(parsedB.minute);
+          } catch (_) {
+            return 0;
+          }
+        });
+      });
+
+      // Sort the groups by predefined order: שחרית, מנחה, ערבית
+      final List<String> tefilaOrder = ['שחרית', 'מנחה', 'ערבית'];
+      Map<String, List<Map<String, dynamic>>> sortedGrouped = {
+        for (var type in tefilaOrder)
+          if (grouped.containsKey(type)) type: grouped[type]!,
+      };
+
+      setState(() => groupedTefilot = sortedGrouped);
     } catch (e) {
       print('Error fetching tefilot data: $e');
     }
@@ -188,102 +219,160 @@ class _WeekdayTefilotScreenState extends State<WeekdayTefilotScreen> {
                   // Tefilot times
                   ...groupedTefilot.keys.map((type) {
                     final tefilot = groupedTefilot[type]!;
-                    return Card(
-                      color: Colors.deepPurpleAccent.withOpacity(0.85),
+                    return Container(
                       margin: EdgeInsets.symmetric(vertical: 8),
-                      shape: RoundedRectangleBorder(
+                      decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(20),
-                      ),
-                      elevation: 4,
-                      child: ExpansionTile(
-                        leading: Icon(
-                          getIconForTefilaType(type),
-                          color: Colors.white,
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.deepPurple.shade400.withOpacity(0.9),
+                            Colors.deepPurple.shade700.withOpacity(0.9),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                        title: Text(
-                          type,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 8,
+                            offset: Offset(2, 4),
+                          ),
+                        ],
+                      ),
+                      child: Theme(
+                        data: Theme.of(context).copyWith(
+                          dividerColor: Colors.transparent,
+                          splashColor: Colors.white24,
+                          highlightColor: Colors.white10,
+                        ),
+                        child: ExpansionTile(
+                          leading: Icon(
+                            getIconForTefilaType(type),
                             color: Colors.white,
                           ),
-                        ),
-                        iconColor: Colors.white,
-                        collapsedIconColor: Colors.white,
-                        children:
-                            tefilot.map((tefila) {
-                              final note = tefila['הערות'] ?? '';
-                              final time = tefila['שעה'] ?? 'לא צוין שעה';
+                          title: Text(
+                            type,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 20,
+                              color: Colors.white,
+                            ),
+                          ),
+                          iconColor: Colors.white,
+                          collapsedIconColor: Colors.white,
+                          children:
+                              tefilot.map((tefila) {
+                                final note = tefila['הערות'] ?? '';
+                                final time = tefila['שעה'] ?? 'לא צוין שעה';
 
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16.0,
-                                  vertical: 8.0,
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.end,
-                                      children: [
-                                        Icon(
-                                          Icons.access_time,
-                                          color: Colors.white,
-                                          size: 20,
-                                        ),
-                                        SizedBox(width: 8),
-                                        Text(
-                                          time,
-                                          style: TextStyle(
-                                            fontSize: 16,
+                                return Container(
+                                  margin: EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  padding: EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: Colors.white30,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      // Time
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.access_time,
                                             color: Colors.white,
+                                            size: 20,
                                           ),
-                                        ),
-                                        SizedBox(width: 16),
-                                        if (note.isNotEmpty)
-                                          Expanded(
-                                            child: InkWell(
-                                              onTap:
-                                                  () => showDialog(
-                                                    context: context,
-                                                    builder:
-                                                        (_) => AlertDialog(
-                                                          title: Text('הערה'),
-                                                          content: Text(note),
-                                                          actions: [
-                                                            TextButton(
-                                                              onPressed:
-                                                                  () =>
-                                                                      Navigator.pop(
-                                                                        context,
-                                                                      ),
-                                                              child: Text(
-                                                                'סגור',
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                  ),
-                                              child: Text(
-                                                note,
-                                                style: TextStyle(
-                                                  fontSize: 16,
-                                                  color: Colors.white,
-                                                  decoration:
-                                                      TextDecoration.underline,
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                textAlign: TextAlign.right,
-                                              ),
+                                          SizedBox(width: 6),
+                                          Text(
+                                            time,
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w500,
                                             ),
                                           ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }).toList(),
+                                        ],
+                                      ),
+                                      // Note icon (if exists)
+                                      if (note.isNotEmpty)
+                                        Tooltip(
+                                          message: note,
+                                          decoration: BoxDecoration(
+                                            color: Colors.black87,
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                          textStyle: TextStyle(
+                                            color: Colors.white,
+                                          ),
+                                          child: IconButton(
+                                            icon: Icon(
+                                              Icons.info_outline,
+                                              color: Colors.amberAccent,
+                                            ),
+                                            onPressed: () {
+                                              showDialog(
+                                                context: context,
+                                                builder:
+                                                    (_) => AlertDialog(
+                                                      shape: RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              20,
+                                                            ),
+                                                      ),
+                                                      backgroundColor:
+                                                          Colors.white,
+                                                      title: Row(
+                                                        children: [
+                                                          Icon(
+                                                            Icons.info,
+                                                            color:
+                                                                Colors
+                                                                    .deepPurple,
+                                                          ),
+                                                          SizedBox(width: 8),
+                                                          Text('הערה'),
+                                                        ],
+                                                      ),
+                                                      content: Text(
+                                                        note,
+                                                        textAlign:
+                                                            TextAlign.right,
+                                                        style: TextStyle(
+                                                          fontSize: 16,
+                                                        ),
+                                                      ),
+                                                      actions: [
+                                                        TextButton(
+                                                          onPressed:
+                                                              () =>
+                                                                  Navigator.pop(
+                                                                    context,
+                                                                  ),
+                                                          child: Text('סגור'),
+                                                        ),
+                                                      ],
+                                                    ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                        ),
                       ),
                     );
                   }).toList(),

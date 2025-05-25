@@ -5,9 +5,12 @@ import 'package:rabbi_shiba/screens/general_detail_screen.dart';
 import 'package:rabbi_shiba/screens/week_day_tefilot_screen .dart';
 import 'package:rabbi_shiba/screens/chet_screen.dart';
 import 'package:rabbi_shiba/screens/user_to_synagogue_map.dart';
+import 'package:rabbi_shiba/screens/shabbat_screen.dart'; // ← הוספתי את מסך יום שישי
 import 'package:flutter/scheduler.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:rabbi_shiba/screens/entrance_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -17,18 +20,21 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   double _opacity = 0.0;
   bool _isImageLoaded = false;
+  bool _showShabbatBanner = false;
 
   @override
   void initState() {
     super.initState();
 
-    // טעינת התמונה בצורה אסינכרונית ללא חסימת UI
-    _loadBackgroundImage();
+    // אם היום הוא שישי – ניווט ישיר למסך יום שישי
+    if (DateTime.now().weekday == 5) {
+      _showShabbatBanner = true; // it's Friday
+    }
+    _loadBackgroundImage(); // תמיד טען רקע
   }
 
   Future<void> _loadBackgroundImage() async {
     try {
-      // טעינה מוקדמת של התמונה ללא חסימת ה-UI
       final imageProvider = AssetImage('assets/siba4.png');
       await precacheImage(imageProvider, context);
 
@@ -37,7 +43,6 @@ class _HomeScreenState extends State<HomeScreen> {
           _isImageLoaded = true;
         });
 
-        // התחלת האנימציה לאחר שהתמונה טעונה
         Future.delayed(Duration(milliseconds: 100), () {
           if (mounted) {
             setState(() {
@@ -47,7 +52,6 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
     } catch (e) {
-      // במקרה של שגיאה, עדיין נאפשר למסך להופיע
       if (mounted) {
         setState(() {
           _isImageLoaded = true;
@@ -57,8 +61,24 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<String?> fetchParashaName() async {
+    final supabase = Supabase.instance.client;
+
+    final response =
+        await supabase
+            .from('shabbat_times')
+            .select('parasha_name')
+            .limit(1)
+            .maybeSingle(); // מחזיר רק רשומה אחת או null
+
+    if (response != null && response['parasha_name'] != null) {
+      return response['parasha_name'] as String;
+    } else {
+      return null;
+    }
+  }
+
   final List<Map<String, dynamic>> bubbles = [
-    // הרשימה נשארה כפי שהיא
     {
       'label': 'שבת',
       'icon': Icons.wine_bar,
@@ -128,13 +148,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
+      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
       body: AnimatedOpacity(
         opacity: _opacity,
         duration: Duration(milliseconds: 800),
         curve: Curves.easeInOut,
         child: Stack(
           children: [
-            // רקע תמונה - מוצג רק לאחר טעינה
             if (_isImageLoaded)
               Positioned.fill(
                 child: Container(
@@ -150,64 +170,177 @@ class _HomeScreenState extends State<HomeScreen> {
             SafeArea(
               child: Column(
                 children: [
-                  // כותרת עם אנימציות
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Column(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        AnimatedDefaultTextStyle(
-                          duration: Duration(milliseconds: 500),
-                          style: GoogleFonts.alef(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 28,
-                            color:
-                                _isImageLoaded
-                                    ? Colors.white
-                                    : Colors.transparent,
-                            shadows:
-                                _isImageLoaded
-                                    ? [
-                                      Shadow(
-                                        blurRadius: 5,
-                                        color: Colors.black45,
-                                        offset: Offset(1, 1),
-                                      ),
-                                    ]
-                                    : [],
-                          ),
-                          child: Text('כשרות דת והלכה'),
+                        IconButton(
+                          icon: Icon(Icons.arrow_back, color: Colors.black),
+                          iconSize: 30,
+                          tooltip: 'חזרה למסך הראשי',
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => EntranceScreen(),
+                              ),
+                            );
+                          },
                         ),
-                        SizedBox(height: 4),
-                        AnimatedDefaultTextStyle(
-                          duration: Duration(milliseconds: 500),
-                          style: GoogleFonts.rubikDirt(
-                            fontSize: 16,
-                            color:
-                                _isImageLoaded
-                                    ? Colors.black
-                                    : Colors.transparent,
-                            shadows:
-                                _isImageLoaded
-                                    ? [
-                                      Shadow(
-                                        blurRadius: 3,
-                                        color: Colors.black45,
-                                        offset: Offset(1, 1),
-                                      ),
-                                    ]
-                                    : [],
-                          ),
-                          child: Text('מרכז רפואי שיבא תל השומר'),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            AnimatedDefaultTextStyle(
+                              duration: Duration(milliseconds: 500),
+                              style: GoogleFonts.alef(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 28,
+                                color:
+                                    _isImageLoaded
+                                        ? Colors.white
+                                        : Colors.transparent,
+                                shadows:
+                                    _isImageLoaded
+                                        ? [
+                                          Shadow(
+                                            blurRadius: 5,
+                                            color: Colors.black45,
+                                            offset: Offset(1, 1),
+                                          ),
+                                        ]
+                                        : [],
+                              ),
+                              child: Text('כשרות דת והלכה'),
+                            ),
+                            SizedBox(height: 4),
+                            AnimatedDefaultTextStyle(
+                              duration: Duration(milliseconds: 500),
+                              style: GoogleFonts.rubikDirt(
+                                fontSize: 16,
+                                color:
+                                    _isImageLoaded
+                                        ? Colors.black
+                                        : Colors.transparent,
+                                shadows:
+                                    _isImageLoaded
+                                        ? [
+                                          Shadow(
+                                            blurRadius: 3,
+                                            color: Colors.black45,
+                                            offset: Offset(1, 1),
+                                          ),
+                                        ]
+                                        : [],
+                              ),
+                              child: Text('מרכז רפואי שיבא תל השומר'),
+                            ),
+                          ],
                         ),
+                        SizedBox(
+                          width: 48,
+                        ), // מרווח כדי לאזן את הכפתור בצד שמאל
                       ],
                     ),
                   ),
 
-                  // בועות עם אנימציות מדורגות
+                  if (_showShabbatBanner)
+                    FutureBuilder<String?>(
+                      future: fetchParashaName(),
+                      builder: (context, snapshot) {
+                        final parashaName = snapshot.data ?? '';
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16.0,
+                            vertical: 10.0,
+                          ),
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ShabbatScreen(),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Color(0xFF4A3A3A),
+                                    Color(0xFF3B2C2C),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.3),
+                                    blurRadius: 8,
+                                    offset: Offset(0, 4),
+                                  ),
+                                ],
+                                border: Border.all(
+                                  color: Colors.amber.withOpacity(0.2),
+                                  width: 0.5,
+                                ),
+                              ),
+                              padding: EdgeInsets.symmetric(
+                                vertical: 14,
+                                horizontal: 18,
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.line_weight, // אייקון נרות שבת
+                                    color: Colors.amber[200],
+                                    size: 28,
+                                  ),
+                                  SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          'זמני שבת ${parashaName.isNotEmpty ? parashaName + " " : ""}',
+                                          style: GoogleFonts.secularOne(
+                                            color: Colors.amber[100],
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        SizedBox(height: 4),
+                                        Text(
+                                          'לחצו לצפייה בזמני כניסת ויציאת שבת',
+                                          style: TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  SizedBox(width: 12),
+                                  Icon(
+                                    Icons.arrow_downward,
+                                    color: Colors.amber[200],
+                                    size: 18,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   Expanded(
                     child: SingleChildScrollView(
-                      physics:
-                          BouncingScrollPhysics(), // אנימציית גלילה חלקה יותר
+                      physics: BouncingScrollPhysics(),
                       child: Directionality(
                         textDirection: TextDirection.rtl,
                         child: Padding(
@@ -230,22 +363,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                         context,
                                         PageRouteBuilder(
                                           pageBuilder:
-                                              (
-                                                context,
-                                                animation,
-                                                secondaryAnimation,
-                                              ) => bubble['screen'],
-                                          transitionsBuilder: (
-                                            context,
-                                            animation,
-                                            secondaryAnimation,
-                                            child,
-                                          ) {
-                                            return FadeTransition(
-                                              opacity: animation,
-                                              child: child,
-                                            );
-                                          },
+                                              (_, animation, __) =>
+                                                  bubble['screen'],
+                                          transitionsBuilder:
+                                              (_, animation, __, child) =>
+                                                  FadeTransition(
+                                                    opacity: animation,
+                                                    child: child,
+                                                  ),
                                           transitionDuration: Duration(
                                             milliseconds: 300,
                                           ),
@@ -258,71 +383,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                 }).toList(),
                           ),
                         ),
-                      ),
-                    ),
-                  ),
-
-                  // טקסט תחתון עם אנימציה
-                  AnimatedOpacity(
-                    opacity: _isImageLoaded ? 1.0 : 0.0,
-                    duration: Duration(milliseconds: 500),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                PageRouteBuilder(
-                                  pageBuilder:
-                                      (
-                                        context,
-                                        animation,
-                                        secondaryAnimation,
-                                      ) => ChatScreen(),
-                                  transitionsBuilder: (
-                                    context,
-                                    animation,
-                                    secondaryAnimation,
-                                    child,
-                                  ) {
-                                    return FadeTransition(
-                                      opacity: animation,
-                                      child: child,
-                                    );
-                                  },
-                                  transitionDuration: Duration(
-                                    milliseconds: 300,
-                                  ),
-                                ),
-                              );
-                            },
-                            child: FaIcon(
-                              FontAwesomeIcons.whatsapp,
-                              size: 30,
-                              color: Colors.green[800]!.withOpacity(0.7),
-                            ),
-                          ),
-                          SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              '* באם יש משהו לא ברור מספיק ניתן להתכתב עם רב המרכז הרפואי בענין.',
-                              style: GoogleFonts.davidLibre(
-                                fontSize: 16,
-                                color: Colors.black,
-                                shadows: [
-                                  Shadow(
-                                    blurRadius: 3,
-                                    color: Colors.black45,
-                                    offset: Offset(1, 1),
-                                  ),
-                                ],
-                              ),
-                              textDirection: TextDirection.rtl,
-                            ),
-                          ),
-                        ],
                       ),
                     ),
                   ),

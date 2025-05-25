@@ -3,7 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:rabbi_shiba/screens/home_screen.dart';
+import 'package:rabbi_shiba/screens/entrance_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
@@ -170,7 +170,7 @@ class _SplashScreenState extends State<SplashScreen>
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
           transitionDuration: Duration(milliseconds: 800),
-          pageBuilder: (_, __, ___) => HomeScreen(),
+          pageBuilder: (_, __, ___) => EntranceScreen(),
           transitionsBuilder: (_, animation, __, child) {
             return FadeTransition(opacity: animation, child: child);
           },

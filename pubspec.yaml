@@ -85,9 +85,11 @@ flutter:
     - assets/siba3.png
     - assets/siba4.png
     - assets/siba5.png
+    - assets/shabbat_background.jpg
+    - assets/shabbat_candles.png
+    - assets/hrav.png
     - .env
-  
-  # The following line ensures that the Material Icons font is
+    # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true

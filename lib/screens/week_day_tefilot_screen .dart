@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 
 class WeekdayTefilotScreen extends StatefulWidget {
   @override
@@ -10,67 +8,8 @@ class WeekdayTefilotScreen extends StatefulWidget {
 
 class _WeekdayTefilotScreenState extends State<WeekdayTefilotScreen> {
   Map<String, List<Map<String, dynamic>>> groupedTefilot = {};
-  String hebrewDateInfo = '';
   String tefilinInfo = '';
   bool isLoading = true;
-
-  // מילון תרגום פרשיות מאנגלית לעברית
-  final Map<String, String> parashaTranslations = {
-    'Parashat Bereshit': 'פרשת בראשית',
-    'Parashat Noach': 'פרשת נח',
-    'Parashat Lech-Lecha': 'פרשת לך לך',
-    'Parashat Vayera': 'פרשת וירא',
-    'Parashat Chayei Sara': 'פרשת חיי שרה',
-    'Parashat Toldot': 'פרשת תולדות',
-    'Parashat Vayetzei': 'פרשת ויצא',
-    'Parashat Vayishlach': 'פרשת וישלח',
-    'Parashat Vayeshev': 'פרשת וישב',
-    'Parashat Miketz': 'פרשת מקץ',
-    'Parashat Vayigash': 'פרשת ויגש',
-    'Parashat Vayechi': 'פרשת ויחי',
-    'Parashat Shemot': 'פרשת שמות',
-    'Parashat Vaera': 'פרשת וארא',
-    'Parashat Bo': 'פרשת בא',
-    'Parashat Beshalach': 'פרשת בשלח',
-    'Parashat Yitro': 'פרשת יתרו',
-    'Parashat Mishpatim': 'פרשת משפטים',
-    'Parashat Terumah': 'פרשת תרומה',
-    'Parashat Tetzaveh': 'פרשת תצוה',
-    'Parashat Ki Tisa': 'פרשת כי תשא',
-    'Parashat Vayakhel': 'פרשת ויקהל',
-    'Parashat Pekudei': 'פרשת פקודי',
-    'Parashat Vayikra': 'פרשת ויקרא',
-    'Parashat Tzav': 'פרשת צו',
-    'Parashat Shmini': 'פרשת שמיני',
-    'Parashat Tazria': 'פרשת תזריע',
-    'Parashat Metzora': 'פרשת מצורע',
-    'Parashat Achrei Mot': 'פרשת אחרי מות',
-    'Parashat Kedoshim': 'פרשת קדושים',
-    'Parashat Emor': 'פרשת אמור',
-    'Parashat Behar': 'פרשת בהר',
-    'Parashat Bechukotai': 'פרשת בחוקתי',
-    'Parashat Bamidbar': 'פרשת במדבר',
-    'Parashat Nasso': 'פרשת נשא',
-    'Parashat Beha\'alotcha': 'פרשת בהעלותך',
-    'Parashat Sh\'lach': 'פרשת שלח לך',
-    'Parashat Korach': 'פרשת קרח',
-    'Parashat Chukat': 'פרשת חקת',
-    'Parashat Balak': 'פרשת בלק',
-    'Parashat Pinchas': 'פרשת פינחס',
-    'Parashat Matot': 'פרשת מטות',
-    'Parashat Masei': 'פרשת מסעי',
-    'Parashat Devarim': 'פרשת דברים',
-    'Parashat Vaetchanan': 'פרשת ואתחנן',
-    'Parashat Eikev': 'פרשת עקב',
-    'Parashat Re\'eh': 'פרשת ראה',
-    'Parashat Shoftim': 'פרשת שופטים',
-    'Parashat Ki Teitzei': 'פרשת כי תצא',
-    'Parashat Ki Tavo': 'פרשת כי תבוא',
-    'Parashat Nitzavim': 'פרשת נצבים',
-    'Parashat Vayeilech': 'פרשת וילך',
-    'Parashat Ha\'Azinu': 'פרשת האזינו',
-    'Parashat V\'Zot HaBerachah': 'פרשת וזאת הברכה',
-  };
 
   @override
   void initState() {
@@ -82,59 +21,11 @@ class _WeekdayTefilotScreenState extends State<WeekdayTefilotScreen> {
     setState(() => isLoading = true);
 
     try {
-      await Future.wait([
-        fetchHebrewDateAndParasha(),
-        fetchTefilotData(),
-        fetchTefilinInfo(),
-      ]);
+      await Future.wait([fetchTefilotData(), fetchTefilinInfo()]);
     } catch (e) {
       print('Error fetching data: $e');
     } finally {
       setState(() => isLoading = false);
-    }
-  }
-
-  Future<void> fetchHebrewDateAndParasha() async {
-    try {
-      final nowDate = DateTime.now();
-      final formattedDate =
-          '${nowDate.year}-${nowDate.month.toString().padLeft(2, '0')}-${nowDate.day.toString().padLeft(2, '0')}';
-
-      final response = await http.get(
-        Uri.parse(
-          'https://www.hebcal.com/converter?cfg=json&date=$formattedDate&g2h=1',
-        ),
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final hebrewDate = data['hebrew'] ?? 'לא זמין';
-        String parasha = 'לא זמין';
-
-        if (data['events'] != null) {
-          final events = List<String>.from(data['events']);
-          final englishParasha = events.firstWhere(
-            (event) => event.startsWith('Parashat'),
-            orElse: () => 'לא זמין',
-          );
-
-          // תרגום לעברית
-          parasha = parashaTranslations[englishParasha] ?? englishParasha;
-        }
-
-        setState(() {
-          hebrewDateInfo = '$hebrewDate\n$parasha';
-        });
-      } else {
-        setState(() {
-          hebrewDateInfo = 'שגיאה: ה-API החזיר קוד ${response.statusCode}';
-        });
-      }
-    } catch (e) {
-      setState(
-        () => hebrewDateInfo = 'שגיאה: לא ניתן לטעון תאריך עברי. נסה שוב.',
-      );
-      debugPrint('שגיאה ב-fetchHebrewDateAndParasha: $e');
     }
   }
 
@@ -233,53 +124,6 @@ class _WeekdayTefilotScreenState extends State<WeekdayTefilotScreen> {
           end: Alignment.bottomCenter,
           colors: [Color(0xFFE3F2FD), Color(0xFFBBDEFB), Color(0xFF90CAF9)],
         ),
-      ),
-    );
-  }
-
-  Widget _buildHeaderCard() {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.transparent, Colors.transparent],
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 12,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(Icons.today, color: Colors.black, size: 32),
-          SizedBox(height: 12),
-          Text(
-            'תאריך עברי',
-            style: TextStyle(
-              color: Colors.black,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            hebrewDateInfo,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-              height: 1.4,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -492,6 +336,7 @@ class _WeekdayTefilotScreenState extends State<WeekdayTefilotScreen> {
                 offset: Offset(1, 1),
                 blurRadius: 3,
               ),
+              Shadow(blurRadius: 10, color: Colors.black, offset: Offset(2, 2)),
             ],
           ),
         ),
@@ -538,7 +383,6 @@ class _WeekdayTefilotScreenState extends State<WeekdayTefilotScreen> {
             ListView(
               padding: EdgeInsets.fromLTRB(0, 100, 0, 32),
               children: [
-                _buildHeaderCard(),
                 SizedBox(height: 8),
                 ...groupedTefilot.entries.map(
                   (entry) => _buildTefilaCard(entry.key, entry.value),

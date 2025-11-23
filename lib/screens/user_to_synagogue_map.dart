@@ -326,6 +326,19 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
     );
   }
 
+  Widget _buildBackground() {
+    // רקע חלופי אם יש בעיה עם התמונה
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFE3F2FD), Color(0xFFBBDEFB), Color(0xFF90CAF9)],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -357,14 +370,7 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
       ),
       body: Stack(
         children: [
-          Positioned.fill(
-            child: Image.asset(
-              'assets/siba4.png',
-              fit: BoxFit.cover,
-              color: Colors.black.withOpacity(0.3),
-              colorBlendMode: BlendMode.darken,
-            ),
-          ),
+          Positioned.fill(child: _buildBackground()),
           // עיגול טעינה שמופיע עד שהמפה נטענת
           if (_loading)
             Center(

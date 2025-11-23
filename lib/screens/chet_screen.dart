@@ -56,6 +56,19 @@ class ChatScreen extends StatelessWidget {
     }
   }
 
+  Widget _buildBackground() {
+    // רקע חלופי אם יש בעיה עם התמונה
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFE3F2FD), Color(0xFFBBDEFB), Color(0xFF90CAF9)],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -91,17 +104,7 @@ class ChatScreen extends StatelessWidget {
       ),
       body: Stack(
         children: [
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage('assets/siba4.png'),
-                  fit: BoxFit.cover,
-                ),
-              ),
-              child: Container(color: Colors.black.withOpacity(0.3)),
-            ),
-          ),
+          Positioned.fill(child: _buildBackground()),
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -118,12 +121,15 @@ class ChatScreen extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.2),
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
+                          border: Border.all(
+                            color: Color(0xFF25D366),
+                            width: 2,
+                          ),
                         ),
                         child: FaIcon(
                           FontAwesomeIcons.whatsapp,
                           size: 80,
-                          color: Colors.white,
+                          color: Color(0xFF25D366),
                         ),
                       ),
                     );
@@ -137,11 +143,11 @@ class ChatScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: Color.fromARGB(255, 5, 79, 32),
                       shadows: [
                         Shadow(
                           blurRadius: 10,
-                          color: Colors.black,
+                          color: Colors.white,
                           offset: Offset(2, 2),
                         ),
                       ],
@@ -156,7 +162,7 @@ class ChatScreen extends StatelessWidget {
                     'לחצו על הכפתור כדי להתחיל שיחה בווטסאפ עם הרב לייעוץ אישי',
                     style: TextStyle(
                       fontSize: 16,
-                      color: Colors.white.withOpacity(0.9),
+                      color: Color.fromARGB(255, 4, 78, 31),
                       height: 1.5,
                     ),
                     textAlign: TextAlign.center,

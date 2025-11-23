@@ -14,6 +14,64 @@ class _WeekdayTefilotScreenState extends State<WeekdayTefilotScreen> {
   String tefilinInfo = '';
   bool isLoading = true;
 
+  // מילון תרגום פרשיות מאנגלית לעברית
+  final Map<String, String> parashaTranslations = {
+    'Parashat Bereshit': 'פרשת בראשית',
+    'Parashat Noach': 'פרשת נח',
+    'Parashat Lech-Lecha': 'פרשת לך לך',
+    'Parashat Vayera': 'פרשת וירא',
+    'Parashat Chayei Sara': 'פרשת חיי שרה',
+    'Parashat Toldot': 'פרשת תולדות',
+    'Parashat Vayetzei': 'פרשת ויצא',
+    'Parashat Vayishlach': 'פרשת וישלח',
+    'Parashat Vayeshev': 'פרשת וישב',
+    'Parashat Miketz': 'פרשת מקץ',
+    'Parashat Vayigash': 'פרשת ויגש',
+    'Parashat Vayechi': 'פרשת ויחי',
+    'Parashat Shemot': 'פרשת שמות',
+    'Parashat Vaera': 'פרשת וארא',
+    'Parashat Bo': 'פרשת בא',
+    'Parashat Beshalach': 'פרשת בשלח',
+    'Parashat Yitro': 'פרשת יתרו',
+    'Parashat Mishpatim': 'פרשת משפטים',
+    'Parashat Terumah': 'פרשת תרומה',
+    'Parashat Tetzaveh': 'פרשת תצוה',
+    'Parashat Ki Tisa': 'פרשת כי תשא',
+    'Parashat Vayakhel': 'פרשת ויקהל',
+    'Parashat Pekudei': 'פרשת פקודי',
+    'Parashat Vayikra': 'פרשת ויקרא',
+    'Parashat Tzav': 'פרשת צו',
+    'Parashat Shmini': 'פרשת שמיני',
+    'Parashat Tazria': 'פרשת תזריע',
+    'Parashat Metzora': 'פרשת מצורע',
+    'Parashat Achrei Mot': 'פרשת אחרי מות',
+    'Parashat Kedoshim': 'פרשת קדושים',
+    'Parashat Emor': 'פרשת אמור',
+    'Parashat Behar': 'פרשת בהר',
+    'Parashat Bechukotai': 'פרשת בחוקתי',
+    'Parashat Bamidbar': 'פרשת במדבר',
+    'Parashat Nasso': 'פרשת נשא',
+    'Parashat Beha\'alotcha': 'פרשת בהעלותך',
+    'Parashat Sh\'lach': 'פרשת שלח לך',
+    'Parashat Korach': 'פרשת קרח',
+    'Parashat Chukat': 'פרשת חקת',
+    'Parashat Balak': 'פרשת בלק',
+    'Parashat Pinchas': 'פרשת פינחס',
+    'Parashat Matot': 'פרשת מטות',
+    'Parashat Masei': 'פרשת מסעי',
+    'Parashat Devarim': 'פרשת דברים',
+    'Parashat Vaetchanan': 'פרשת ואתחנן',
+    'Parashat Eikev': 'פרשת עקב',
+    'Parashat Re\'eh': 'פרשת ראה',
+    'Parashat Shoftim': 'פרשת שופטים',
+    'Parashat Ki Teitzei': 'פרשת כי תצא',
+    'Parashat Ki Tavo': 'פרשת כי תבוא',
+    'Parashat Nitzavim': 'פרשת נצבים',
+    'Parashat Vayeilech': 'פרשת וילך',
+    'Parashat Ha\'Azinu': 'פרשת האזינו',
+    'Parashat V\'Zot HaBerachah': 'פרשת וזאת הברכה',
+  };
+
   @override
   void initState() {
     super.initState();
@@ -55,14 +113,17 @@ class _WeekdayTefilotScreenState extends State<WeekdayTefilotScreen> {
 
         if (data['events'] != null) {
           final events = List<String>.from(data['events']);
-          parasha = events.firstWhere(
+          final englishParasha = events.firstWhere(
             (event) => event.startsWith('Parashat'),
             orElse: () => 'לא זמין',
           );
+
+          // תרגום לעברית
+          parasha = parashaTranslations[englishParasha] ?? englishParasha;
         }
 
         setState(() {
-          hebrewDateInfo = 'תאריך עברי: $hebrewDate\n  $parasha :פרשת השבוע';
+          hebrewDateInfo = '$hebrewDate\n$parasha';
         });
       } else {
         setState(() {
@@ -157,6 +218,260 @@ class _WeekdayTefilotScreenState extends State<WeekdayTefilotScreen> {
     return Icons.access_time;
   }
 
+  Color getColorForTefilaType(String type) {
+    if (type.contains('שחרית')) return Colors.orange.shade700;
+    if (type.contains('מנחה')) return Colors.blue.shade700;
+    if (type.contains('ערבית')) return Colors.indigo.shade800;
+    return Colors.grey.shade700;
+  }
+
+  Widget _buildBackground() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFE3F2FD), Color(0xFFBBDEFB), Color(0xFF90CAF9)],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderCard() {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.transparent, Colors.transparent],
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 12,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.today, color: Colors.black, size: 32),
+          SizedBox(height: 12),
+          Text(
+            'תאריך עברי',
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            hebrewDateInfo,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTefilaCard(String type, List<Map<String, dynamic>> tefilot) {
+    final color = getColorForTefilaType(type);
+
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.3),
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Header
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            child: Row(
+              children: [
+                Icon(getIconForTefilaType(type), color: Colors.white, size: 24),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    type,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Times list
+          ...tefilot.asMap().entries.map((entry) {
+            final index = entry.key;
+            final tefila = entry.value;
+            final note = tefila['הערות'] ?? '';
+            final time = tefila['שעה'] ?? 'לא צוין שעה';
+            final isLast = index == tefilot.length - 1;
+
+            return Container(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom:
+                      isLast
+                          ? BorderSide.none
+                          : BorderSide(color: Colors.grey.shade200),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.access_time, color: color, size: 16),
+                        SizedBox(width: 6),
+                        Text(
+                          time,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: color,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Spacer(),
+                  if (note.isNotEmpty)
+                    GestureDetector(
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder:
+                              (_) => AlertDialog(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                title: Row(
+                                  children: [
+                                    Icon(Icons.info, color: color),
+                                    SizedBox(width: 8),
+                                    Text('הערה'),
+                                  ],
+                                ),
+                                content: Text(
+                                  note,
+                                  textAlign: TextAlign.right,
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: color,
+                                    ),
+                                    onPressed: () => Navigator.pop(context),
+                                    child: Text('סגור'),
+                                  ),
+                                ],
+                              ),
+                        );
+                      },
+                      child: Container(
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade100,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.info_outline,
+                          color: Colors.amber.shade700,
+                          size: 18,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          }).toList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTefilinCard() {
+    return Container(
+      margin: EdgeInsets.all(16),
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.brown.shade600, Colors.brown.shade800],
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 12,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.auto_stories, color: Colors.white, size: 28),
+              SizedBox(width: 12),
+              Text(
+                'שאילת תפילין',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+          Text(
+            tefilinInfo,
+            style: TextStyle(fontSize: 16, color: Colors.white, height: 1.5),
+            textAlign: TextAlign.right,
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -171,245 +486,66 @@ class _WeekdayTefilotScreenState extends State<WeekdayTefilotScreen> {
             fontWeight: FontWeight.bold,
             fontSize: 24,
             color: Colors.white,
+            shadows: [
+              Shadow(
+                color: Colors.black45,
+                offset: Offset(1, 1),
+                blurRadius: 3,
+              ),
+            ],
           ),
         ),
       ),
       body: Stack(
         children: [
-          Positioned.fill(
-            child: Image.asset('assets/siba4.png', fit: BoxFit.cover),
-          ),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.grey.withOpacity(0.5),
-                  Colors.grey.withOpacity(0.4),
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
-          ),
-          isLoading
-              ? Center(child: CircularProgressIndicator())
-              : ListView(
-                padding: EdgeInsets.fromLTRB(16, 100, 16, 32),
-                children: [
-                  // Hebrew date and parasha section
-                  Container(
-                    margin: EdgeInsets.only(bottom: 16),
-                    padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.8),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.blue, width: 2),
+          Positioned.fill(child: _buildBackground()),
+          if (isLoading)
+            Center(
+              child: Container(
+                padding: EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 12,
+                      offset: Offset(0, 6),
                     ),
-                    child: Text(
-                      hebrewDateInfo,
-                      textAlign: TextAlign.center,
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Colors.deepPurple,
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'טוען נתונים...',
                       style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        fontSize: 16,
+                        color: Colors.grey.shade700,
                       ),
                     ),
-                  ),
-
-                  // Tefilot times
-                  ...groupedTefilot.keys.map((type) {
-                    final tefilot = groupedTefilot[type]!;
-                    return Container(
-                      margin: EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        gradient: LinearGradient(
-                          colors: [
-                            Colors.deepPurple.shade400.withOpacity(0.9),
-                            Colors.deepPurple.shade700.withOpacity(0.9),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 8,
-                            offset: Offset(2, 4),
-                          ),
-                        ],
-                      ),
-                      child: Theme(
-                        data: Theme.of(context).copyWith(
-                          dividerColor: Colors.transparent,
-                          splashColor: Colors.white24,
-                          highlightColor: Colors.white10,
-                        ),
-                        child: ExpansionTile(
-                          leading: Icon(
-                            getIconForTefilaType(type),
-                            color: Colors.white,
-                          ),
-                          title: Text(
-                            type,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 20,
-                              color: Colors.white,
-                            ),
-                          ),
-                          iconColor: Colors.white,
-                          collapsedIconColor: Colors.white,
-                          children:
-                              tefilot.map((tefila) {
-                                final note = tefila['הערות'] ?? '';
-                                final time = tefila['שעה'] ?? 'לא צוין שעה';
-
-                                return Container(
-                                  margin: EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  padding: EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.15),
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                      color: Colors.white30,
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      // Time
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Icons.access_time,
-                                            color: Colors.white,
-                                            size: 20,
-                                          ),
-                                          SizedBox(width: 6),
-                                          Text(
-                                            time,
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      // Note icon (if exists)
-                                      if (note.isNotEmpty)
-                                        Tooltip(
-                                          message: note,
-                                          decoration: BoxDecoration(
-                                            color: Colors.black87,
-                                            borderRadius: BorderRadius.circular(
-                                              10,
-                                            ),
-                                          ),
-                                          textStyle: TextStyle(
-                                            color: Colors.white,
-                                          ),
-                                          child: IconButton(
-                                            icon: Icon(
-                                              Icons.info_outline,
-                                              color: Colors.amberAccent,
-                                            ),
-                                            onPressed: () {
-                                              showDialog(
-                                                context: context,
-                                                builder:
-                                                    (_) => AlertDialog(
-                                                      shape: RoundedRectangleBorder(
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              20,
-                                                            ),
-                                                      ),
-                                                      backgroundColor:
-                                                          Colors.white,
-                                                      title: Row(
-                                                        children: [
-                                                          Icon(
-                                                            Icons.info,
-                                                            color:
-                                                                Colors
-                                                                    .deepPurple,
-                                                          ),
-                                                          SizedBox(width: 8),
-                                                          Text('הערה'),
-                                                        ],
-                                                      ),
-                                                      content: Text(
-                                                        note,
-                                                        textAlign:
-                                                            TextAlign.right,
-                                                        style: TextStyle(
-                                                          fontSize: 16,
-                                                        ),
-                                                      ),
-                                                      actions: [
-                                                        TextButton(
-                                                          onPressed:
-                                                              () =>
-                                                                  Navigator.pop(
-                                                                    context,
-                                                                  ),
-                                                          child: Text('סגור'),
-                                                        ),
-                                                      ],
-                                                    ),
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                );
-                              }).toList(),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-
-                  // Tefilin info section
-                  SizedBox(height: 20),
-                  Container(
-                    padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.brown.withOpacity(0.8),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.black, width: 1),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Center(
-                          child: Text(
-                            ':שאילת תפילין',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          tefilinInfo,
-                          style: TextStyle(fontSize: 16, color: Colors.white),
-                          textAlign: TextAlign.right,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+            )
+          else
+            ListView(
+              padding: EdgeInsets.fromLTRB(0, 100, 0, 32),
+              children: [
+                _buildHeaderCard(),
+                SizedBox(height: 8),
+                ...groupedTefilot.entries.map(
+                  (entry) => _buildTefilaCard(entry.key, entry.value),
+                ),
+                _buildTefilinCard(),
+              ],
+            ),
         ],
       ),
     );

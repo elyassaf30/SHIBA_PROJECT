@@ -101,6 +101,19 @@ class _MoadiIsraelScreenState extends State<MoadiIsraelScreen>
     return FontAwesomeIcons.calendarDay;
   }
 
+  Widget _buildBackground() {
+    // רקע חלופי אם יש בעיה עם התמונה
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFE3F2FD), Color(0xFFBBDEFB), Color(0xFF90CAF9)],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -133,9 +146,7 @@ class _MoadiIsraelScreenState extends State<MoadiIsraelScreen>
       body: Stack(
         children: [
           // רקע עם אפקט
-          Positioned.fill(
-            child: Image.asset('assets/siba4.png', fit: BoxFit.cover),
-          ),
+          Positioned.fill(child: _buildBackground()),
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(

@@ -87,6 +87,19 @@ class ShabatScreenState extends State<ShabatScreen>
     return FontAwesomeIcons.wineGlass;
   }
 
+  Widget _buildBackground() {
+    // רקע חלופי אם יש בעיה עם התמונה
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFE3F2FD), Color(0xFFBBDEFB), Color(0xFF90CAF9)],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -119,9 +132,7 @@ class ShabatScreenState extends State<ShabatScreen>
       body: Stack(
         children: [
           // רקע עם אפקט
-          Positioned.fill(
-            child: Image.asset('assets/siba4.png', fit: BoxFit.cover),
-          ),
+          Positioned.fill(child: _buildBackground()),
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(

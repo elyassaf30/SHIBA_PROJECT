@@ -5,6 +5,364 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/animation.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'dart:async';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+// Map of common Parasha names translations from English to Hebrew.
+const Map<String, String> parashaTranslations = {
+  'Parashat Bereshit': 'בראשית',
+  'Parashat Noach': 'נח',
+  'Parashat Lech-Lecha': 'לך לך',
+  'Parashat Vayera': 'וירא',
+  'Parashat Chayei Sarah': 'חיי שרה',
+  'Parashat Toldot': 'תולדות',
+  'Parashat Vayetzei': 'וייצא',
+  'Parashat Vayishlach': 'וישלח',
+  'Parashat Vayeshev': 'וישב',
+  'Parashat Miketz': 'מקץ',
+  'Parashat Vayigash': 'ויגש',
+  'Parashat Vayechi': 'ויחי',
+  'Parashat Shemot': 'שמות',
+  'Parashat Vaera': 'וָאֵרָא',
+  'Parashat Bo': 'בו',
+  'Parashat Beshalach': 'בשלח',
+  'Parashat Yitro': 'יתרו',
+  'Parashat Mishpatim': 'משפטים',
+  'Parashat Terumah': 'תרומה',
+  'Parashat Tetzaveh': 'תצוה',
+  'Parashat Ki Tisa': 'כי תשא',
+  'Parashat Vayakhel': 'ויקהל',
+  'Parashat Pekudei': 'פקודי',
+  'Parashat Vayikra': 'ויקרא',
+  'Parashat Tzav': 'צו',
+  'Parashat Shemini': 'שמיני',
+  'Parashat Tazria': 'תזריע',
+  'Parashat Metzora': 'מצורע',
+  'Parashat Acharei Mot': 'אחרי מות',
+  'Parashat Kedoshim': 'קדושים',
+  'Parashat Emor': 'אמור',
+  'Parashat Behar': 'בהר',
+  'Parashat Bechukotai': 'בחקתי',
+  'Parashat Bamidbar': 'במדבר',
+  'Parashat Nasso': 'נשא',
+  'Parashat Behaalotecha': 'בהעלותך',
+  'Parashat Shlach': 'שלח',
+  'Parashat Korach': 'קורח',
+  'Parashat Chukat': 'חוקת',
+  'Parashat Balak': 'בלק',
+  'Parashat Pinchas': 'פינחס',
+  'Parashat Matot': 'מטות',
+  'Parashat Massei': 'מסעי',
+  'Parashat Devarim': 'דברים',
+  'Parashat Vaetchanan': 'ואתחנן',
+  'Parashat Eikev': 'עקב',
+  'Parashat Reeh': 'ראה',
+  'Parashat Shoftim': 'שופטים',
+  'Parashat Ki Teitzei': 'כי תצא',
+  'Parashat Ki Tavo': 'כי תבוא',
+  'Parashat Nitzavim': 'ניצבים',
+  'Parashat Vayelech': 'וילך',
+  'Parashat Haazinu': 'האזינו',
+  'Parashat Vezot Haberakhah': 'וזאת הברכה',
+};
+
+// ✅ 1. ווידג'ט להצגת תאריך עברי ופרשה
+class HebrewDateBanner extends StatefulWidget {
+  @override
+  _HebrewDateBannerState createState() => _HebrewDateBannerState();
+}
+
+class _HebrewDateBannerState extends State<HebrewDateBanner> {
+  String hebrewDate = 'טוען...';
+  String parasha = '';
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchHebrewDateAndParasha();
+  }
+
+  Future<void> _fetchHebrewDateAndParasha() async {
+    try {
+      final nowDate = DateTime.now();
+      final formattedDate =
+          '${nowDate.year}-${nowDate.month.toString().padLeft(2, '0')}-${nowDate.day.toString().padLeft(2, '0')}';
+
+      final response = await http.get(
+        Uri.parse(
+          'https://www.hebcal.com/converter?cfg=json&date=$formattedDate&g2h=1',
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        String fetchedHebrewDate = data['hebrew'] ?? 'לא זמין';
+        String fetchedParasha = '';
+
+        if (data['events'] != null) {
+          final events = List<String>.from(data['events']);
+          final englishParasha = events.firstWhere(
+            (event) => event.startsWith('Parashat'),
+            orElse: () => '',
+          );
+
+          if (englishParasha.isNotEmpty) {
+            fetchedParasha =
+                parashaTranslations[englishParasha] ?? englishParasha;
+          }
+        }
+
+        if (mounted) {
+          setState(() {
+            hebrewDate = fetchedHebrewDate;
+            parasha = fetchedParasha;
+            isLoading = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            hebrewDate = 'שגיאה בטעינה';
+            isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          hebrewDate = 'שגיאה בטעינה';
+          isLoading = false;
+        });
+      }
+      debugPrint('שגיאה ב-fetchHebrewDateAndParasha: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),
+        decoration: BoxDecoration(
+          color: Color(0xFFFFF9C4),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Color(0xFFFDD835), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 6,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Color(0xFFF57F17),
+              ),
+            ),
+            SizedBox(width: 10),
+            Text(
+              'טוען תאריך עברי...',
+              style: GoogleFonts.alef(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFFF57F17),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),
+      decoration: BoxDecoration(
+        color: Color(0xFFFFF9C4),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Color(0xFFFDD835), width: 1.5),
+        boxShadow: [
+          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.calendar_today, color: Color(0xFFF57F17), size: 20),
+              SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  hebrewDate,
+                  textDirection: TextDirection.rtl,
+                  style: GoogleFonts.alef(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFF57F17),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ),
+          if (parasha.isNotEmpty) ...[
+            SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.book, color: Color(0xFFF57F17), size: 18),
+                SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    'פרשת $parasha',
+                    textDirection: TextDirection.rtl,
+                    style: GoogleFonts.alef(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFF57F17),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ✅ 2. ווידג'ט להצגת התפילה הבאה
+class NextPrayerBanner extends StatefulWidget {
+  @override
+  _NextPrayerBannerState createState() => _NextPrayerBannerState();
+}
+
+class _NextPrayerBannerState extends State<NextPrayerBanner> {
+  Map<String, dynamic>? _nextPrayerTime;
+  Timer? _prayerCheckTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startPrayerTimeCheck();
+  }
+
+  @override
+  void dispose() {
+    _prayerCheckTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startPrayerTimeCheck() {
+    _fetchAndDetermineNextPrayer();
+    _prayerCheckTimer = Timer.periodic(Duration(minutes: 1), (timer) {
+      _fetchAndDetermineNextPrayer();
+    });
+  }
+
+  void _fetchAndDetermineNextPrayer() async {
+    const int TIME_OFFSET_MINUTES = 120;
+
+    try {
+      final now = DateTime.now();
+      final currentMinutes = now.hour * 60 + now.minute;
+      final adjustedMinutes = currentMinutes + TIME_OFFSET_MINUTES;
+
+      final response = await Supabase.instance.client
+          .from('זמני תפילות ימי חול')
+          .select('שעה, "סוג תפילה"');
+
+      final data = List<Map<String, dynamic>>.from(response);
+      Map<String, dynamic>? nextPrayer;
+
+      data.sort((a, b) => a['שעה'].compareTo(b['שעה']));
+
+      for (var item in data) {
+        final timeString = item['שעה'];
+        final parts = timeString.split(':');
+        if (parts.length < 2) continue;
+
+        final prayerHour = int.tryParse(parts[0]) ?? 0;
+        final prayerMinute = int.tryParse(parts[1]) ?? 0;
+        final prayerMinutes = prayerHour * 60 + prayerMinute;
+
+        if (prayerMinutes > adjustedMinutes) {
+          nextPrayer = item;
+          break;
+        }
+      }
+
+      if (nextPrayer == null && data.isNotEmpty) {
+        nextPrayer = data.first;
+      }
+
+      if (mounted) {
+        setState(() {
+          _nextPrayerTime = nextPrayer;
+        });
+      }
+    } catch (e) {
+      // מטפל בשגיאה בשקט
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_nextPrayerTime == null) {
+      return SizedBox.shrink();
+    }
+
+    final time = _nextPrayerTime!['שעה'];
+    final type = _nextPrayerTime!['סוג תפילה'];
+    final displayTime = time.length >= 5 ? time.substring(0, 5) : time;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),
+      decoration: BoxDecoration(
+        color: Color(0xFFE0F7FA),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Color(0xFF4DD0E1), width: 1.5),
+        boxShadow: [
+          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          Icon(Icons.schedule, color: Color(0xFF00ACC1), size: 20),
+          SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              'התפילה הבאה: $type בשעה $displayTime',
+              textDirection: TextDirection.rtl,
+              style: GoogleFonts.alef(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF006064),
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ✅ 3. מסך EntranceScreen משופר
 
 class EntranceScreen extends StatefulWidget {
   @override
@@ -168,35 +526,43 @@ class _EntranceScreenState extends State<EntranceScreen>
             height: safeAreaHeight,
             child: Padding(
               padding: EdgeInsets.symmetric(
-                horizontal: screenWidth * 0.06, // 6% של רוחב המסך
-                vertical: safeAreaHeight * 0.03, // 3% של גובה המסך
+                horizontal: screenWidth * 0.05,
+                vertical: safeAreaHeight * 0.02,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Header Section - גמיש בגובה
-                  Expanded(
-                    flex: 3,
-                    child: AnimatedBuilder(
-                      animation: _mainController,
-                      builder: (context, child) {
-                        return Transform.translate(
-                          offset: Offset(0, _slideAnimation.value),
-                          child: FadeTransition(
-                            opacity: _fadeAnimation,
-                            child: ScaleTransition(
-                              scale: _scaleAnimation,
-                              child: _buildHeader(),
-                            ),
+                  // 1. תאריך עברי ופרשה - ראשון
+                  HebrewDateBanner(),
+
+                  SizedBox(height: 10),
+
+                  // 2. באנר התפילה הבאה - שני
+                  NextPrayerBanner(),
+
+                  SizedBox(height: safeAreaHeight * 0.02),
+
+                  // 3. Header Section - שלישי
+                  AnimatedBuilder(
+                    animation: _mainController,
+                    builder: (context, child) {
+                      return Transform.translate(
+                        offset: Offset(0, _slideAnimation.value),
+                        child: FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: ScaleTransition(
+                            scale: _scaleAnimation,
+                            child: _buildHeader(),
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      );
+                    },
                   ),
 
-                  // Quote Section - גמיש בגובה
+                  SizedBox(height: safeAreaHeight * 0.02),
+
+                  // 4. Quote Section - רביעי, תופס את רוב המסך
                   Expanded(
-                    flex: 4,
                     child: AnimatedBuilder(
                       animation: _quoteController,
                       builder: (context, child) {
@@ -211,7 +577,9 @@ class _EntranceScreenState extends State<EntranceScreen>
                     ),
                   ),
 
-                  // Buttons Section - גובה קבוע
+                  SizedBox(height: safeAreaHeight * 0.02),
+
+                  // 5. Buttons Section - אחרון
                   AnimatedBuilder(
                     animation: _buttonController,
                     builder: (context, child) {
@@ -235,42 +603,13 @@ class _EntranceScreenState extends State<EntranceScreen>
 
   Widget _buildHeader() {
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        // Logo with shadow
-        Flexible(
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 20,
-                  offset: Offset(0, 10),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: Image.asset(
-                'assets/siba5.png',
-                height:
-                    MediaQuery.of(context).size.height *
-                    0.12, // 12% של גובה המסך
-                fit: BoxFit.contain,
-              ),
-            ),
-          ),
-        ),
-
-        SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-
         // Title
         Text(
           'ברוכים הבאים',
           style: GoogleFonts.alef(
-            fontSize:
-                MediaQuery.of(context).size.width * 0.08, // 8% של רוחב המסך
+            fontSize: MediaQuery.of(context).size.width * 0.075,
             fontWeight: FontWeight.w700,
             color: Color(0xFF1E293B),
             height: 1.2,
@@ -278,14 +617,13 @@ class _EntranceScreenState extends State<EntranceScreen>
           textAlign: TextAlign.center,
         ),
 
-        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+        SizedBox(height: 4),
 
         // Subtitle
         Text(
           'מחלקת כשרות דת והלכה',
           style: GoogleFonts.alef(
-            fontSize:
-                MediaQuery.of(context).size.width * 0.045, // 4.5% של רוחב המסך
+            fontSize: MediaQuery.of(context).size.width * 0.042,
             fontWeight: FontWeight.w500,
             color: Color(0xFF475569),
             height: 1.3,
@@ -293,13 +631,12 @@ class _EntranceScreenState extends State<EntranceScreen>
           textAlign: TextAlign.center,
         ),
 
+        SizedBox(height: 12),
+
         // Decorative line
         Container(
-          margin: EdgeInsets.only(
-            top: MediaQuery.of(context).size.height * 0.02,
-          ),
           height: 3,
-          width: 80,
+          width: 60,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(2),
             gradient: LinearGradient(
@@ -353,74 +690,74 @@ class _EntranceScreenState extends State<EntranceScreen>
         ],
       ),
       child: Padding(
-        padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.05),
+        padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.045),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Rabbi Image
+            // Rabbi Image - קטן יותר
             Container(
-              width:
-                  MediaQuery.of(context).size.width * 0.2, // 20% של רוחב המסך
-              height: MediaQuery.of(context).size.width * 0.2,
+              width: MediaQuery.of(context).size.width * 0.16,
+              height: MediaQuery.of(context).size.width * 0.16,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(
-                  MediaQuery.of(context).size.width * 0.1,
+                  MediaQuery.of(context).size.width * 0.08,
                 ),
                 boxShadow: [
                   BoxShadow(
                     color: Color(0xFF3B82F6).withOpacity(0.2),
-                    blurRadius: 20,
-                    offset: Offset(0, 10),
+                    blurRadius: 15,
+                    offset: Offset(0, 8),
                   ),
                 ],
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(
-                  MediaQuery.of(context).size.width * 0.1,
+                  MediaQuery.of(context).size.width * 0.08,
                 ),
                 child: Image.asset(
                   'assets/hrav.png',
                   fit: BoxFit.cover,
-                  alignment: Alignment.topCenter, // זה ייקח יותר מלמעלה
+                  alignment: Alignment.topCenter,
                 ),
               ),
             ),
 
-            SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+            SizedBox(height: 12),
 
-            // Quote mark
+            // Quote mark - קטן יותר
             Icon(
               Icons.format_quote,
-              size: 28,
+              size: 24,
               color: Color(0xFF3B82F6).withOpacity(0.6),
             ),
 
-            SizedBox(height: MediaQuery.of(context).size.height * 0.015),
+            SizedBox(height: 8),
 
-            // Quote text - גמיש וניתן לגלילה פנימית אם צריך
+            // Quote text - תופס את רוב המקום
             Expanded(
               child: SingleChildScrollView(
-                child: Text(
-                  rabbiQuote,
-                  style: GoogleFonts.alef(
-                    fontSize:
-                        MediaQuery.of(context).size.width *
-                        0.04, // 4% של רוחב המסך
-                    height: 1.6,
-                    color: Color(0xFF374151),
-                    fontWeight: FontWeight.w400,
+                physics: BouncingScrollPhysics(),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(
+                    rabbiQuote,
+                    style: GoogleFonts.alef(
+                      fontSize: MediaQuery.of(context).size.width * 0.042,
+                      height: 1.7,
+                      color: Color(0xFF374151),
+                      fontWeight: FontWeight.w400,
+                    ),
+                    textAlign: TextAlign.center,
+                    textDirection: TextDirection.rtl,
                   ),
-                  textAlign: TextAlign.center,
-                  textDirection: TextDirection.rtl,
                 ),
               ),
             ),
 
-            SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+            SizedBox(height: 12),
 
-            // Attribution
+            // Attribution - קומפקטי יותר
             Container(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
                 color: Color(0xFFF1F5F9),
                 borderRadius: BorderRadius.circular(20),
@@ -428,7 +765,7 @@ class _EntranceScreenState extends State<EntranceScreen>
               child: Text(
                 'הרב יואב חנניה אוקנין',
                 style: GoogleFonts.alef(
-                  fontSize: MediaQuery.of(context).size.width * 0.04,
+                  fontSize: MediaQuery.of(context).size.width * 0.038,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFF1E293B),
                 ),
@@ -447,7 +784,7 @@ class _EntranceScreenState extends State<EntranceScreen>
         // Contact Button
         Container(
           width: double.infinity,
-          height: 56,
+          height: 52,
           child: ElevatedButton(
             onPressed: () {
               Navigator.push(
@@ -470,14 +807,14 @@ class _EntranceScreenState extends State<EntranceScreen>
               children: [
                 FaIcon(
                   FontAwesomeIcons.whatsapp,
-                  size: 22,
+                  size: 20,
                   color: Color(0xFF25D366),
                 ),
-                SizedBox(width: 12),
+                SizedBox(width: 10),
                 Text(
                   'יצירת קשר עם הרב',
                   style: GoogleFonts.alef(
-                    fontSize: 18,
+                    fontSize: 17,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -486,16 +823,15 @@ class _EntranceScreenState extends State<EntranceScreen>
           ),
         ),
 
-        SizedBox(height: 16),
+        SizedBox(height: 12),
 
-        // Enter Button - תיקון הניווט למסך הבית
+        // Enter Button
         Container(
           width: double.infinity,
-          height: 56,
+          height: 52,
           child: ElevatedButton(
             onPressed: () {
               Navigator.pushReplacement(
-                // שינוי ל-pushReplacement כדי למנוע חזרה
                 context,
                 PageRouteBuilder(
                   pageBuilder: (_, __, ___) => HomeScreen(),
@@ -520,7 +856,7 @@ class _EntranceScreenState extends State<EntranceScreen>
                 Text(
                   'כניסה לאפליקציה',
                   style: GoogleFonts.alef(
-                    fontSize: 20,
+                    fontSize: 19,
                     fontWeight: FontWeight.w700,
                   ),
                 ),

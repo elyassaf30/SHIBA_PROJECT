@@ -10,6 +10,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rabbi_shiba/screens/entrance_screen.dart';
+import 'package:rabbi_shiba/screens/AdminLoginScreen.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -17,8 +18,22 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  double _opacity = 0.0;
+  int _adminTapCount = 0; // מונה ללחיצה נסתרת
   bool _showShabbatBanner = false;
   String? _cachedParashaName; // קאש לשם הפרשה
+
+  // פונקציה להצגת מסך ההתחברות לאדמין
+  void _checkForAdminLogin() {
+    // אפשרות לחיצה נסתרת 5 פעמים על הכותרת
+    if (_adminTapCount == 5) {
+      _adminTapCount = 0;
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => AdminLoginScreen()),
+      );
+    }
+  }
 
   // העברת הגדרת הבועות לקבוע כדי למנוע יצירה מחדש
   static final List<Map<String, dynamic>> _bubbles = [
@@ -277,7 +292,16 @@ class _HomeScreenState extends State<HomeScreen> {
           SafeArea(
             child: Column(
               children: [
-                _buildAppBar(),
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _adminTapCount++; // הגדלת המונה
+                    });
+                    _checkForAdminLogin(); // בדיקת הפעלה
+                  },
+                  child: _buildAppBar(), // קריאה לפונקציה המכילה את הכותרת
+                ),
+                // רכיב נפרד, לא עטוף
                 _buildShabbatBanner(),
                 Expanded(
                   child: SingleChildScrollView(

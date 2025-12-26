@@ -21,6 +21,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
   Map<String, TextEditingController> _notesControllers = {};
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  final ScrollController _scrollController = ScrollController();
 
   final List<String> _tefilotOptions = ['שחרית', 'מנחה', 'ערבית'];
 
@@ -49,6 +50,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
     _notesControllers.values.forEach((c) => c.dispose());
     _newTefilaTimeDisplayController.dispose();
     _newTefilaNotesController.dispose();
+    _scrollController.dispose();
     _animationController.dispose();
     super.dispose();
   }
@@ -226,7 +228,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
           'סוג תפילה': item['סוג תפילה'],
         };
 
-        final res = await supabase
+        await supabase
             .from('זמני תפילות ימי חול')
             .update(updatedData)
             .eq('id', idStr);
@@ -294,6 +296,103 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
     );
   }
 
+  // Scroll helpers for drawer actions
+  Future<void> _scrollToTop() async {
+    try {
+      await _scrollController.animateTo(
+        0,
+        duration: Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _scrollToBottom() async {
+    try {
+      await Future.delayed(Duration(milliseconds: 100));
+      final max = _scrollController.position.maxScrollExtent;
+      await _scrollController.animateTo(
+        max,
+        duration: Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _changeRabbiQuote() async {
+    String current = '';
+    try {
+      final res =
+          await supabase
+              .from('כללי')
+              .select('מידע')
+              .eq('סוג', 'דבר הרב')
+              .limit(1)
+              .maybeSingle();
+      if (res != null && res['מידע'] != null) current = res['מידע'] as String;
+    } catch (e) {
+      // ignore fetch error, show empty
+    }
+
+    final controller = TextEditingController(text: current);
+    final result = await showDialog<String?>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('ערוך דבר הרב'),
+            content: TextFormField(
+              controller: controller,
+              maxLines: 6,
+              decoration: InputDecoration(
+                hintText: 'הקלד את הטקסט שברצונך להציג',
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('בטל'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, controller.text.trim()),
+                child: Text('שמור'),
+              ),
+            ],
+          ),
+    );
+
+    if (result != null) {
+      setState(() => _isLoading = true);
+      try {
+        // check if exists
+        final existing =
+            await supabase
+                .from('כללי')
+                .select('id')
+                .eq('סוג', 'דבר הרב')
+                .limit(1)
+                .maybeSingle();
+
+        if (existing != null && existing['id'] != null) {
+          await supabase
+              .from('כללי')
+              .update({'מידע': result})
+              .eq('id', existing['id'].toString());
+        } else {
+          await supabase.from('כללי').insert({
+            'סוג': 'דבר הרב',
+            'מידע': result,
+          });
+        }
+
+        _showSnackBar('דבר הרב נשמר בהצלחה', isError: false);
+      } catch (e) {
+        _showSnackBar('שגיאה בשמירה: ${e.toString()}', isError: true);
+      } finally {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   String? _validateTimeFormat(String? value) {
     if (value == null || value.isEmpty) {
       return null;
@@ -344,6 +443,61 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFFF5F7FA),
+      drawer: Drawer(
+        child: SafeArea(
+          child: Column(
+            children: [
+              DrawerHeader(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF6C63FF), Color(0xFF5A52D5)],
+                  ),
+                ),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    'תפריט ניהול',
+                    style: TextStyle(color: Colors.white, fontSize: 20),
+                  ),
+                ),
+              ),
+              ListTile(
+                leading: Icon(Icons.edit_calendar),
+                title: Text('עריכה / מחיקה של תפילות'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _scrollToTop();
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.add_circle_outline),
+                title: Text('הוספת תפילה חדשה'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _scrollToBottom();
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.format_quote),
+                title: Text('שינוי דבר הרב'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _changeRabbiQuote();
+                },
+              ),
+              Divider(),
+              ListTile(
+                leading: Icon(Icons.logout, color: Colors.red),
+                title: Text('התנתק', style: TextStyle(color: Colors.red)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _signOut();
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
       appBar: AppBar(
         elevation: 0,
         flexibleSpace: Container(
@@ -401,6 +555,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
                 child: Form(
                   key: _formKey,
                   child: ListView(
+                    controller: _scrollController,
                     padding: EdgeInsets.all(20),
                     children: [
                       // כותרת מעוצבת

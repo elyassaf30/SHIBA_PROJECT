@@ -8,16 +8,18 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'AdminLoginScreen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Map of common Parasha names translations from English to Hebrew.
 const Map<String, String> parashaTranslations = {
   'Parashat Bereshit': 'בראשית',
   'Parashat Noach': 'נח',
-  'Parashat Lech-Lecha': 'לך לך',
+  'Parashat Lech-Lecha': 'לך-לך',
   'Parashat Vayera': 'וירא',
-  'Parashat Chayei Sarah': 'חיי שרה',
+  'Parashat Chayei Sarah': 'חיי-שרה',
   'Parashat Toldot': 'תולדות',
-  'Parashat Vayetzei': 'וייצא',
+  'Parashat Vayetzei': 'ויצא',
   'Parashat Vayishlach': 'וישלח',
   'Parashat Vayeshev': 'וישב',
   'Parashat Miketz': 'מקץ',
@@ -25,13 +27,13 @@ const Map<String, String> parashaTranslations = {
   'Parashat Vayechi': 'ויחי',
   'Parashat Shemot': 'שמות',
   'Parashat Vaera': 'וָאֵרָא',
-  'Parashat Bo': 'בו',
+  'Parashat Bo': 'בא',
   'Parashat Beshalach': 'בשלח',
   'Parashat Yitro': 'יתרו',
   'Parashat Mishpatim': 'משפטים',
   'Parashat Terumah': 'תרומה',
   'Parashat Tetzaveh': 'תצוה',
-  'Parashat Ki Tisa': 'כי תשא',
+  'Parashat Ki Tisa': 'כי-תשא',
   'Parashat Vayakhel': 'ויקהל',
   'Parashat Pekudei': 'פקודי',
   'Parashat Vayikra': 'ויקרא',
@@ -39,7 +41,7 @@ const Map<String, String> parashaTranslations = {
   'Parashat Shemini': 'שמיני',
   'Parashat Tazria': 'תזריע',
   'Parashat Metzora': 'מצורע',
-  'Parashat Acharei Mot': 'אחרי מות',
+  'Parashat Acharei Mot': 'אחרי-מות',
   'Parashat Kedoshim': 'קדושים',
   'Parashat Emor': 'אמור',
   'Parashat Behar': 'בהר',
@@ -77,6 +79,8 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
   String hebrewDate = 'טוען...';
   String parasha = '';
   bool isLoading = true;
+  double _opacity = 0.0;
+  int _adminTapCount = 0; // מונה ללחיצה נסתרת
 
   @override
   void initState() {
@@ -84,9 +88,23 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
     _fetchHebrewDateAndParasha();
   }
 
+  void _checkForAdminLogin() {
+    // אפשרות לחיצה נסתרת 5 פעמים על הכותרת
+    if (_adminTapCount == 5) {
+      _adminTapCount = 0;
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => AdminLoginScreen()),
+      );
+    }
+  }
+
   Future<void> _fetchHebrewDateAndParasha() async {
     try {
+      final prefs = await SharedPreferences.getInstance();
       final nowDate = DateTime.now();
+
+      // טעינה מהשרת כדי לקבל את התאריך העברי הנוכחי
       final formattedDate =
           '${nowDate.year}-${nowDate.month.toString().padLeft(2, '0')}-${nowDate.day.toString().padLeft(2, '0')}';
 
@@ -101,6 +119,23 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
         String fetchedHebrewDate = data['hebrew'] ?? 'לא זמין';
         String fetchedParasha = '';
 
+        // בדיקה אם התאריך העברי השתנה (כלומר עבר צאת הכוכבים ויום עברי חדש)
+        final cachedHebrewDate = prefs.getString('cachedHebrewDate');
+
+        if (cachedHebrewDate == fetchedHebrewDate) {
+          // אותו יום עברי - השתמש ב-cache של הפרשה
+          final cachedParasha = prefs.getString('parasha');
+          if (mounted) {
+            setState(() {
+              hebrewDate = fetchedHebrewDate;
+              parasha = cachedParasha ?? '';
+              isLoading = false;
+            });
+          }
+          return;
+        }
+
+        // יום עברי חדש - טען את הפרשה מחדש
         if (data['events'] != null) {
           final events = List<String>.from(data['events']);
           final englishParasha = events.firstWhere(
@@ -113,6 +148,11 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
                 parashaTranslations[englishParasha] ?? englishParasha;
           }
         }
+
+        // שמירה ב-cache - התאריך העברי הוא המפתח
+        await prefs.setString('hebrewDate', fetchedHebrewDate);
+        await prefs.setString('parasha', fetchedParasha);
+        await prefs.setString('cachedHebrewDate', fetchedHebrewDate);
 
         if (mounted) {
           setState(() {
@@ -273,12 +313,9 @@ class _NextPrayerBannerState extends State<NextPrayerBanner> {
   }
 
   void _fetchAndDetermineNextPrayer() async {
-    const int TIME_OFFSET_MINUTES = 120;
-
     try {
       final now = DateTime.now();
       final currentMinutes = now.hour * 60 + now.minute;
-      final adjustedMinutes = currentMinutes + TIME_OFFSET_MINUTES;
 
       final response = await Supabase.instance.client
           .from('זמני תפילות ימי חול')
@@ -298,7 +335,7 @@ class _NextPrayerBannerState extends State<NextPrayerBanner> {
         final prayerMinute = int.tryParse(parts[1]) ?? 0;
         final prayerMinutes = prayerHour * 60 + prayerMinute;
 
-        if (prayerMinutes > adjustedMinutes) {
+        if (prayerMinutes > currentMinutes) {
           nextPrayer = item;
           break;
         }
@@ -375,6 +412,7 @@ class _EntranceScreenState extends State<EntranceScreen>
   String rabbiQuote = 'טוען ציטוט...';
   String rabbiImageUrl = '';
   bool isLoading = true;
+  int _adminTapCount = 0; // secret tap counter for admin
 
   late AnimationController _mainController;
   late AnimationController _quoteController;
@@ -542,17 +580,32 @@ class _EntranceScreenState extends State<EntranceScreen>
 
                   SizedBox(height: safeAreaHeight * 0.02),
 
-                  // 3. Header Section - שלישי
+                  // 3. Header Section - שלישי (with secret admin tap)
                   AnimatedBuilder(
                     animation: _mainController,
                     builder: (context, child) {
-                      return Transform.translate(
-                        offset: Offset(0, _slideAnimation.value),
-                        child: FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: ScaleTransition(
-                            scale: _scaleAnimation,
-                            child: _buildHeader(),
+                      return GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          _adminTapCount++;
+                          if (_adminTapCount >= 5) {
+                            _adminTapCount = 0;
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => AdminLoginScreen(),
+                              ),
+                            );
+                          }
+                        },
+                        child: Transform.translate(
+                          offset: Offset(0, _slideAnimation.value),
+                          child: FadeTransition(
+                            opacity: _fadeAnimation,
+                            child: ScaleTransition(
+                              scale: _scaleAnimation,
+                              child: _buildHeader(),
+                            ),
                           ),
                         ),
                       );

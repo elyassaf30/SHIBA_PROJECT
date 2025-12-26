@@ -2,15 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:rabbi_shiba/screens/shabat_screen.dart';
 import 'package:rabbi_shiba/screens/moadi_israel_screen.dart';
 import 'package:rabbi_shiba/screens/general_detail_screen.dart';
-import 'package:rabbi_shiba/screens/week_day_tefilot_screen .dart';
+import 'package:rabbi_shiba/screens/week_day_tefilot_screen.dart';
 import 'package:rabbi_shiba/screens/chet_screen.dart';
 import 'package:rabbi_shiba/screens/user_to_synagogue_map.dart';
-import 'package:rabbi_shiba/screens/shabbat_screen.dart';
-import 'package:flutter/scheduler.dart';
+import 'package:rabbi_shiba/screens/zmanim_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rabbi_shiba/screens/entrance_screen.dart';
 import 'package:rabbi_shiba/screens/AdminLoginScreen.dart';
+import 'package:rabbi_shiba/screens/shabat_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -18,25 +17,18 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  double _opacity = 0.0;
-  int _adminTapCount = 0; // מונה ללחיצה נסתרת
-  bool _showShabbatBanner = false;
-  String? _cachedParashaName; // קאש לשם הפרשה
-
-  // פונקציה להצגת מסך ההתחברות לאדמין
-  void _checkForAdminLogin() {
-    // אפשרות לחיצה נסתרת 5 פעמים על הכותרת
-    if (_adminTapCount == 5) {
-      _adminTapCount = 0;
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => AdminLoginScreen()),
-      );
-    }
-  }
+  // Cached text styles to avoid recomputing each build
+  late final TextStyle _titleStyle;
+  late final TextStyle _subtitleStyle;
 
   // העברת הגדרת הבועות לקבוע כדי למנוע יצירה מחדש
   static final List<Map<String, dynamic>> _bubbles = [
+    {
+      'label': 'זמני היום',
+      'icon': Icons.sunny,
+      'color': Colors.amber,
+      'screenBuilder': () => ZmanimScreen(),
+    },
     {
       'label': 'שבת',
       'icon': Icons.wine_bar,
@@ -102,44 +94,29 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeScreen();
+
+    // Initialize and cache styles once to avoid per-build computation
+    _titleStyle = GoogleFonts.alef(
+      fontWeight: FontWeight.bold,
+      fontSize: 28,
+      color: Colors.black,
+      shadows: [
+        Shadow(blurRadius: 5, color: Colors.black45, offset: Offset(1, 1)),
+      ],
+    );
+
+    _subtitleStyle = GoogleFonts.rubikDirt(
+      fontSize: 16,
+      color: Colors.black,
+      shadows: [
+        Shadow(blurRadius: 3, color: Colors.black45, offset: Offset(1, 1)),
+      ],
+    );
+
+    // no Shabbat banner initialization
   }
 
-  // איחוד של כל ההכנות הדרושות בפונקציה אחת
-  void _initializeScreen() {
-    print('Initializing HomeScreen...');
-    _showShabbatBanner = DateTime.now().weekday == 5;
-    print('Show Shabbat banner: $_showShabbatBanner');
-
-    // טעינת הפרשה רק אם צריך
-    if (_showShabbatBanner) {
-      _fetchAndCacheParashaName();
-    }
-  }
-
-  Future<void> _fetchAndCacheParashaName() async {
-    if (_cachedParashaName != null) return; // שימוש בקאש
-
-    print('Fetching parasha name...');
-    try {
-      final supabase = Supabase.instance.client;
-      final response =
-          await supabase
-              .from('shabbat_times')
-              .select('parasha_name')
-              .limit(1)
-              .maybeSingle();
-
-      if (response != null && response['parasha_name'] != null) {
-        _cachedParashaName = response['parasha_name'] as String;
-        print('Parasha name fetched: $_cachedParashaName');
-        if (mounted) setState(() {});
-      }
-    } catch (e) {
-      // טיפול בשגיאה בשקט
-      print('Error fetching parasha name: $e');
-    }
-  }
+  //
 
   Widget _buildAppBar() {
     return Padding(
@@ -160,36 +137,9 @@ class _HomeScreenState extends State<HomeScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                'כשרות דת והלכה',
-                style: GoogleFonts.alef(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 28,
-                  color: Colors.black,
-                  shadows: [
-                    Shadow(
-                      blurRadius: 5,
-                      color: Colors.black45,
-                      offset: Offset(1, 1),
-                    ),
-                  ],
-                ),
-              ),
+              Text('כשרות דת והלכה', style: _titleStyle),
               SizedBox(height: 4),
-              Text(
-                'מרכז רפואי שיבא תל השומר',
-                style: GoogleFonts.rubikDirt(
-                  fontSize: 16,
-                  color: Colors.black,
-                  shadows: [
-                    Shadow(
-                      blurRadius: 3,
-                      color: Colors.black45,
-                      offset: Offset(1, 1),
-                    ),
-                  ],
-                ),
-              ),
+              Text('מרכז רפואי שיבא תל השומר', style: _subtitleStyle),
             ],
           ),
           SizedBox(width: 48),
@@ -198,72 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildShabbatBanner() {
-    if (!_showShabbatBanner) return SizedBox.shrink();
-
-    final parashaName = _cachedParashaName ?? '';
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-      child: GestureDetector(
-        onTap:
-            () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => ShabbatScreen()),
-            ),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF4A3A3A), Color(0xFF3B2C2C)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 8,
-                offset: Offset(0, 4),
-              ),
-            ],
-            border: Border.all(
-              color: Colors.amber.withOpacity(0.2),
-              width: 0.5,
-            ),
-          ),
-          padding: EdgeInsets.symmetric(vertical: 14, horizontal: 18),
-          child: Row(
-            children: [
-              Icon(Icons.line_weight, color: Colors.amber[200], size: 28),
-              SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'זמני שבת ${parashaName.isNotEmpty ? parashaName + " " : ""}',
-                      style: GoogleFonts.secularOne(
-                        color: Colors.amber[100],
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'לחצו לצפייה בזמני כניסת ויציאת שבת',
-                      style: TextStyle(color: Colors.white70, fontSize: 14),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(width: 12),
-              Icon(Icons.arrow_downward, color: Colors.amber[200], size: 18),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  // Shabbat banner removed
 
   Widget _buildBackground() {
     // תמיד רקע כחול גרדיאנט - ללא תלות בטעינת תמונה
@@ -281,7 +166,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final bubbleSize = screenWidth / 3.5;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -293,56 +177,63 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               children: [
                 GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _adminTapCount++; // הגדלת המונה
-                    });
-                    _checkForAdminLogin(); // בדיקת הפעלה
-                  },
-                  child: _buildAppBar(), // קריאה לפונקציה המכילה את הכותרת
+                  child: _buildAppBar(), // כותרת
                 ),
-                // רכיב נפרד, לא עטוף
-                _buildShabbatBanner(),
+                // Shabbat banner removed
                 Expanded(
-                  child: SingleChildScrollView(
-                    physics: BouncingScrollPhysics(),
-                    child: Directionality(
-                      textDirection: TextDirection.rtl,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Wrap(
-                          alignment: WrapAlignment.center,
-                          spacing: 16,
-                          runSpacing: 16,
-                          children: List.generate(_bubbles.length, (index) {
-                            final bubble = _bubbles[index];
-                            return _AnimatedBubbleItem(
-                              key: ValueKey(bubble['label']), // key לביצועים
-                              label: bubble['label'],
-                              icon: bubble['icon'],
-                              color: bubble['color'],
-                              size: bubbleSize,
-                              onTap:
-                                  () => Navigator.push(
-                                    context,
-                                    PageRouteBuilder(
-                                      pageBuilder:
-                                          (_, animation, __) =>
-                                              bubble['screenBuilder'](),
-                                      transitionsBuilder:
-                                          (_, animation, __, child) =>
-                                              FadeTransition(
-                                                opacity: animation,
-                                                child: child,
-                                              ),
-                                      transitionDuration: Duration(
-                                        milliseconds: 300,
+                  child: Center(
+                    // Center the content vertically when there are few bubbles
+                    child: SingleChildScrollView(
+                      physics: BouncingScrollPhysics(),
+                      padding: const EdgeInsets.all(8.0),
+                      child: Directionality(
+                        textDirection: TextDirection.rtl,
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final double spacing = 16.0;
+                            final double availableWidth = constraints.maxWidth;
+                            // scale down bubbles slightly
+                            final double scale = 0.70;
+                            final double baseItemSize =
+                                (availableWidth - spacing) / 2;
+                            final double itemSize = baseItemSize * scale;
+
+                            return Wrap(
+                              alignment: WrapAlignment.center,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: spacing,
+                              runSpacing: 16,
+                              children: List.generate(_bubbles.length, (index) {
+                                final bubble = _bubbles[index];
+                                return _AnimatedBubbleItem(
+                                  key: ValueKey(bubble['label']),
+                                  label: bubble['label'],
+                                  icon: bubble['icon'],
+                                  color: bubble['color'],
+                                  size: itemSize,
+                                  onTap:
+                                      () => Navigator.push(
+                                        context,
+                                        PageRouteBuilder(
+                                          pageBuilder:
+                                              (_, animation, __) =>
+                                                  bubble['screenBuilder'](),
+                                          transitionsBuilder:
+                                              (_, animation, __, child) =>
+                                                  FadeTransition(
+                                                    opacity: animation,
+                                                    child: child,
+                                                  ),
+                                          transitionDuration: Duration(
+                                            milliseconds: 300,
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                              delay: Duration(milliseconds: 50 * index),
+                                  delay: Duration(milliseconds: 50 * index),
+                                );
+                              }),
                             );
-                          }),
+                          },
                         ),
                       ),
                     ),
@@ -379,49 +270,27 @@ class _AnimatedBubbleItem extends StatefulWidget {
   State<_AnimatedBubbleItem> createState() => _AnimatedBubbleItemState();
 }
 
-class _AnimatedBubbleItemState extends State<_AnimatedBubbleItem>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scale;
-  late Animation<double> _opacity;
+class _AnimatedBubbleItemState extends State<_AnimatedBubbleItem> {
+  bool _visible = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: Duration(milliseconds: 600),
-    );
-
-    _scale = Tween<double>(
-      begin: 0.8,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
-
-    _opacity = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
-
-    // התחלת האנימציה מיד עם עיכוב קטן
     Future.delayed(widget.delay, () {
-      if (mounted) _controller.forward();
+      if (mounted) setState(() => _visible = true);
     });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return RepaintBoundary(
-      child: FadeTransition(
-        opacity: _opacity,
-        child: ScaleTransition(
-          scale: _scale,
+      child: AnimatedOpacity(
+        duration: Duration(milliseconds: 400),
+        opacity: _visible ? 1.0 : 0.0,
+        child: AnimatedScale(
+          scale: _visible ? 1.0 : 0.85,
+          duration: Duration(milliseconds: 450),
+          curve: Curves.easeOutBack,
           child: GestureDetector(
             onTap: widget.onTap,
             child: Container(

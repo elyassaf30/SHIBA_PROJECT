@@ -24,6 +24,7 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
   String? _selectedSynagogue;
   BitmapDescriptor? _customMarkerIcon;
   GoogleMapController? _mapController;
+  bool _routeLoading = false;
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -58,8 +59,22 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
       return;
     }
     await _fetchSynagogueLocations();
+    await _loadCachedApiKey();
     await _determinePosition();
   }
+
+  Future<void> _loadCachedApiKey() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final stored = prefs.getString('google_maps_api_key') ?? '';
+      if (stored.isNotEmpty) {
+        // store for usage in route calls
+        _cachedApiKey = stored;
+      }
+    } catch (_) {}
+  }
+
+  String _cachedApiKey = '';
 
   Future<bool> _checkInternetConnection() async {
     var connectivityResult = await Connectivity().checkConnectivity();
@@ -252,20 +267,80 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
         _synagogueLocations.containsKey(_selectedSynagogue)) {
       final synagogueLocation = _synagogueLocations[_selectedSynagogue]!;
 
-      PolylinePoints polylinePoints = PolylinePoints();
-      PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
-        'AIzaSyCnSxJ2tY3gEzotimAUACpW1qFE7h4_6EM', // השתמש במפתח API שלך
-        PointLatLng(_currentLocation!.latitude, _currentLocation!.longitude),
-        PointLatLng(synagogueLocation.latitude, synagogueLocation.longitude),
-        travelMode: TravelMode.walking,
-      );
+      // Attempt to fetch cached route first
+      final prefs = await SharedPreferences.getInstance();
+      final routeKey = 'route_${_selectedSynagogue!}';
+      final cachedRoute = prefs.getString(routeKey);
 
-      if (result.points.isNotEmpty) {
-        List<LatLng> polylineCoordinates =
-            result.points
-                .map((point) => LatLng(point.latitude, point.longitude))
-                .toList();
+      List<LatLng> polylineCoordinates = [];
 
+      if (cachedRoute != null) {
+        try {
+          final decoded = jsonDecode(cachedRoute) as List<dynamic>;
+          polylineCoordinates =
+              decoded
+                  .map(
+                    (p) => LatLng(
+                      (p[0] as num).toDouble(),
+                      (p[1] as num).toDouble(),
+                    ),
+                  )
+                  .toList();
+        } catch (_) {
+          polylineCoordinates = [];
+        }
+      }
+
+      if (polylineCoordinates.isEmpty) {
+        setState(() => _routeLoading = true);
+        try {
+          PolylinePoints polylinePoints = PolylinePoints();
+          final apiKey = _cachedApiKey.isNotEmpty ? _cachedApiKey : '';
+
+          final fetchFuture = polylinePoints.getRouteBetweenCoordinates(
+            apiKey,
+            PointLatLng(
+              _currentLocation!.latitude,
+              _currentLocation!.longitude,
+            ),
+            PointLatLng(
+              synagogueLocation.latitude,
+              synagogueLocation.longitude,
+            ),
+            travelMode: TravelMode.walking,
+          );
+
+          // wrap with timeout to avoid long waits
+          final PolylineResult result = await fetchFuture.timeout(
+            Duration(seconds: 8),
+          );
+
+          if (result.points.isNotEmpty) {
+            polylineCoordinates =
+                result.points
+                    .map((point) => LatLng(point.latitude, point.longitude))
+                    .toList();
+
+            // cache the route coordinates
+            try {
+              final listToSave =
+                  polylineCoordinates
+                      .map((p) => [p.latitude, p.longitude])
+                      .toList();
+              await prefs.setString(routeKey, jsonEncode(listToSave));
+            } catch (_) {}
+          } else {
+            // fallback: straight line between points
+            polylineCoordinates = [_currentLocation!, synagogueLocation];
+          }
+        } catch (e) {
+          // on any failure fallback to straight line
+          polylineCoordinates = [_currentLocation!, synagogueLocation];
+        } finally {
+          setState(() => _routeLoading = false);
+        }
+      }
+      if (polylineCoordinates.isNotEmpty) {
         _polylines.add(
           Polyline(
             polylineId: PolylineId(_selectedSynagogue!),
@@ -415,18 +490,52 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
                       ),
                     ),
                   ),
-                // Google Map Widget
+                // Google Map Widget with overlay for route loading
                 Expanded(
-                  child: GoogleMap(
-                    initialCameraPosition: CameraPosition(
-                      target: _currentLocation ?? LatLng(31.768319, 35.213711),
-                      zoom: 15,
-                    ),
-                    markers: _markers,
-                    polylines: _polylines,
-                    onMapCreated: (controller) {
-                      _mapController = controller;
-                    },
+                  child: Stack(
+                    children: [
+                      GoogleMap(
+                        initialCameraPosition: CameraPosition(
+                          target:
+                              _currentLocation ?? LatLng(31.768319, 35.213711),
+                          zoom: 15,
+                        ),
+                        markers: _markers,
+                        polylines: _polylines,
+                        mapType: MapType.normal,
+                        myLocationButtonEnabled: true,
+                        zoomControlsEnabled: false,
+                        onMapCreated: (controller) {
+                          _mapController = controller;
+                          // try to reset any custom style in case of dark/black tiles
+                          try {
+                            controller.setMapStyle(null);
+                          } catch (_) {}
+                        },
+                      ),
+                      if (_routeLoading)
+                        Positioned(
+                          top: 12,
+                          right: 12,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black45,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: EdgeInsets.all(6),
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ],

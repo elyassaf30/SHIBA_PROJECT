@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:http/http.dart' as http;
@@ -13,9 +13,9 @@ void main() async {
   // Load .env file
   try {
     await dotenv.load(fileName: ".env");
-    print('✅ .env loaded successfully.');
+    debugPrint('ג… .env loaded successfully.');
   } catch (e) {
-    print('❌ Failed to load .env file: $e');
+    debugPrint('ג Failed to load .env file: $e');
   }
 
   // Supabase Init
@@ -23,7 +23,7 @@ void main() async {
     final anonKey = dotenv.env['SUPABASE_ANON_KEY'];
     if (anonKey == null || anonKey.isEmpty) {
       throw Exception(
-        '❌ Supabase anon key is missing or empty. Check your .env file.',
+        'ג Supabase anon key is missing or empty. Check your .env file.',
       );
     }
 
@@ -31,32 +31,32 @@ void main() async {
       url: 'https://srdwmyerieeeyrkgxsgi.supabase.co',
       anonKey: anonKey,
     );
-    print('✅ Supabase initialized.');
+    debugPrint('ג… Supabase initialized.');
   } catch (e) {
-    print('❌ Supabase initialization error: $e');
+    debugPrint('ג Supabase initialization error: $e');
   }
 
   // OneSignal Init
   try {
     final onesignalAppId = dotenv.env['ONESIGNAL_APP_ID'];
     if (onesignalAppId == null || onesignalAppId.isEmpty) {
-      throw Exception('❌ OneSignal App ID is missing in .env file.');
+      throw Exception('ג OneSignal App ID is missing in .env file.');
     }
 
     OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
     OneSignal.initialize(onesignalAppId);
-    print('✅ OneSignal initialized with App ID: $onesignalAppId');
+    debugPrint('ג… OneSignal initialized with App ID: $onesignalAppId');
 
     final bool accepted = await OneSignal.Notifications.requestPermission(true);
-    print("📢 Notification permission granted: $accepted");
+    debugPrint("נ“¢ Notification permission granted: $accepted");
 
     OneSignal.User.pushSubscription.addObserver((state) {
-      print(
-        '🔔 Push subscription state changed: ${state.current.jsonRepresentation()}',
+      debugPrint(
+        'נ”” Push subscription state changed: ${state.current.jsonRepresentation()}',
       );
     });
   } catch (e) {
-    print('❌ OneSignal initialization error: $e');
+    debugPrint('ג OneSignal initialization error: $e');
   }
 
   // Listen to Supabase table changes
@@ -66,38 +66,38 @@ void main() async {
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
           schema: 'public',
-          table: 'זמני תפילות ימי חול',
+          table: '׳–׳׳ ׳™ ׳×׳₪׳™׳׳•׳× ׳™׳׳™ ׳—׳•׳',
           callback: (payload) async {
-            print('🔄 שינוי בטבלה התקבל: ${payload.eventType}');
-            print('Payload: ${payload.newRecord}');
+            debugPrint('נ”„ ׳©׳™׳ ׳•׳™ ׳‘׳˜׳‘׳׳” ׳”׳×׳§׳‘׳: ${payload.eventType}');
+            debugPrint('Payload: ${payload.newRecord}');
 
             String message;
             switch (payload.eventType) {
               case PostgresChangeEvent.insert:
-                message = "🆕 נוסף זמן תפילה חדש!";
+                message = "נ†• ׳ ׳•׳¡׳£ ׳–׳׳ ׳×׳₪׳™׳׳” ׳—׳“׳©!";
                 break;
               case PostgresChangeEvent.update:
-                message = "🔄 עודכן זמן תפילה!";
+                message = "נ”„ ׳¢׳•׳“׳›׳ ׳–׳׳ ׳×׳₪׳™׳׳”!";
                 break;
               case PostgresChangeEvent.delete:
-                message = "🗑️ זמן תפילה הוסר!";
+                message = "נ—‘ן¸ ׳–׳׳ ׳×׳₪׳™׳׳” ׳”׳•׳¡׳¨!";
                 break;
               default:
-                message = "📅 שינוי בזמני התפילה!";
+                message = "נ“… ׳©׳™׳ ׳•׳™ ׳‘׳–׳׳ ׳™ ׳”׳×׳₪׳™׳׳”!";
             }
 
             try {
               await _sendPushNotificationViaAPI(message);
             } catch (e) {
-              print('❌ שגיאה בשליחת הפוש: $e');
+              debugPrint('ג ׳©׳’׳™׳׳” ׳‘׳©׳׳™׳—׳× ׳”׳₪׳•׳©: $e');
             }
           },
         );
 
-    await channel.subscribe();
-    print('📡 Supabase change listener subscribed.');
+    channel.subscribe();
+    debugPrint('נ“¡ Supabase change listener subscribed.');
   } catch (e) {
-    print("❌ Error subscribing to table changes: $e");
+    debugPrint("ג Error subscribing to table changes: $e");
   }
 
   // Run App
@@ -120,21 +120,23 @@ Future<void> _sendPushNotificationViaAPI(String message) async {
         'app_id': onesignalAppId,
         'included_segments': ['Subscribed Users'],
         'contents': {'en': message, 'he': message},
-        'headings': {'en': 'Prayer Time Update', 'he': 'עדכון זמני תפילה'},
+        'headings': {'en': 'Prayer Time Update', 'he': '׳¢׳“׳›׳•׳ ׳–׳׳ ׳™ ׳×׳₪׳™׳׳”'},
       }),
     );
 
-    print('📬 API Response: ${response.statusCode} - ${response.body}');
+    debugPrint('נ“¬ API Response: ${response.statusCode} - ${response.body}');
   } catch (e) {
-    print('❌ Error sending push via API: $e');
+    debugPrint('ג Error sending push via API: $e');
   }
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'מרכז רפואי שיבא',
+      title: '׳׳¨׳›׳– ׳¨׳₪׳•׳׳™ ׳©׳™׳‘׳',
       theme: ThemeData(
         primarySwatch: Colors.blue,
         fontFamily: 'Arimo',
@@ -156,6 +158,8 @@ class MyApp extends StatelessWidget {
 }
 
 class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
   @override
   _SplashScreenState createState() => _SplashScreenState();
 }
@@ -179,7 +183,7 @@ class _SplashScreenState extends State<SplashScreen>
     _startAnimationSequence();
 
     final status = OneSignal.Notifications.permission;
-    print('🔔 סטטוס הרשאות התחלתי: $status');
+    debugPrint('נ”” ׳¡׳˜׳˜׳•׳¡ ׳”׳¨׳©׳׳•׳× ׳”׳×׳—׳׳×׳™: $status');
   }
 
   void _initializeAnimations() {
@@ -315,7 +319,7 @@ class _SplashScreenState extends State<SplashScreen>
                             borderRadius: BorderRadius.circular(30),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
+                                color: Colors.black.withValues(alpha: 0.1),
                                 blurRadius: 30,
                                 offset: Offset(0, 15),
                               ),
@@ -324,7 +328,7 @@ class _SplashScreenState extends State<SplashScreen>
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(30),
                             child: Image.asset(
-                              'assets/siba5.png',
+                              'assets/icon.png',
                               width: 200,
                               height: 200,
                               fit: BoxFit.contain,
@@ -349,7 +353,7 @@ class _SplashScreenState extends State<SplashScreen>
                         child: Column(
                           children: [
                             Text(
-                              'מרכז רפואי שיבא',
+                              '׳׳¨׳›׳– ׳¨׳₪׳•׳׳™ ׳©׳™׳‘׳',
                               style: GoogleFonts.alef(
                                 fontSize: 28,
                                 fontWeight: FontWeight.w700,
@@ -360,7 +364,7 @@ class _SplashScreenState extends State<SplashScreen>
                             ),
                             SizedBox(height: 8),
                             Text(
-                              'מחלקת כשרות דת והלכה',
+                              '׳׳—׳׳§׳× ׳›׳©׳¨׳•׳× ׳“׳× ׳•׳”׳׳›׳”',
                               style: GoogleFonts.alef(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w500,
@@ -390,7 +394,7 @@ class _SplashScreenState extends State<SplashScreen>
                             width: 200,
                             height: 4,
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.3),
+                              color: Colors.white.withValues(alpha: 0.3),
                               borderRadius: BorderRadius.circular(2),
                             ),
                             child: FractionallySizedBox(
@@ -411,7 +415,7 @@ class _SplashScreenState extends State<SplashScreen>
                           ),
                           SizedBox(height: 20),
                           Text(
-                            '...טוען',
+                            '...׳˜׳•׳¢׳',
                             style: GoogleFonts.alef(
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
@@ -433,3 +437,4 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 }
+

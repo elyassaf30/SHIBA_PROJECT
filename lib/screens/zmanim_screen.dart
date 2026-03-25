@@ -1,9 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:kosher_dart/kosher_dart.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 
 class ZmanimScreen extends StatefulWidget {
+  const ZmanimScreen({super.key});
+
   @override
   _ZmanimScreenState createState() => _ZmanimScreenState();
 }
@@ -14,7 +16,7 @@ class _ZmanimScreenState extends State<ZmanimScreen> {
   HebrewDateFormatter? _hebrewFormatter;
   bool _isLoading = true;
   String? _errorMessage;
-  String _locationName = 'ישראל';
+  String _locationName = '׳™׳©׳¨׳׳';
 
   @override
   void initState() {
@@ -29,7 +31,7 @@ class _ZmanimScreenState extends State<ZmanimScreen> {
     });
 
     try {
-      // נסה לקבל מיקום מדויק, אחרת השתמש במיקום ברירת מחדל (ירושלים)
+      // ׳ ׳¡׳” ׳׳§׳‘׳ ׳׳™׳§׳•׳ ׳׳“׳•׳™׳§, ׳׳—׳¨׳× ׳”׳©׳×׳׳© ׳‘׳׳™׳§׳•׳ ׳‘׳¨׳™׳¨׳× ׳׳—׳“׳ (׳™׳¨׳•׳©׳׳™׳)
       Position? position;
       try {
         LocationPermission permission = await Geolocator.checkPermission();
@@ -42,13 +44,13 @@ class _ZmanimScreenState extends State<ZmanimScreen> {
           position = await Geolocator.getCurrentPosition(
             desiredAccuracy: LocationAccuracy.medium,
           ).timeout(Duration(seconds: 5));
-          _locationName = 'מיקום נוכחי';
+          _locationName = '׳׳™׳§׳•׳ ׳ ׳•׳›׳—׳™';
         }
       } catch (e) {
-        print('לא ניתן לקבל מיקום מדויק, משתמש במיקום ברירת מחדל');
+        debugPrint('׳׳ ׳ ׳™׳×׳ ׳׳§׳‘׳ ׳׳™׳§׳•׳ ׳׳“׳•׳™׳§, ׳׳©׳×׳׳© ׳‘׳׳™׳§׳•׳ ׳‘׳¨׳™׳¨׳× ׳׳—׳“׳');
       }
 
-      // אם לא הצלחנו לקבל מיקום, השתמש בירושלים כברירת מחדל
+      // ׳׳ ׳׳ ׳”׳¦׳׳—׳ ׳• ׳׳§׳‘׳ ׳׳™׳§׳•׳, ׳”׳©׳×׳׳© ׳‘׳™׳¨׳•׳©׳׳™׳ ׳›׳‘׳¨׳™׳¨׳× ׳׳—׳“׳
       final latitude = position?.latitude ?? 31.7683;
       final longitude = position?.longitude ?? 35.2137;
 
@@ -71,13 +73,13 @@ class _ZmanimScreenState extends State<ZmanimScreen> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _errorMessage = 'שגיאה בטעינת זמנים: $e';
+        _errorMessage = '׳©׳’׳™׳׳” ׳‘׳˜׳¢׳™׳ ׳× ׳–׳׳ ׳™׳: $e';
       });
     }
   }
 
   String _formatTime(DateTime? time) {
-    if (time == null) return 'לא זמין';
+    if (time == null) return '׳׳ ׳–׳׳™׳';
     return DateFormat('HH:mm').format(time);
   }
 
@@ -95,7 +97,7 @@ class _ZmanimScreenState extends State<ZmanimScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.3),
+            color: color.withValues(alpha: 0.3),
             blurRadius: 8,
             offset: Offset(0, 4),
           ),
@@ -108,7 +110,7 @@ class _ZmanimScreenState extends State<ZmanimScreen> {
             Container(
               padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color, size: 28),
@@ -164,7 +166,7 @@ class _ZmanimScreenState extends State<ZmanimScreen> {
         elevation: 0,
         centerTitle: true,
         title: Text(
-          'זמני היום',
+          '׳–׳׳ ׳™ ׳”׳™׳•׳',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 24,
@@ -179,7 +181,7 @@ class _ZmanimScreenState extends State<ZmanimScreen> {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Colors.deepPurple.withOpacity(0.7), Colors.transparent],
+              colors: [Colors.deepPurple.withValues(alpha: 0.7), Colors.transparent],
             ),
           ),
         ),
@@ -187,7 +189,7 @@ class _ZmanimScreenState extends State<ZmanimScreen> {
           IconButton(
             icon: Icon(Icons.refresh, color: Colors.white),
             onPressed: _initializeZmanim,
-            tooltip: 'רענן זמנים',
+            tooltip: '׳¨׳¢׳ ׳ ׳–׳׳ ׳™׳',
           ),
         ],
       ),
@@ -208,7 +210,7 @@ class _ZmanimScreenState extends State<ZmanimScreen> {
                       CircularProgressIndicator(),
                       SizedBox(height: 16),
                       Text(
-                        'טוען זמנים...',
+                        '׳˜׳•׳¢׳ ׳–׳׳ ׳™׳...',
                         style: TextStyle(fontSize: 18, color: Colors.black87),
                       ),
                     ],
@@ -235,7 +237,7 @@ class _ZmanimScreenState extends State<ZmanimScreen> {
                       ),
                       ElevatedButton(
                         onPressed: _initializeZmanim,
-                        child: Text('נסה שוב'),
+                        child: Text('׳ ׳¡׳” ׳©׳•׳‘'),
                       ),
                     ],
                   ),
@@ -245,7 +247,7 @@ class _ZmanimScreenState extends State<ZmanimScreen> {
                   child: ListView(
                     padding: EdgeInsets.only(top: 100, bottom: 16),
                     children: [
-                      // כותרת תאריך עברי
+                      // ׳›׳•׳×׳¨׳× ׳×׳׳¨׳™׳ ׳¢׳‘׳¨׳™
                       if (_jewishCalendar != null && _hebrewFormatter != null)
                         Container(
                           margin: EdgeInsets.symmetric(
@@ -263,7 +265,7 @@ class _ZmanimScreenState extends State<ZmanimScreen> {
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.deepPurple.withOpacity(0.4),
+                                color: Colors.deepPurple.withValues(alpha: 0.4),
                                 blurRadius: 8,
                                 offset: Offset(0, 4),
                               ),
@@ -294,28 +296,28 @@ class _ZmanimScreenState extends State<ZmanimScreen> {
 
                       SizedBox(height: 8),
 
-                      // זמני היום
+                      // ׳–׳׳ ׳™ ׳”׳™׳•׳
                       _buildZmanCard(
-                        title: 'עלות השחר',
+                        title: '׳¢׳׳•׳× ׳”׳©׳—׳¨',
                         time: _formatTime(_zmanimCalendar?.getAlos72()),
                         icon: Icons.nightlight_round,
                         color: Colors.indigo,
-                        subtitle: '72 דקות לפני הנץ',
+                        subtitle: '72 ׳“׳§׳•׳× ׳׳₪׳ ׳™ ׳”׳ ׳¥',
                       ),
                       _buildZmanCard(
-                        title: 'הנץ החמה',
+                        title: '׳”׳ ׳¥ ׳”׳—׳׳”',
                         time: _formatTime(_zmanimCalendar?.getSunrise()),
                         icon: Icons.wb_sunny,
                         color: Colors.orange,
                       ),
                       _buildZmanCard(
-                        title: 'סוף זמן ק"ש (גר"א)',
+                        title: '׳¡׳•׳£ ׳–׳׳ ׳§"׳© (׳’׳¨"׳)',
                         time: _formatTime(_zmanimCalendar?.getSofZmanShmaGRA()),
                         icon: Icons.menu_book,
                         color: Colors.blue[700]!,
                       ),
                       _buildZmanCard(
-                        title: 'סוף זמן תפילה (גר"א)',
+                        title: '׳¡׳•׳£ ׳–׳׳ ׳×׳₪׳™׳׳” (׳’׳¨"׳)',
                         time: _formatTime(
                           _zmanimCalendar?.getSofZmanTfilaGRA(),
                         ),
@@ -323,44 +325,44 @@ class _ZmanimScreenState extends State<ZmanimScreen> {
                         color: Colors.teal,
                       ),
                       _buildZmanCard(
-                        title: 'חצות היום',
+                        title: '׳—׳¦׳•׳× ׳”׳™׳•׳',
                         time: _formatTime(_zmanimCalendar?.getChatzos()),
                         icon: Icons.wb_twilight,
                         color: Colors.amber[700]!,
                       ),
                       _buildZmanCard(
-                        title: 'מנחה גדולה',
+                        title: '׳׳ ׳—׳” ׳’׳“׳•׳׳”',
                         time: _formatTime(_zmanimCalendar?.getMinchaGedola()),
                         icon: Icons.wb_cloudy,
                         color: Colors.blue[600]!,
                       ),
                       _buildZmanCard(
-                        title: 'מנחה קטנה',
+                        title: '׳׳ ׳—׳” ׳§׳˜׳ ׳”',
                         time: _formatTime(_zmanimCalendar?.getMinchaKetana()),
                         icon: Icons.cloud,
                         color: Colors.lightBlue,
                       ),
                       _buildZmanCard(
-                        title: 'פלג המנחה',
+                        title: '׳₪׳׳’ ׳”׳׳ ׳—׳”',
                         time: _formatTime(_zmanimCalendar?.getPlagHamincha()),
                         icon: Icons.cloud_queue,
                         color: Colors.cyan,
                       ),
                       _buildZmanCard(
-                        title: 'שקיעה',
+                        title: '׳©׳§׳™׳¢׳”',
                         time: _formatTime(_zmanimCalendar?.getSunset()),
                         icon: Icons.wb_twilight,
                         color: Colors.deepOrange,
                       ),
                       _buildZmanCard(
-                        title: 'צאת הכוכבים',
+                        title: '׳¦׳׳× ׳”׳›׳•׳›׳‘׳™׳',
                         time: _formatTime(_zmanimCalendar?.getTzais()),
                         icon: Icons.nights_stay,
                         color: Colors.indigo[900]!,
-                        subtitle: 'סוף השבת והחג',
+                        subtitle: '׳¡׳•׳£ ׳”׳©׳‘׳× ׳•׳”׳—׳’',
                       ),
                       _buildZmanCard(
-                        title: 'חצות הלילה',
+                        title: '׳—׳¦׳•׳× ׳”׳׳™׳׳”',
                         time: _formatTime(_zmanimCalendar?.getSolarMidnight()),
                         icon: Icons.bedtime,
                         color: Colors.deepPurple[900]!,
@@ -368,7 +370,7 @@ class _ZmanimScreenState extends State<ZmanimScreen> {
 
                       SizedBox(height: 16),
 
-                      // הערה
+                      // ׳”׳¢׳¨׳”
                       Container(
                         margin: EdgeInsets.symmetric(horizontal: 16),
                         padding: EdgeInsets.all(12),
@@ -383,7 +385,7 @@ class _ZmanimScreenState extends State<ZmanimScreen> {
                             SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'הזמנים מחושבים לפי המיקום שלך',
+                                '׳”׳–׳׳ ׳™׳ ׳׳—׳•׳©׳‘׳™׳ ׳׳₪׳™ ׳”׳׳™׳§׳•׳ ׳©׳׳',
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: Colors.amber[900],
@@ -400,3 +402,4 @@ class _ZmanimScreenState extends State<ZmanimScreen> {
     );
   }
 }
+

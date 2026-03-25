@@ -1,86 +1,93 @@
-import 'package:flutter/material.dart';
-import 'package:rabbi_shiba/screens/home_screen.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:rabbi_shiba/screens/chet_screen.dart';
+import 'package:rabbi_shiba/screens/shabat_screen.dart';
+import 'package:rabbi_shiba/screens/moadi_israel_screen.dart';
+import 'package:rabbi_shiba/screens/general_detail_screen.dart';
+import 'package:rabbi_shiba/screens/week_day_tefilot_screen.dart';
+import 'package:rabbi_shiba/screens/user_to_synagogue_map.dart';
+import 'package:rabbi_shiba/screens/zmanim_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter/animation.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:kosher_dart/kosher_dart.dart';
+import 'package:intl/intl.dart' as intl;
 import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'AdminLoginScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:rabbi_shiba/utils/theme_helpers.dart';
 
 // Map of common Parasha names translations from English to Hebrew.
 const Map<String, String> parashaTranslations = {
-  'Parashat Bereshit': 'בראשית',
-  'Parashat Noach': 'נח',
-  'Parashat Lech-Lecha': 'לך-לך',
-  'Parashat Vayera': 'וירא',
-  'Parashat Chayei Sarah': 'חיי-שרה',
-  'Parashat Toldot': 'תולדות',
-  'Parashat Vayetzei': 'ויצא',
-  'Parashat Vayishlach': 'וישלח',
-  'Parashat Vayeshev': 'וישב',
-  'Parashat Miketz': 'מקץ',
-  'Parashat Vayigash': 'ויגש',
-  'Parashat Vayechi': 'ויחי',
-  'Parashat Shemot': 'שמות',
-  'Parashat Vaera': 'וָאֵרָא',
-  'Parashat Bo': 'בא',
-  'Parashat Beshalach': 'בשלח',
-  'Parashat Yitro': 'יתרו',
-  'Parashat Mishpatim': 'משפטים',
-  'Parashat Terumah': 'תרומה',
-  'Parashat Tetzaveh': 'תצוה',
-  'Parashat Ki Tisa': 'כי-תשא',
-  'Parashat Vayakhel': 'ויקהל',
-  'Parashat Pekudei': 'פקודי',
-  'Parashat Vayikra': 'ויקרא',
-  'Parashat Tzav': 'צו',
-  'Parashat Shemini': 'שמיני',
-  'Parashat Tazria': 'תזריע',
-  'Parashat Metzora': 'מצורע',
-  'Parashat Acharei Mot': 'אחרי-מות',
-  'Parashat Kedoshim': 'קדושים',
-  'Parashat Emor': 'אמור',
-  'Parashat Behar': 'בהר',
-  'Parashat Bechukotai': 'בחקתי',
-  'Parashat Bamidbar': 'במדבר',
-  'Parashat Nasso': 'נשא',
-  'Parashat Behaalotecha': 'בהעלותך',
-  'Parashat Shlach': 'שלח',
-  'Parashat Korach': 'קורח',
-  'Parashat Chukat': 'חוקת',
-  'Parashat Balak': 'בלק',
-  'Parashat Pinchas': 'פינחס',
-  'Parashat Matot': 'מטות',
-  'Parashat Massei': 'מסעי',
-  'Parashat Devarim': 'דברים',
-  'Parashat Vaetchanan': 'ואתחנן',
-  'Parashat Eikev': 'עקב',
-  'Parashat Reeh': 'ראה',
-  'Parashat Shoftim': 'שופטים',
-  'Parashat Ki Teitzei': 'כי תצא',
-  'Parashat Ki Tavo': 'כי תבוא',
-  'Parashat Nitzavim': 'ניצבים',
-  'Parashat Vayelech': 'וילך',
-  'Parashat Haazinu': 'האזינו',
-  'Parashat Vezot Haberakhah': 'וזאת הברכה',
+  'Parashat Bereshit': '׳‘׳¨׳׳©׳™׳×',
+  'Parashat Noach': '׳ ׳—',
+  'Parashat Lech-Lecha': '׳׳-׳׳',
+  'Parashat Vayera': '׳•׳™׳¨׳',
+  'Parashat Chayei Sarah': '׳—׳™׳™-׳©׳¨׳”',
+  'Parashat Toldot': '׳×׳•׳׳“׳•׳×',
+  'Parashat Vayetzei': '׳•׳™׳¦׳',
+  'Parashat Vayishlach': '׳•׳™׳©׳׳—',
+  'Parashat Vayeshev': '׳•׳™׳©׳‘',
+  'Parashat Miketz': '׳׳§׳¥',
+  'Parashat Vayigash': '׳•׳™׳’׳©',
+  'Parashat Vayechi': '׳•׳™׳—׳™',
+  'Parashat Shemot': '׳©׳׳•׳×',
+  'Parashat Vaera': '׳•ײ¸׳ײµ׳¨ײ¸׳',
+  'Parashat Bo': '׳‘׳',
+  'Parashat Beshalach': '׳‘׳©׳׳—',
+  'Parashat Yitro': '׳™׳×׳¨׳•',
+  'Parashat Mishpatim': '׳׳©׳₪׳˜׳™׳',
+  'Parashat Terumah': '׳×׳¨׳•׳׳”',
+  'Parashat Tetzaveh': '׳×׳¦׳•׳”',
+  'Parashat Ki Tisa': '׳›׳™-׳×׳©׳',
+  'Parashat Vayakhel': '׳•׳™׳§׳”׳',
+  'Parashat Pekudei': '׳₪׳§׳•׳“׳™',
+  'Parashat Vayikra': '׳•׳™׳§׳¨׳',
+  'Parashat Tzav': '׳¦׳•',
+  'Parashat Shemini': '׳©׳׳™׳ ׳™',
+  'Parashat Tazria': '׳×׳–׳¨׳™׳¢',
+  'Parashat Metzora': '׳׳¦׳•׳¨׳¢',
+  'Parashat Acharei Mot': '׳׳—׳¨׳™-׳׳•׳×',
+  'Parashat Kedoshim': '׳§׳“׳•׳©׳™׳',
+  'Parashat Emor': '׳׳׳•׳¨',
+  'Parashat Behar': '׳‘׳”׳¨',
+  'Parashat Bechukotai': '׳‘׳—׳§׳×׳™',
+  'Parashat Bamidbar': '׳‘׳׳“׳‘׳¨',
+  'Parashat Nasso': '׳ ׳©׳',
+  'Parashat Behaalotecha': '׳‘׳”׳¢׳׳•׳×׳',
+  'Parashat Shlach': '׳©׳׳—',
+  'Parashat Korach': '׳§׳•׳¨׳—',
+  'Parashat Chukat': '׳—׳•׳§׳×',
+  'Parashat Balak': '׳‘׳׳§',
+  'Parashat Pinchas': '׳₪׳™׳ ׳—׳¡',
+  'Parashat Matot': '׳׳˜׳•׳×',
+  'Parashat Massei': '׳׳¡׳¢׳™',
+  'Parashat Devarim': '׳“׳‘׳¨׳™׳',
+  'Parashat Vaetchanan': '׳•׳׳×׳—׳ ׳',
+  'Parashat Eikev': '׳¢׳§׳‘',
+  'Parashat Reeh': '׳¨׳׳”',
+  'Parashat Shoftim': '׳©׳•׳₪׳˜׳™׳',
+  'Parashat Ki Teitzei': '׳›׳™ ׳×׳¦׳',
+  'Parashat Ki Tavo': '׳›׳™ ׳×׳‘׳•׳',
+  'Parashat Nitzavim': '׳ ׳™׳¦׳‘׳™׳',
+  'Parashat Vayelech': '׳•׳™׳׳',
+  'Parashat Haazinu': '׳”׳׳–׳™׳ ׳•',
+  'Parashat Vezot Haberakhah': '׳•׳–׳׳× ׳”׳‘׳¨׳›׳”',
 };
 
-// ✅ 1. ווידג'ט להצגת תאריך עברי ופרשה
+// ג… 1. ׳•׳•׳™׳“׳’'׳˜ ׳׳”׳¦׳’׳× ׳×׳׳¨׳™׳ ׳¢׳‘׳¨׳™ ׳•׳₪׳¨׳©׳”
 class HebrewDateBanner extends StatefulWidget {
+  const HebrewDateBanner({super.key});
+
   @override
   _HebrewDateBannerState createState() => _HebrewDateBannerState();
 }
 
 class _HebrewDateBannerState extends State<HebrewDateBanner> {
-  String hebrewDate = 'טוען...';
+  String hebrewDate = '׳˜׳•׳¢׳...';
   String parasha = '';
   bool isLoading = true;
-  double _opacity = 0.0;
-  int _adminTapCount = 0; // מונה ללחיצה נסתרת
 
   @override
   void initState() {
@@ -88,23 +95,12 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
     _fetchHebrewDateAndParasha();
   }
 
-  void _checkForAdminLogin() {
-    // אפשרות לחיצה נסתרת 5 פעמים על הכותרת
-    if (_adminTapCount == 5) {
-      _adminTapCount = 0;
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => AdminLoginScreen()),
-      );
-    }
-  }
-
   Future<void> _fetchHebrewDateAndParasha() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final nowDate = DateTime.now();
 
-      // טעינה מהשרת כדי לקבל את התאריך העברי הנוכחי
+      // ׳˜׳¢׳™׳ ׳” ׳׳”׳©׳¨׳× ׳›׳“׳™ ׳׳§׳‘׳ ׳׳× ׳”׳×׳׳¨׳™׳ ׳”׳¢׳‘׳¨׳™ ׳”׳ ׳•׳›׳—׳™
       final formattedDate =
           '${nowDate.year}-${nowDate.month.toString().padLeft(2, '0')}-${nowDate.day.toString().padLeft(2, '0')}';
 
@@ -116,14 +112,14 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        String fetchedHebrewDate = data['hebrew'] ?? 'לא זמין';
+        String fetchedHebrewDate = data['hebrew'] ?? '׳׳ ׳–׳׳™׳';
         String fetchedParasha = '';
 
-        // בדיקה אם התאריך העברי השתנה (כלומר עבר צאת הכוכבים ויום עברי חדש)
+        // ׳‘׳“׳™׳§׳” ׳׳ ׳”׳×׳׳¨׳™׳ ׳”׳¢׳‘׳¨׳™ ׳”׳©׳×׳ ׳” (׳›׳׳•׳׳¨ ׳¢׳‘׳¨ ׳¦׳׳× ׳”׳›׳•׳›׳‘׳™׳ ׳•׳™׳•׳ ׳¢׳‘׳¨׳™ ׳—׳“׳©)
         final cachedHebrewDate = prefs.getString('cachedHebrewDate');
 
         if (cachedHebrewDate == fetchedHebrewDate) {
-          // אותו יום עברי - השתמש ב-cache של הפרשה
+          // ׳׳•׳×׳• ׳™׳•׳ ׳¢׳‘׳¨׳™ - ׳”׳©׳×׳׳© ׳‘-cache ׳©׳ ׳”׳₪׳¨׳©׳”
           final cachedParasha = prefs.getString('parasha');
           if (mounted) {
             setState(() {
@@ -135,7 +131,7 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
           return;
         }
 
-        // יום עברי חדש - טען את הפרשה מחדש
+        // ׳™׳•׳ ׳¢׳‘׳¨׳™ ׳—׳“׳© - ׳˜׳¢׳ ׳׳× ׳”׳₪׳¨׳©׳” ׳׳—׳“׳©
         if (data['events'] != null) {
           final events = List<String>.from(data['events']);
           final englishParasha = events.firstWhere(
@@ -149,7 +145,7 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
           }
         }
 
-        // שמירה ב-cache - התאריך העברי הוא המפתח
+        // ׳©׳׳™׳¨׳” ׳‘-cache - ׳”׳×׳׳¨׳™׳ ׳”׳¢׳‘׳¨׳™ ׳”׳•׳ ׳”׳׳₪׳×׳—
         await prefs.setString('hebrewDate', fetchedHebrewDate);
         await prefs.setString('parasha', fetchedParasha);
         await prefs.setString('cachedHebrewDate', fetchedHebrewDate);
@@ -164,7 +160,7 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
       } else {
         if (mounted) {
           setState(() {
-            hebrewDate = 'שגיאה בטעינה';
+            hebrewDate = '׳©׳’׳™׳׳” ׳‘׳˜׳¢׳™׳ ׳”';
             isLoading = false;
           });
         }
@@ -172,11 +168,11 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          hebrewDate = 'שגיאה בטעינה';
+          hebrewDate = '׳©׳’׳™׳׳” ׳‘׳˜׳¢׳™׳ ׳”';
           isLoading = false;
         });
       }
-      debugPrint('שגיאה ב-fetchHebrewDateAndParasha: $e');
+      debugPrint('׳©׳’׳™׳׳” ׳‘-fetchHebrewDateAndParasha: $e');
     }
   }
 
@@ -210,7 +206,7 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
             ),
             SizedBox(width: 10),
             Text(
-              'טוען תאריך עברי...',
+              '׳˜׳•׳¢׳ ׳×׳׳¨׳™׳ ׳¢׳‘׳¨׳™...',
               style: GoogleFonts.alef(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -263,7 +259,7 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
                 SizedBox(width: 6),
                 Flexible(
                   child: Text(
-                    'פרשת $parasha',
+                    '׳₪׳¨׳©׳× $parasha',
                     textDirection: TextDirection.rtl,
                     style: GoogleFonts.alef(
                       fontSize: 14,
@@ -283,8 +279,157 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
   }
 }
 
-// ✅ 2. ווידג'ט להצגת התפילה הבאה
+// ג… 2. ׳•׳•׳™׳“׳’'׳˜ ׳׳”׳¦׳’׳× ׳”׳–׳׳ ׳”׳‘׳ (׳ ׳¥/׳©׳§׳™׳¢׳”)
+class NextZmanBanner extends StatefulWidget {
+  const NextZmanBanner({super.key});
+
+  @override
+  _NextZmanBannerState createState() => _NextZmanBannerState();
+}
+
+class _NextZmanBannerState extends State<NextZmanBanner> {
+  String _nextZman = '׳˜׳•׳¢׳...';
+  String _nextZmanLabel = '';
+  bool _isLoading = true;
+  Timer? _zmanCheckTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startZmanCheck();
+  }
+
+  @override
+  void dispose() {
+    _zmanCheckTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startZmanCheck() {
+    _fetchNextZman();
+    _zmanCheckTimer = Timer.periodic(Duration(minutes: 5), (timer) {
+      _fetchNextZman();
+    });
+  }
+
+  void _fetchNextZman() async {
+    try {
+      final now = DateTime.now();
+      final currentMinutes = now.hour * 60 + now.minute;
+
+      // ׳׳™׳¦׳•׳¨ Zmanim calendar ׳¢׳‘׳•׳¨ ׳™׳¨׳•׳©׳׳™׳ (׳‘׳¨׳™׳¨׳× ׳׳—׳“׳)
+      final geoLocation = GeoLocation.setLocation(
+        '׳™׳¨׳•׳©׳׳™׳',
+        31.7683,
+        35.2137,
+        now,
+      );
+
+      final zmanimCalendar = ComplexZmanimCalendar.intGeoLocation(geoLocation);
+      final dateFormat = intl.DateFormat('HH:mm');
+
+      // ׳§׳— ׳׳× ׳”׳–׳׳ ׳™׳ ׳”׳—׳©׳•׳‘׳™׳
+      final sunrise = zmanimCalendar.getSunrise();
+      final sunset = zmanimCalendar.getSunset();
+
+      Map<String, dynamic>? nextZman;
+
+      // ׳‘׳“׳•׳§ ׳׳™׳–׳” ׳–׳׳ ׳”׳•׳ ׳”׳‘׳
+      if (sunrise != null) {
+        final sunriseMinutes = sunrise.hour * 60 + sunrise.minute;
+        if (sunriseMinutes > currentMinutes) {
+          nextZman = {
+            'time': dateFormat.format(sunrise),
+            'label': '׳ ׳¥ ׳”׳—׳׳”',
+            'minutes': sunriseMinutes,
+          };
+        }
+      }
+
+      if (sunset != null) {
+        final sunsetMinutes = sunset.hour * 60 + sunset.minute;
+        if (sunsetMinutes > currentMinutes) {
+          if (nextZman == null ||
+              sunsetMinutes < (nextZman['minutes'] as int)) {
+            nextZman = {
+              'time': dateFormat.format(sunset),
+              'label': '׳©׳§׳™׳¢׳”',
+              'minutes': sunsetMinutes,
+            };
+          }
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          if (nextZman != null) {
+            _nextZman = nextZman['time'] as String;
+            _nextZmanLabel = nextZman['label'] as String;
+          } else {
+            _nextZman = '׳׳ ׳–׳׳™׳';
+            _nextZmanLabel = '';
+          }
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _nextZman = '׳©׳’׳™׳׳”';
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return SizedBox.shrink();
+    }
+
+    if (_nextZman == '׳׳ ׳–׳׳™׳' || _nextZman == '׳©׳’׳™׳׳”') {
+      return SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),
+      decoration: BoxDecoration(
+        color: Color(0xFFFFF9C4),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Color(0xFFFDD835), width: 1.5),
+        boxShadow: [
+          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          Icon(Icons.wb_sunny, color: Color(0xFFF57F17), size: 20),
+          SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              '$_nextZmanLabel ׳‘׳©׳¢׳” $_nextZman',
+              textDirection: TextDirection.rtl,
+              style: GoogleFonts.alef(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFFF57F17),
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ג… 3. ׳•׳•׳™׳“׳’'׳˜ ׳׳”׳¦׳’׳× ׳”׳×׳₪׳™׳׳” ׳”׳‘׳׳”
 class NextPrayerBanner extends StatefulWidget {
+  const NextPrayerBanner({super.key});
+
   @override
   _NextPrayerBannerState createState() => _NextPrayerBannerState();
 }
@@ -318,16 +463,16 @@ class _NextPrayerBannerState extends State<NextPrayerBanner> {
       final currentMinutes = now.hour * 60 + now.minute;
 
       final response = await Supabase.instance.client
-          .from('זמני תפילות ימי חול')
-          .select('שעה, "סוג תפילה"');
+          .from('׳–׳׳ ׳™ ׳×׳₪׳™׳׳•׳× ׳™׳׳™ ׳—׳•׳')
+          .select('׳©׳¢׳”, "׳¡׳•׳’ ׳×׳₪׳™׳׳”"');
 
       final data = List<Map<String, dynamic>>.from(response);
       Map<String, dynamic>? nextPrayer;
 
-      data.sort((a, b) => a['שעה'].compareTo(b['שעה']));
+      data.sort((a, b) => a['׳©׳¢׳”'].compareTo(b['׳©׳¢׳”']));
 
       for (var item in data) {
-        final timeString = item['שעה'];
+        final timeString = item['׳©׳¢׳”'];
         final parts = timeString.split(':');
         if (parts.length < 2) continue;
 
@@ -351,7 +496,7 @@ class _NextPrayerBannerState extends State<NextPrayerBanner> {
         });
       }
     } catch (e) {
-      // מטפל בשגיאה בשקט
+      // ׳׳˜׳₪׳ ׳‘׳©׳’׳™׳׳” ׳‘׳©׳§׳˜
     }
   }
 
@@ -361,8 +506,8 @@ class _NextPrayerBannerState extends State<NextPrayerBanner> {
       return SizedBox.shrink();
     }
 
-    final time = _nextPrayerTime!['שעה'];
-    final type = _nextPrayerTime!['סוג תפילה'];
+    final time = _nextPrayerTime!['׳©׳¢׳”'];
+    final type = _nextPrayerTime!['׳¡׳•׳’ ׳×׳₪׳™׳׳”'];
     final displayTime = time.length >= 5 ? time.substring(0, 5) : time;
 
     return Container(
@@ -383,7 +528,7 @@ class _NextPrayerBannerState extends State<NextPrayerBanner> {
           SizedBox(width: 8),
           Flexible(
             child: Text(
-              'התפילה הבאה: $type בשעה $displayTime',
+              '׳”׳×׳₪׳™׳׳” ׳”׳‘׳׳”: $type ׳‘׳©׳¢׳” $displayTime',
               textDirection: TextDirection.rtl,
               style: GoogleFonts.alef(
                 fontSize: 15,
@@ -399,9 +544,11 @@ class _NextPrayerBannerState extends State<NextPrayerBanner> {
   }
 }
 
-// ✅ 3. מסך EntranceScreen משופר
+// ג… 3. ׳׳¡׳ EntranceScreen ׳׳©׳•׳₪׳¨
 
 class EntranceScreen extends StatefulWidget {
+  const EntranceScreen({super.key});
+
   @override
   _EntranceScreenState createState() => _EntranceScreenState();
 }
@@ -409,7 +556,7 @@ class EntranceScreen extends StatefulWidget {
 class _EntranceScreenState extends State<EntranceScreen>
     with TickerProviderStateMixin {
   final supabase = Supabase.instance.client;
-  String rabbiQuote = 'טוען ציטוט...';
+  String rabbiQuote = '׳˜׳•׳¢׳ ׳¦׳™׳˜׳•׳˜...';
   String rabbiImageUrl = '';
   bool isLoading = true;
   int _adminTapCount = 0; // secret tap counter for admin
@@ -423,6 +570,76 @@ class _EntranceScreenState extends State<EntranceScreen>
   late Animation<double> _slideAnimation;
   late Animation<double> _quoteOpacityAnimation;
   late Animation<double> _buttonSlideAnimation;
+
+  // ׳¨׳©׳™׳׳× ׳”׳‘׳•׳¢׳•׳× - ׳›׳ ׳”׳׳₪׳©׳¨׳•׳™׳•׳×
+  static final List<Map<String, dynamic>> _bubbles = [
+    {
+      'label': '׳–׳׳ ׳™ ׳”׳™׳•׳',
+      'icon': Icons.sunny,
+      'color': Colors.amber,
+      'screenBuilder': () => ZmanimScreen(),
+    },
+    {
+      'label': '׳©׳‘׳×',
+      'icon': Icons.wine_bar,
+      'color': Colors.indigo,
+      'screenBuilder': () => ShabatScreen(),
+    },
+    {
+      'label': '׳›׳©׳¨׳•׳×',
+      'icon': Icons.food_bank,
+      'color': Colors.green,
+      'screenBuilder': () => GeneralDetailScreen(type: '׳›׳©׳¨׳•׳×'),
+    },
+    {
+      'label': '׳‘׳×׳™ ׳›׳ ׳¡׳× ׳‘׳׳¨׳›׳– ׳”׳¨׳₪׳•׳׳™',
+      'icon': Icons.location_on,
+      'color': Colors.orange,
+      'screenBuilder': () => UserToSynagogueMap(),
+    },
+    {
+      'label': '׳–׳׳ ׳™ ׳×׳₪׳™׳׳•׳× ׳™׳׳™ ׳—׳•׳',
+      'icon': Icons.access_time,
+      'color': Colors.blue,
+      'screenBuilder': () => WeekdayTefilotScreen(),
+    },
+    {
+      'label': '׳˜׳•׳׳׳× ׳›׳”׳ ׳™׳',
+      'icon': Icons.people,
+      'color': Colors.brown,
+      'screenBuilder': () => GeneralDetailScreen(type: '׳˜׳•׳׳׳× ׳›׳”׳ ׳™׳'),
+    },
+    {
+      'label': '׳ ׳₪׳˜׳¨׳™׳',
+      'icon': Icons.help_outline,
+      'color': Colors.grey,
+      'screenBuilder': () => GeneralDetailScreen(type: '׳ ׳₪׳˜׳¨׳™׳'),
+    },
+    {
+      'label': '׳׳§׳•׳•׳”',
+      'icon': Icons.water,
+      'color': Colors.blueAccent,
+      'screenBuilder': () => GeneralDetailScreen(type: '׳׳§׳•׳•׳”'),
+    },
+    {
+      'label': '׳׳•׳¢׳“׳™ ׳™׳©׳¨׳׳',
+      'icon': Icons.calendar_today,
+      'color': Colors.purple,
+      'screenBuilder': () => MoadiIsraelScreen(),
+    },
+    {
+      'label': '׳™׳™׳¢׳•׳¥ ׳”׳׳›׳×׳™ ׳¨׳₪׳•׳׳™',
+      'icon': Icons.medical_services,
+      'color': Colors.teal,
+      'screenBuilder': () => ChatScreen(),
+    },
+    {
+      'label': '׳׳ ׳©׳™ ׳§׳©׳¨',
+      'icon': Icons.contacts,
+      'color': Colors.redAccent,
+      'screenBuilder': () => GeneralDetailScreen(type: '׳׳ ׳©׳™ ׳§׳©׳¨'),
+    },
+  ];
 
   @override
   void initState() {
@@ -482,25 +699,25 @@ class _EntranceScreenState extends State<EntranceScreen>
     try {
       final response =
           await supabase
-              .from('כללי')
-              .select('מידע')
-              .eq('סוג', 'דבר הרב')
+              .from('׳›׳׳׳™')
+              .select('׳׳™׳“׳¢')
+              .eq('׳¡׳•׳’', '׳“׳‘׳¨ ׳”׳¨׳‘')
               .limit(1)
               .maybeSingle();
 
       if (!mounted) return;
 
-      if (response == null || response['מידע'] == null) {
+      if (response == null || response['׳׳™׳“׳¢'] == null) {
         setState(() {
           rabbiQuote =
-              'ברוכים הבאים לאפליקציית כשרות דת והלכה של מרכז רפואי שיבא. כאן תמצאו את כל המידע הדרוש לכם לשמירה על הלכות הכשרות והדת במרכז הרפואי.';
+              '׳‘׳¨׳•׳›׳™׳ ׳”׳‘׳׳™׳ ׳׳׳₪׳׳™׳§׳¦׳™׳™׳× ׳›׳©׳¨׳•׳× ׳“׳× ׳•׳”׳׳›׳” ׳©׳ ׳׳¨׳›׳– ׳¨׳₪׳•׳׳™ ׳©׳™׳‘׳. ׳›׳׳ ׳×׳׳¦׳׳• ׳׳× ׳›׳ ׳”׳׳™׳“׳¢ ׳”׳“׳¨׳•׳© ׳׳›׳ ׳׳©׳׳™׳¨׳” ׳¢׳ ׳”׳׳›׳•׳× ׳”׳›׳©׳¨׳•׳× ׳•׳”׳“׳× ׳‘׳׳¨׳›׳– ׳”׳¨׳₪׳•׳׳™.';
           isLoading = false;
         });
       } else {
         setState(() {
           rabbiQuote =
-              response['מידע']?.toString() ??
-              'ברוכים הבאים לאפליקציית כשרות דת והלכה של מרכז רפואי שיבא.';
+              response['׳׳™׳“׳¢']?.toString() ??
+              '׳‘׳¨׳•׳›׳™׳ ׳”׳‘׳׳™׳ ׳׳׳₪׳׳™׳§׳¦׳™׳™׳× ׳›׳©׳¨׳•׳× ׳“׳× ׳•׳”׳׳›׳” ׳©׳ ׳׳¨׳›׳– ׳¨׳₪׳•׳׳™ ׳©׳™׳‘׳.';
           isLoading = false;
         });
       }
@@ -522,13 +739,13 @@ class _EntranceScreenState extends State<EntranceScreen>
       if (!mounted) return;
       setState(() {
         rabbiQuote =
-            'ברוכים הבאים לאפליקציית כשרות דת והלכה של מרכז רפואי שיבא. כאן תמצאו את כל המידע הדרוש לכם לשמירה על הלכות הכשרות והדת במרכז הרפואי.';
+            '׳‘׳¨׳•׳›׳™׳ ׳”׳‘׳׳™׳ ׳׳׳₪׳׳™׳§׳¦׳™׳™׳× ׳›׳©׳¨׳•׳× ׳“׳× ׳•׳”׳׳›׳” ׳©׳ ׳׳¨׳›׳– ׳¨׳₪׳•׳׳™ ׳©׳™׳‘׳. ׳›׳׳ ׳×׳׳¦׳׳• ׳׳× ׳›׳ ׳”׳׳™׳“׳¢ ׳”׳“׳¨׳•׳© ׳׳›׳ ׳׳©׳׳™׳¨׳” ׳¢׳ ׳”׳׳›׳•׳× ׳”׳›׳©׳¨׳•׳× ׳•׳”׳“׳× ׳‘׳׳¨׳›׳– ׳”׳¨׳₪׳•׳׳™.';
         isLoading = false;
       });
       _mainController.forward();
       _quoteController.forward();
       _buttonController.forward();
-      print('Error fetching rabbi data: $e');
+      debugPrint('Error fetching rabbi data: $e');
     }
   }
 
@@ -550,18 +767,30 @@ class _EntranceScreenState extends State<EntranceScreen>
         MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFF8FAFC), Color(0xFFE2E8F0), Color(0xFFCBD5E1)],
-            stops: [0.0, 0.6, 1.0],
+      drawer: _buildDrawer(),
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        iconTheme: IconThemeData(color: Color(0xFF1E293B)),
+        title: Text(
+          '׳›׳©׳¨׳•׳× ׳“׳× ׳•׳”׳׳›׳”',
+          style: GoogleFonts.alef(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1E293B),
           ),
+          textDirection: TextDirection.rtl,
         ),
-        child: SafeArea(
-          child: Container(
-            height: safeAreaHeight,
+        centerTitle: true,
+      ),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: ThemeHelpers.buildDefaultBackground(
+              colors: [Color(0xFFF8FAFC), Color(0xFFE2E8F0), Color(0xFFCBD5E1)],
+            ),
+          ),
+          SafeArea(
             child: Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: screenWidth * 0.05,
@@ -570,17 +799,22 @@ class _EntranceScreenState extends State<EntranceScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // 1. תאריך עברי ופרשה - ראשון
+                  // 1. ׳×׳׳¨׳™׳ ׳¢׳‘׳¨׳™ ׳•׳₪׳¨׳©׳” - ׳¨׳׳©׳•׳
                   HebrewDateBanner(),
 
                   SizedBox(height: 10),
 
-                  // 2. באנר התפילה הבאה - שני
+                  // 2. ׳‘׳׳ ׳¨ ׳”׳–׳׳ ׳”׳‘׳ - ׳©׳ ׳™
+                  NextZmanBanner(),
+
+                  SizedBox(height: 10),
+
+                  // 3. ׳‘׳׳ ׳¨ ׳”׳×׳₪׳™׳׳” ׳”׳‘׳׳” - ׳©׳׳™׳©׳™
                   NextPrayerBanner(),
 
                   SizedBox(height: safeAreaHeight * 0.02),
 
-                  // 3. Header Section - שלישי (with secret admin tap)
+                  // 4. Header Section - ׳¨׳‘׳™׳¢׳™ (with secret admin tap)
                   AnimatedBuilder(
                     animation: _mainController,
                     builder: (context, child) {
@@ -614,7 +848,7 @@ class _EntranceScreenState extends State<EntranceScreen>
 
                   SizedBox(height: safeAreaHeight * 0.02),
 
-                  // 4. Quote Section - רביעי, תופס את רוב המסך
+                  // 5. Quote Section - ׳—׳׳™׳©׳™, ׳×׳•׳₪׳¡ ׳׳× ׳¨׳•׳‘ ׳”׳׳¡׳
                   Expanded(
                     child: AnimatedBuilder(
                       animation: _quoteController,
@@ -632,7 +866,7 @@ class _EntranceScreenState extends State<EntranceScreen>
 
                   SizedBox(height: safeAreaHeight * 0.02),
 
-                  // 5. Buttons Section - אחרון
+                  // 6. Buttons Section - ׳©׳™׳©׳™
                   AnimatedBuilder(
                     animation: _buttonController,
                     builder: (context, child) {
@@ -649,7 +883,7 @@ class _EntranceScreenState extends State<EntranceScreen>
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -660,7 +894,7 @@ class _EntranceScreenState extends State<EntranceScreen>
       children: [
         // Title
         Text(
-          'ברוכים הבאים',
+          '׳‘׳¨׳•׳›׳™׳ ׳”׳‘׳׳™׳',
           style: GoogleFonts.alef(
             fontSize: MediaQuery.of(context).size.width * 0.075,
             fontWeight: FontWeight.w700,
@@ -674,7 +908,7 @@ class _EntranceScreenState extends State<EntranceScreen>
 
         // Subtitle
         Text(
-          'מחלקת כשרות דת והלכה',
+          '׳׳—׳׳§׳× ׳›׳©׳¨׳•׳× ׳“׳× ׳•׳”׳׳›׳”',
           style: GoogleFonts.alef(
             fontSize: MediaQuery.of(context).size.width * 0.042,
             fontWeight: FontWeight.w500,
@@ -706,7 +940,7 @@ class _EntranceScreenState extends State<EntranceScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
+          SizedBox(
             width: 50,
             height: 50,
             child: CircularProgressIndicator(
@@ -716,7 +950,7 @@ class _EntranceScreenState extends State<EntranceScreen>
           ),
           SizedBox(height: 20),
           Text(
-            '...טוען',
+            '...׳˜׳•׳¢׳',
             style: GoogleFonts.alef(fontSize: 16, color: Color(0xFF64748B)),
           ),
         ],
@@ -725,28 +959,14 @@ class _EntranceScreenState extends State<EntranceScreen>
   }
 
   Widget _buildQuoteCard() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 25,
-            offset: Offset(0, 15),
-          ),
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: Offset(0, 5),
-          ),
-        ],
-      ),
+    return SingleChildScrollView(
+      physics: BouncingScrollPhysics(),
       child: Padding(
         padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.045),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Rabbi Image - קטן יותר
+            // Rabbi Image - ׳§׳˜׳ ׳™׳•׳×׳¨
             Container(
               width: MediaQuery.of(context).size.width * 0.16,
               height: MediaQuery.of(context).size.width * 0.16,
@@ -756,7 +976,7 @@ class _EntranceScreenState extends State<EntranceScreen>
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Color(0xFF3B82F6).withOpacity(0.2),
+                    color: Color(0xFF3B82F6).withValues(alpha: 0.2),
                     blurRadius: 15,
                     offset: Offset(0, 8),
                   ),
@@ -776,39 +996,34 @@ class _EntranceScreenState extends State<EntranceScreen>
 
             SizedBox(height: 12),
 
-            // Quote mark - קטן יותר
+            // Quote mark - ׳§׳˜׳ ׳™׳•׳×׳¨
             Icon(
               Icons.format_quote,
               size: 24,
-              color: Color(0xFF3B82F6).withOpacity(0.6),
+              color: Color(0xFF3B82F6).withValues(alpha: 0.6),
             ),
 
             SizedBox(height: 8),
 
-            // Quote text - תופס את רוב המקום
-            Expanded(
-              child: SingleChildScrollView(
-                physics: BouncingScrollPhysics(),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8),
-                  child: Text(
-                    rabbiQuote,
-                    style: GoogleFonts.alef(
-                      fontSize: MediaQuery.of(context).size.width * 0.042,
-                      height: 1.7,
-                      color: Color(0xFF374151),
-                      fontWeight: FontWeight.w400,
-                    ),
-                    textAlign: TextAlign.center,
-                    textDirection: TextDirection.rtl,
-                  ),
+            // Quote text
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                rabbiQuote,
+                style: GoogleFonts.alef(
+                  fontSize: MediaQuery.of(context).size.width * 0.042,
+                  height: 1.7,
+                  color: Color(0xFF374151),
+                  fontWeight: FontWeight.w400,
                 ),
+                textAlign: TextAlign.center,
+                textDirection: TextDirection.rtl,
               ),
             ),
 
             SizedBox(height: 12),
 
-            // Attribution - קומפקטי יותר
+            // Attribution - ׳§׳•׳׳₪׳§׳˜׳™ ׳™׳•׳×׳¨
             Container(
               padding: EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
@@ -816,7 +1031,7 @@ class _EntranceScreenState extends State<EntranceScreen>
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                'הרב יואב חנניה אוקנין',
+                '׳”׳¨׳‘ ׳™׳•׳׳‘ ׳—׳ ׳ ׳™׳” ׳׳•׳§׳ ׳™׳',
                 style: GoogleFonts.alef(
                   fontSize: MediaQuery.of(context).size.width * 0.038,
                   fontWeight: FontWeight.w600,
@@ -834,8 +1049,7 @@ class _EntranceScreenState extends State<EntranceScreen>
   Widget _buildButtonsSection() {
     return Column(
       children: [
-        // Contact Button
-        Container(
+        SizedBox(
           width: double.infinity,
           height: 52,
           child: ElevatedButton(
@@ -849,7 +1063,7 @@ class _EntranceScreenState extends State<EntranceScreen>
               backgroundColor: Colors.white,
               foregroundColor: Color(0xFF3B82F6),
               elevation: 8,
-              shadowColor: Colors.black.withOpacity(0.15),
+              shadowColor: Colors.black.withValues(alpha: 0.15),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
                 side: BorderSide(color: Color(0xFF3B82F6), width: 2),
@@ -865,7 +1079,7 @@ class _EntranceScreenState extends State<EntranceScreen>
                 ),
                 SizedBox(width: 10),
                 Text(
-                  'יצירת קשר עם הרב',
+                  '׳™׳¦׳™׳¨׳× ׳§׳©׳¨ ׳¢׳ ׳”׳¨׳‘',
                   style: GoogleFonts.alef(
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
@@ -875,51 +1089,86 @@ class _EntranceScreenState extends State<EntranceScreen>
             ),
           ),
         ),
-
-        SizedBox(height: 12),
-
-        // Enter Button
-        Container(
-          width: double.infinity,
-          height: 52,
-          child: ElevatedButton(
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                PageRouteBuilder(
-                  pageBuilder: (_, __, ___) => HomeScreen(),
-                  transitionsBuilder:
-                      (_, a, __, c) => FadeTransition(opacity: a, child: c),
-                  transitionDuration: Duration(milliseconds: 600),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFF3B82F6),
-              foregroundColor: Colors.white,
-              elevation: 12,
-              shadowColor: Color(0xFF3B82F6).withOpacity(0.4),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'כניסה לאפליקציה',
-                  style: GoogleFonts.alef(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                SizedBox(width: 8),
-                Icon(Icons.arrow_forward, size: 20),
-              ],
-            ),
-          ),
-        ),
       ],
     );
   }
+
+  Widget _buildDrawer() {
+    return Drawer(
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFF8FAFC), Color(0xFFE2E8F0)],
+          ),
+        ),
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.menu_book, size: 40, color: Colors.white),
+                  SizedBox(height: 12),
+                  Text(
+                    '׳×׳₪׳¨׳™׳˜ ׳¨׳׳©׳™',
+                    textDirection: TextDirection.rtl,
+                    style: GoogleFonts.alef(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ..._bubbles.map((bubble) {
+              return Directionality(
+                textDirection: TextDirection.rtl,
+                child: ListTile(
+                  leading: Icon(
+                    bubble['icon'],
+                    color: bubble['color'],
+                    size: 24,
+                  ),
+                  title: Text(
+                    bubble['label'],
+                    textDirection: TextDirection.rtl,
+                    style: GoogleFonts.alef(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      PageRouteBuilder(
+                        pageBuilder:
+                            (_, animation, __) => bubble['screenBuilder'](),
+                        transitionsBuilder:
+                            (_, animation, __, child) => FadeTransition(
+                              opacity: animation,
+                              child: child,
+                            ),
+                        transitionDuration: Duration(milliseconds: 300),
+                      ),
+                    );
+                  },
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
 }
+

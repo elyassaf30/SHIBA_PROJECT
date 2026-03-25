@@ -4,6 +4,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rabbi_shiba/screens/admin_tfilot_screen.dart';
 
 class AdminLoginScreen extends StatefulWidget {
+  const AdminLoginScreen({super.key});
+
   @override
   _AdminLoginScreenState createState() => _AdminLoginScreenState();
 }
@@ -54,12 +56,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         setState(() => _isLoading = false);
       }
     }
-  }
-
-  Future<void> _signOut() async {
-    await Supabase.instance.client.auth.signOut();
-    // ניווט חזרה למסך הבית הראשי
-    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   void _showErrorSnackBar(String message) {
@@ -125,13 +121,13 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                     ? CircularProgressIndicator()
                     : ElevatedButton(
                       onPressed: _signIn,
-                      child: Text(
-                        'התחבר',
-                        style: TextStyle(fontSize: 18, color: Colors.white),
-                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red.shade900,
                         minimumSize: Size(double.infinity, 50),
+                      ),
+                      child: Text(
+                        'התחבר',
+                        style: TextStyle(fontSize: 18, color: Colors.white),
                       ),
                     ),
               ],

@@ -1,13 +1,16 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert'; // חובה בשביל jsonDecode/jsonEncode
-import 'package:connectivity_plus/connectivity_plus.dart'; // עבור בדיקת חיבור אינטרנט
+import 'dart:convert'; // ׳—׳•׳‘׳” ׳‘׳©׳‘׳™׳ jsonDecode/jsonEncode
+import 'package:connectivity_plus/connectivity_plus.dart'; // ׳¢׳‘׳•׳¨ ׳‘׳“׳™׳§׳× ׳—׳™׳‘׳•׳¨ ׳׳™׳ ׳˜׳¨׳ ׳˜
+import 'package:rabbi_shiba/utils/theme_helpers.dart';
 
 class UserToSynagogueMap extends StatefulWidget {
+  const UserToSynagogueMap({super.key});
+
   @override
   _UserToSynagogueMapState createState() => _UserToSynagogueMapState();
 }
@@ -19,7 +22,7 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
   LatLng? _currentLocation;
   Map<String, LatLng> _synagogueLocations = {};
   Set<Marker> _markers = {};
-  Set<Polyline> _polylines = {};
+  final Set<Polyline> _polylines = {};
   bool _loading = true;
   String? _selectedSynagogue;
   BitmapDescriptor? _customMarkerIcon;
@@ -55,7 +58,7 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
       setState(() {
         _loading = false;
       });
-      _showErrorDialog("אין אינטרנט", "לא ניתן להתחבר לרשת.");
+      _showErrorDialog("׳׳™׳ ׳׳™׳ ׳˜׳¨׳ ׳˜", "׳׳ ׳ ׳™׳×׳ ׳׳”׳×׳—׳‘׳¨ ׳׳¨׳©׳×.");
       return;
     }
     await _fetchSynagogueLocations();
@@ -92,16 +95,16 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
       if (cachedData != null && cachedTime != null) {
         final difference = currentTime - cachedTime;
         if (difference < 3600000) {
-          // פחות משעה (3600 שניות * 1000 מילי שניות)
-          // יש קאש תקין - טוען מהקאש
+          // ׳₪׳—׳•׳× ׳׳©׳¢׳” (3600 ׳©׳ ׳™׳•׳× * 1000 ׳׳™׳׳™ ׳©׳ ׳™׳•׳×)
+          // ׳™׳© ׳§׳׳© ׳×׳§׳™׳ - ׳˜׳•׳¢׳ ׳׳”׳§׳׳©
           final List<dynamic> data = jsonDecode(cachedData);
 
           setState(() {
             _synagogueLocations = {
               for (var item in data)
-                item['שם הבית כנסת'] as String: LatLng(
-                  (item['אורך'] as double).toDouble(),
-                  (item['רוחב'] as double).toDouble(),
+                item['׳©׳ ׳”׳‘׳™׳× ׳›׳ ׳¡׳×'] as String: LatLng(
+                  (item['׳׳•׳¨׳'] as double).toDouble(),
+                  (item['׳¨׳•׳—׳‘'] as double).toDouble(),
                 ),
             };
             if (_synagogueLocations.isNotEmpty) {
@@ -112,15 +115,15 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
         }
       }
 
-      // אין קאש תקין או שעברה שעה - טוען מחדש מהשרת
+      // ׳׳™׳ ׳§׳׳© ׳×׳§׳™׳ ׳׳• ׳©׳¢׳‘׳¨׳” ׳©׳¢׳” - ׳˜׳•׳¢׳ ׳׳—׳“׳© ׳׳”׳©׳¨׳×
       final response = await supabase
-          .from('בתי כנסת')
-          .select('"שם הבית כנסת", "אורך", "רוחב"');
+          .from('׳‘׳×׳™ ׳›׳ ׳¡׳×')
+          .select('"׳©׳ ׳”׳‘׳™׳× ׳›׳ ׳¡׳×", "׳׳•׳¨׳", "׳¨׳•׳—׳‘"');
 
       if (response.isEmpty) {
         setState(() {
           _loading = false;
-          _synagogueLocations = {}; // אם אין נתונים, הצג רק את המיקום של המשתמש
+          _synagogueLocations = {}; // ׳׳ ׳׳™׳ ׳ ׳×׳•׳ ׳™׳, ׳”׳¦׳’ ׳¨׳§ ׳׳× ׳”׳׳™׳§׳•׳ ׳©׳ ׳”׳׳©׳×׳׳©
         });
         return;
       }
@@ -130,9 +133,9 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
       setState(() {
         _synagogueLocations = {
           for (var item in data)
-            item['שם הבית כנסת'] as String: LatLng(
-              (item['אורך'] as double).toDouble(),
-              (item['רוחב'] as double).toDouble(),
+            item['׳©׳ ׳”׳‘׳™׳× ׳›׳ ׳¡׳×'] as String: LatLng(
+              (item['׳׳•׳¨׳'] as double).toDouble(),
+              (item['׳¨׳•׳—׳‘'] as double).toDouble(),
             ),
         };
         if (_synagogueLocations.isNotEmpty) {
@@ -140,15 +143,15 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
         }
       });
 
-      // שמירה לקאש
+      // ׳©׳׳™׳¨׳” ׳׳§׳׳©
       await prefs.setString('synagogue_locations', jsonEncode(data));
       await prefs.setInt('synagogue_locations_time', currentTime);
     } catch (e) {
-      print('Exception fetching synagogues: $e');
+      debugPrint('Exception fetching synagogues: $e');
       setState(() {
         _loading = false;
         _synagogueLocations =
-            {}; // אם לא הצלחנו לטעון את הנתונים מהשרת, נציג רק את המיקום של המשתמש
+            {}; // ׳׳ ׳׳ ׳”׳¦׳׳—׳ ׳• ׳׳˜׳¢׳•׳ ׳׳× ׳”׳ ׳×׳•׳ ׳™׳ ׳׳”׳©׳¨׳×, ׳ ׳¦׳™׳’ ׳¨׳§ ׳׳× ׳”׳׳™׳§׳•׳ ׳©׳ ׳”׳׳©׳×׳׳©
       });
     }
   }
@@ -161,12 +164,14 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied)
+        if (permission == LocationPermission.denied) {
           return _showLocationPermissionError();
+        }
       }
 
-      if (permission == LocationPermission.deniedForever)
+      if (permission == LocationPermission.deniedForever) {
         return _showLocationPermissionError();
+      }
 
       Position position = await Geolocator.getCurrentPosition();
       setState(() {
@@ -254,7 +259,7 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
       Marker(
         markerId: MarkerId('current_location'),
         position: _currentLocation!,
-        infoWindow: InfoWindow(title: 'המיקום שלי'),
+        infoWindow: InfoWindow(title: '׳”׳׳™׳§׳•׳ ׳©׳׳™'),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
       ),
     );
@@ -368,20 +373,20 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
 
   void _showLocationServiceError() {
     _showErrorDialog(
-      'שירות המיקום מנוטרל',
-      'אנא הפעל את שירות המיקום בהגדרות המכשיר',
+      '׳©׳™׳¨׳•׳× ׳”׳׳™׳§׳•׳ ׳׳ ׳•׳˜׳¨׳',
+      '׳׳ ׳ ׳”׳₪׳¢׳ ׳׳× ׳©׳™׳¨׳•׳× ׳”׳׳™׳§׳•׳ ׳‘׳”׳’׳“׳¨׳•׳× ׳”׳׳›׳©׳™׳¨',
     );
   }
 
   void _showLocationPermissionError() {
     _showErrorDialog(
-      'הרשאות מיקום נדרשות',
-      'אנא אשר הרשאות מיקום כדי להשתמש בתכונה זו',
+      '׳”׳¨׳©׳׳•׳× ׳׳™׳§׳•׳ ׳ ׳“׳¨׳©׳•׳×',
+      '׳׳ ׳ ׳׳©׳¨ ׳”׳¨׳©׳׳•׳× ׳׳™׳§׳•׳ ׳›׳“׳™ ׳׳”׳©׳×׳׳© ׳‘׳×׳›׳•׳ ׳” ׳–׳•',
     );
   }
 
   void _showLocationError() {
-    _showErrorDialog('שגיאה במיקום', 'לא ניתן לקבוע את המיקום הנוכחי');
+    _showErrorDialog('׳©׳’׳™׳׳” ׳‘׳׳™׳§׳•׳', '׳׳ ׳ ׳™׳×׳ ׳׳§׳‘׳•׳¢ ׳׳× ׳”׳׳™׳§׳•׳ ׳”׳ ׳•׳›׳—׳™');
   }
 
   void _showErrorDialog(String title, String message) {
@@ -394,23 +399,10 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text('אישור'),
+                child: Text('׳׳™׳©׳•׳¨'),
               ),
             ],
           ),
-    );
-  }
-
-  Widget _buildBackground() {
-    // רקע חלופי אם יש בעיה עם התמונה
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFFE3F2FD), Color(0xFFBBDEFB), Color(0xFF90CAF9)],
-        ),
-      ),
     );
   }
 
@@ -423,7 +415,7 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
         elevation: 0,
         centerTitle: true,
         title: Text(
-          'בתי כנסת במרכז הרפואי',
+          '׳‘׳×׳™ ׳›׳ ׳¡׳× ׳‘׳׳¨׳›׳– ׳”׳¨׳₪׳•׳׳™',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 24,
@@ -438,15 +430,15 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Colors.deepPurple.withOpacity(0.8), Colors.transparent],
+              colors: [Colors.deepPurple.withValues(alpha: 0.8), Colors.transparent],
             ),
           ),
         ),
       ),
       body: Stack(
         children: [
-          Positioned.fill(child: _buildBackground()),
-          // עיגול טעינה שמופיע עד שהמפה נטענת
+          Positioned.fill(child: ThemeHelpers.buildDefaultBackground()),
+          // ׳¢׳™׳’׳•׳ ׳˜׳¢׳™׳ ׳” ׳©׳׳•׳₪׳™׳¢ ׳¢׳“ ׳©׳”׳׳₪׳” ׳ ׳˜׳¢׳ ׳×
           if (_loading)
             Center(
               child: CircularProgressIndicator(
@@ -546,3 +538,4 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
     );
   }
 }
+

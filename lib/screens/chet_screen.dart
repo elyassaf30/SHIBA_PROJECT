@@ -1,16 +1,19 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:rabbi_shiba/utils/theme_helpers.dart';
 
 class ChatScreen extends StatelessWidget {
+  const ChatScreen({super.key});
+
   Future<String> getPhoneNumberFromSupabase() async {
     try {
       final response =
-          await Supabase.instance.client.from('ווטסאפ').select('מספר').single();
-      return response['מספר']?.toString() ?? '';
+          await Supabase.instance.client.from('׳•׳•׳˜׳¡׳׳₪').select('׳׳¡׳₪׳¨').single();
+      return response['׳׳¡׳₪׳¨']?.toString() ?? '';
     } catch (e) {
-      print('Error fetching phone number: $e');
+      debugPrint('Error fetching phone number: $e');
       return '';
     }
   }
@@ -22,28 +25,28 @@ class ChatScreen extends StatelessWidget {
       if (phoneNumber.isEmpty) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('מספר הטלפון לא נמצא במערכת')));
+        ).showSnackBar(SnackBar(content: Text('׳׳¡׳₪׳¨ ׳”׳˜׳׳₪׳•׳ ׳׳ ׳ ׳׳¦׳ ׳‘׳׳¢׳¨׳›׳×')));
         return;
       }
 
       final cleanedNumber = phoneNumber.replaceAll(RegExp(r'[+\-\s]'), '');
       final url =
-          'whatsapp://send?phone=$cleanedNumber'; // URI scheme של WhatsApp
+          'whatsapp://send?phone=$cleanedNumber'; // URI scheme ׳©׳ WhatsApp
 
-      print('Attempting to open: $url'); // Debugging
+      debugPrint('Attempting to open: $url'); // Debugging
 
       if (await canLaunch(url)) {
-        await launch(url); // יפתח את WhatsApp אם הוא מותקן
+        await launch(url); // ׳™׳₪׳×׳— ׳׳× WhatsApp ׳׳ ׳”׳•׳ ׳׳•׳×׳§׳
       } else {
         final webUrl =
-            'https://wa.me/$cleanedNumber'; // אם WhatsApp לא מותקן, הפנייה לאתר
+            'https://wa.me/$cleanedNumber'; // ׳׳ WhatsApp ׳׳ ׳׳•׳×׳§׳, ׳”׳₪׳ ׳™׳™׳” ׳׳׳×׳¨
         if (await canLaunch(webUrl)) {
-          await launch(webUrl); // יפתח את דף הווב של WhatsApp
+          await launch(webUrl); // ׳™׳₪׳×׳— ׳׳× ׳“׳£ ׳”׳•׳•׳‘ ׳©׳ WhatsApp
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'לא ניתן לפתוח את WhatsApp. וודא שהאפליקציה מותקנת',
+                '׳׳ ׳ ׳™׳×׳ ׳׳₪׳×׳•׳— ׳׳× WhatsApp. ׳•׳•׳“׳ ׳©׳”׳׳₪׳׳™׳§׳¦׳™׳” ׳׳•׳×׳§׳ ׳×',
               ),
             ),
           );
@@ -52,21 +55,8 @@ class ChatScreen extends StatelessWidget {
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('שגיאה: ${e.toString()}')));
+      ).showSnackBar(SnackBar(content: Text('׳©׳’׳™׳׳”: ${e.toString()}')));
     }
-  }
-
-  Widget _buildBackground() {
-    // רקע חלופי אם יש בעיה עם התמונה
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFFE3F2FD), Color(0xFFBBDEFB), Color(0xFF90CAF9)],
-        ),
-      ),
-    );
   }
 
   @override
@@ -75,7 +65,7 @@ class ChatScreen extends StatelessWidget {
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(
-          'צ\' אט עם רב בית החולים',
+          '׳¦\' ׳׳˜ ׳¢׳ ׳¨׳‘ ׳‘׳™׳× ׳”׳—׳•׳׳™׳',
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
@@ -85,7 +75,7 @@ class ChatScreen extends StatelessWidget {
                 blurRadius: 10,
                 color: Colors.black,
                 offset: Offset(2, 2),
-              ), // פסיק נוסף כאן
+              ), // ׳₪׳¡׳™׳§ ׳ ׳•׳¡׳£ ׳›׳׳
             ],
           ),
         ),
@@ -97,14 +87,14 @@ class ChatScreen extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Colors.green[800]!.withOpacity(0.7), Colors.transparent],
+              colors: [Colors.green[800]!.withValues(alpha: 0.7), Colors.transparent],
             ),
           ),
         ),
       ),
       body: Stack(
         children: [
-          Positioned.fill(child: _buildBackground()),
+          Positioned.fill(child: ThemeHelpers.buildDefaultBackground()),
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -119,7 +109,7 @@ class ChatScreen extends StatelessWidget {
                       child: Container(
                         padding: EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           shape: BoxShape.circle,
                           border: Border.all(
                             color: Color(0xFF25D366),
@@ -139,7 +129,7 @@ class ChatScreen extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Text(
-                    'שיחת ייעוץ עם הרב',
+                    '׳©׳™׳—׳× ׳™׳™׳¢׳•׳¥ ׳¢׳ ׳”׳¨׳‘',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -159,7 +149,7 @@ class ChatScreen extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 40),
                   child: Text(
-                    'לחצו על הכפתור כדי להתחיל שיחה בווטסאפ עם הרב לייעוץ אישי',
+                    '׳׳—׳¦׳• ׳¢׳ ׳”׳›׳₪׳×׳•׳¨ ׳›׳“׳™ ׳׳”׳×׳—׳™׳ ׳©׳™׳—׳” ׳‘׳•׳•׳˜׳¡׳׳₪ ׳¢׳ ׳”׳¨׳‘ ׳׳™׳™׳¢׳•׳¥ ׳׳™׳©׳™',
                     style: TextStyle(
                       fontSize: 16,
                       color: Color.fromARGB(255, 4, 78, 31),
@@ -200,7 +190,7 @@ class ChatScreen extends StatelessWidget {
                         ),
                         SizedBox(width: 10),
                         Text(
-                          'פתח שיחה בווטסאפ',
+                          '׳₪׳×׳— ׳©׳™׳—׳” ׳‘׳•׳•׳˜׳¡׳׳₪',
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -219,3 +209,4 @@ class ChatScreen extends StatelessWidget {
     );
   }
 }
+

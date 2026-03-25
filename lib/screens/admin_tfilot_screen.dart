@@ -1,4 +1,4 @@
-﻿// lib/screens/admin_tefilot_screen.dart
+// lib/screens/admin_tefilot_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -25,7 +25,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
   late Animation<double> _fadeAnimation;
   final ScrollController _scrollController = ScrollController();
 
-  final List<String> _tefilotOptions = ['׳©׳—׳¨׳™׳×', '׳׳ ׳—׳”', '׳¢׳¨׳‘׳™׳×'];
+  final List<String> _tefilotOptions = ['שחרית', 'מנחה', 'ערבית'];
 
   String? _selectedNewTefilaType;
   final _newTefilaTimeDisplayController = TextEditingController();
@@ -103,9 +103,9 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
     setState(() => _isLoading = true);
     try {
       final response = await supabase
-          .from('׳–׳׳ ׳™ ׳×׳₪׳™׳׳•׳× ׳™׳׳™ ׳—׳•׳')
+          .from('זמני תפילות ימי חול')
           .select()
-          .order('׳©׳¢׳”', ascending: true);
+          .order('שעה', ascending: true);
 
       _tefilotData = List<Map<String, dynamic>>.from(response);
 
@@ -122,17 +122,17 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
         }
 
         _timeControllers[idStr] = TextEditingController(
-          text: item['׳©׳¢׳”'] ?? '',
+          text: item['שעה'] ?? '',
         );
         _notesControllers[idStr] = TextEditingController(
-          text: item['׳”׳¢׳¨׳•׳×'] ?? '',
+          text: item['הערות'] ?? '',
         );
       }
     } on PostgrestException catch (e) {
-      _showSnackBar('׳©׳’׳™׳׳” ׳‘׳˜׳¢׳™׳ ׳× ׳”׳ ׳×׳•׳ ׳™׳: ${e.message}', isError: true);
+      _showSnackBar('שגיאה בטעינת הנתונים: ${e.message}', isError: true);
     } catch (e) {
       _showSnackBar(
-        '׳©׳’׳™׳׳” ׳›׳׳׳™׳× ׳‘׳˜׳¢׳™׳ ׳× ׳”׳ ׳×׳•׳ ׳™׳: ${e.toString()}',
+        'שגיאה כללית בטעינת הנתונים: ${e.toString()}',
         isError: true,
       );
     } finally {
@@ -144,20 +144,20 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
     setState(() => _isLoading = true);
 
     try {
-      await supabase.from('׳–׳׳ ׳™ ׳×׳₪׳™׳׳•׳× ׳™׳׳™ ׳—׳•׳').delete().eq('id', id);
+      await supabase.from('זמני תפילות ימי חול').delete().eq('id', id);
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('tefilot_data_cache');
 
-      _showSnackBar('׳”׳×׳₪׳™׳׳”$type׳ ׳׳—׳§׳” ׳‘׳”׳¦׳׳—׳”!', isError: false);
+      _showSnackBar('התפילה$typeנמחקה בהצלחה!', isError: false);
       _fetchTefilotData();
     } on PostgrestException catch (e) {
       _showSnackBar(
-        '׳©׳’׳™׳׳” ׳‘׳׳—׳™׳§׳” ׳׳©׳¨׳×: ׳•׳“׳ ׳”׳¨׳©׳׳× DELETE ׳‘-RLS. ׳©׳’׳™׳׳”: ${e.message}',
+        'שגיאה במחיקה לשרת: ודא הרשאת DELETE ב-RLS. שגיאה: ${e.message}',
         isError: true,
       );
     } catch (e) {
-      _showSnackBar('׳©׳’׳™׳׳” ׳‘׳׳×׳™ ׳¦׳₪׳•׳™׳” ׳‘׳׳—׳™׳§׳”: ${e.toString()}', isError: true);
+      _showSnackBar('שגיאה בלתי צפויה במחיקה: ${e.toString()}', isError: true);
     } finally {
       setState(() => _isLoading = false);
     }
@@ -175,7 +175,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Text(
-                  '׳׳™׳©׳•׳¨ ׳׳—׳™׳§׳”',
+                  'אישור מחיקה',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 SizedBox(width: 10),
@@ -183,14 +183,14 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
               ],
             ),
             content: Text(
-              '׳”׳׳ ׳׳×׳” ׳‘׳˜׳•׳— ׳©׳‘׳¨׳¦׳•׳ ׳ ׳׳׳—׳•׳§ ׳׳× ׳”׳×׳₪׳™׳׳”: $type?',
+              'האם אתה בטוח שברצונך למחוק את התפילה: $type?',
               textDirection: TextDirection.rtl,
               textAlign: TextAlign.right,
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text('׳‘׳™׳˜׳•׳', style: TextStyle(color: Colors.grey[600])),
+                child: Text('ביטול', style: TextStyle(color: Colors.grey[600])),
               ),
               ElevatedButton(
                 onPressed: () {
@@ -203,7 +203,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                child: Text('׳׳—׳§', style: TextStyle(color: Colors.white)),
+                child: Text('מחק', style: TextStyle(color: Colors.white)),
               ),
             ],
           ),
@@ -212,7 +212,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
 
   Future<void> _saveTefilotData() async {
     if (!_formKey.currentState!.validate()) {
-      _showSnackBar('׳™׳© ׳׳׳׳ ׳׳× ׳›׳ ׳©׳“׳•׳× ׳”׳—׳•׳‘׳” ׳‘׳₪׳•׳¨׳׳˜ ׳”׳ ׳›׳•׳.', isError: true);
+      _showSnackBar('יש למלא את כל שדות החובה בפורמט הנכון.', isError: true);
       return;
     }
 
@@ -228,26 +228,26 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
         if (idStr.isEmpty) continue;
 
         final updatedData = {
-          '׳©׳¢׳”': _timeControllers[idStr]?.text.trim() ?? (item['׳©׳¢׳”'] ?? ''),
-          '׳”׳¢׳¨׳•׳×':
-              _notesControllers[idStr]?.text.trim() ?? (item['׳”׳¢׳¨׳•׳×'] ?? ''),
-          '׳¡׳•׳’ ׳×׳₪׳™׳׳”': item['׳¡׳•׳’ ׳×׳₪׳™׳׳”'],
+          'שעה': _timeControllers[idStr]?.text.trim() ?? (item['שעה'] ?? ''),
+          'הערות':
+              _notesControllers[idStr]?.text.trim() ?? (item['הערות'] ?? ''),
+          'סוג תפילה': item['סוג תפילה'],
         };
 
         await supabase
-            .from('׳–׳׳ ׳™ ׳×׳₪׳™׳׳•׳× ׳™׳׳™ ׳—׳•׳')
+            .from('זמני תפילות ימי חול')
             .update(updatedData)
             .eq('id', idStr);
       }
 
       if (isNewItemValid) {
         final insertData = {
-          '׳©׳¢׳”': _newTefilaTimeDisplayController.text.trim(),
-          '׳”׳¢׳¨׳•׳×': _newTefilaNotesController.text.trim(),
-          '׳¡׳•׳’ ׳×׳₪׳™׳׳”': _selectedNewTefilaType!,
+          'שעה': _newTefilaTimeDisplayController.text.trim(),
+          'הערות': _newTefilaNotesController.text.trim(),
+          'סוג תפילה': _selectedNewTefilaType!,
         };
 
-        await supabase.from('׳–׳׳ ׳™ ׳×׳₪׳™׳׳•׳× ׳™׳׳™ ׳—׳•׳').insert(insertData).select();
+        await supabase.from('זמני תפילות ימי חול').insert(insertData).select();
       }
 
       final prefs = await SharedPreferences.getInstance();
@@ -261,12 +261,12 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
         _newTefilaNotesController.clear();
       }
 
-      _showSnackBar('׳–׳׳ ׳™ ׳”׳×׳₪׳™׳׳•׳× ׳ ׳©׳׳¨׳• ׳‘׳”׳¦׳׳—׳”!', isError: false);
+      _showSnackBar('זמני התפילות נשמרו בהצלחה!', isError: false);
       _fetchTefilotData();
     } on PostgrestException catch (e) {
-      _showSnackBar('׳©׳’׳™׳׳” ׳‘׳©׳׳™׳¨׳” ׳׳©׳¨׳×: ${e.message}', isError: true);
+      _showSnackBar('שגיאה בשמירה לשרת: ${e.message}', isError: true);
     } catch (e) {
-      _showSnackBar('׳©׳’׳™׳׳” ׳‘׳׳×׳™ ׳¦׳₪׳•׳™׳”: ${e.toString()}', isError: true);
+      _showSnackBar('שגיאה בלתי צפויה: ${e.toString()}', isError: true);
     } finally {
       setState(() => _isLoading = false);
     }
@@ -330,12 +330,12 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
     try {
       final res =
           await supabase
-              .from('׳›׳׳׳™')
-              .select('׳׳™׳“׳¢')
-              .eq('׳¡׳•׳’', '׳“׳‘׳¨ ׳”׳¨׳‘')
+              .from('כללי')
+              .select('מידע')
+              .eq('סוג', 'דבר הרב')
               .limit(1)
               .maybeSingle();
-      if (res != null && res['׳׳™׳“׳¢'] != null) current = res['׳׳™׳“׳¢'] as String;
+      if (res != null && res['מידע'] != null) current = res['מידע'] as String;
     } catch (e) {
       // ignore fetch error, show empty
     }
@@ -345,22 +345,22 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
       context: context,
       builder:
           (context) => AlertDialog(
-            title: Text('׳¢׳¨׳•׳ ׳“׳‘׳¨ ׳”׳¨׳‘'),
+            title: Text('ערוך דבר הרב'),
             content: TextFormField(
               controller: controller,
               maxLines: 6,
               decoration: InputDecoration(
-                hintText: '׳”׳§׳׳“ ׳׳× ׳”׳˜׳§׳¡׳˜ ׳©׳‘׳¨׳¦׳•׳ ׳ ׳׳”׳¦׳™׳’',
+                hintText: 'הקלד את הטקסט שברצונך להציג',
               ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text('׳‘׳˜׳'),
+                child: Text('בטל'),
               ),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context, controller.text.trim()),
-                child: Text('׳©׳׳•׳¨'),
+                child: Text('שמור'),
               ),
             ],
           ),
@@ -372,27 +372,27 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
         // check if exists
         final existing =
             await supabase
-                .from('׳›׳׳׳™')
+                .from('כללי')
                 .select('id')
-                .eq('׳¡׳•׳’', '׳“׳‘׳¨ ׳”׳¨׳‘')
+                .eq('סוג', 'דבר הרב')
                 .limit(1)
                 .maybeSingle();
 
         if (existing != null && existing['id'] != null) {
           await supabase
-              .from('׳›׳׳׳™')
-              .update({'׳׳™׳“׳¢': result})
+              .from('כללי')
+              .update({'מידע': result})
               .eq('id', existing['id'].toString());
         } else {
-          await supabase.from('׳›׳׳׳™').insert({
-            '׳¡׳•׳’': '׳“׳‘׳¨ ׳”׳¨׳‘',
-            '׳׳™׳“׳¢': result,
+          await supabase.from('כללי').insert({
+            'סוג': 'דבר הרב',
+            'מידע': result,
           });
         }
 
-        _showSnackBar('׳“׳‘׳¨ ׳”׳¨׳‘ ׳ ׳©׳׳¨ ׳‘׳”׳¦׳׳—׳”', isError: false);
+        _showSnackBar('דבר הרב נשמר בהצלחה', isError: false);
       } catch (e) {
-        _showSnackBar('׳©׳’׳™׳׳” ׳‘׳©׳׳™׳¨׳”: ${e.toString()}', isError: true);
+        _showSnackBar('שגיאה בשמירה: ${e.toString()}', isError: true);
       } finally {
         setState(() => _isLoading = false);
       }
@@ -407,18 +407,18 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
     final timeRegex = RegExp(r'^([01]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$');
 
     if (!timeRegex.hasMatch(trimmedValue)) {
-      return '׳₪׳•׳¨׳׳˜ ׳©׳¢׳” ׳׳ ׳×׳§׳™׳ (HH:MM)';
+      return 'פורמט שעה לא תקין (HH:MM)';
     }
     return null;
   }
 
   Color _getTefilaColor(String type) {
     switch (type) {
-      case '׳©׳—׳¨׳™׳×':
+      case 'שחרית':
         return Color(0xFFFFB74D);
-      case '׳׳ ׳—׳”':
+      case 'מנחה':
         return Color(0xFF64B5F6);
-      case '׳¢׳¨׳‘׳™׳×':
+      case 'ערבית':
         return Color(0xFF9575CD);
       default:
         return Color(0xFF6C63FF);
@@ -427,11 +427,11 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
 
   IconData _getTefilaIcon(String type) {
     switch (type) {
-      case '׳©׳—׳¨׳™׳×':
+      case 'שחרית':
         return Icons.wb_sunny;
-      case '׳׳ ׳—׳”':
+      case 'מנחה':
         return Icons.wb_twilight;
-      case '׳¢׳¨׳‘׳™׳×':
+      case 'ערבית':
         return Icons.nightlight_round;
       default:
         return Icons.access_time;
@@ -455,14 +455,14 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
                 child: Align(
                   alignment: Alignment.centerRight,
                   child: Text(
-                    '׳×׳₪׳¨׳™׳˜ ׳ ׳™׳”׳•׳',
+                    'תפריט ניהול',
                     style: TextStyle(color: Colors.white, fontSize: 20),
                   ),
                 ),
               ),
               ListTile(
                 leading: Icon(Icons.edit_calendar),
-                title: Text('׳¢׳¨׳™׳›׳” / ׳׳—׳™׳§׳” ׳©׳ ׳×׳₪׳™׳׳•׳×'),
+                title: Text('עריכה / מחיקה של תפילות'),
                 onTap: () {
                   Navigator.pop(context);
                   _scrollToTop();
@@ -470,7 +470,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
               ),
               ListTile(
                 leading: Icon(Icons.add_circle_outline),
-                title: Text('׳”׳•׳¡׳₪׳× ׳×׳₪׳™׳׳” ׳—׳“׳©׳”'),
+                title: Text('הוספת תפילה חדשה'),
                 onTap: () {
                   Navigator.pop(context);
                   _scrollToBottom();
@@ -478,7 +478,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
               ),
               ListTile(
                 leading: Icon(Icons.format_quote),
-                title: Text('׳©׳™׳ ׳•׳™ ׳“׳‘׳¨ ׳”׳¨׳‘'),
+                title: Text('שינוי דבר הרב'),
                 onTap: () {
                   Navigator.pop(context);
                   _changeRabbiQuote();
@@ -487,7 +487,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
               Divider(),
               ListTile(
                 leading: Icon(Icons.logout, color: Colors.red),
-                title: Text('׳”׳×׳ ׳×׳§', style: TextStyle(color: Colors.red)),
+                title: Text('התנתק', style: TextStyle(color: Colors.red)),
                 onTap: () {
                   Navigator.pop(context);
                   _signOut();
@@ -512,7 +512,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             Text(
-              '׳ ׳™׳”׳•׳ ׳–׳׳ ׳™ ׳×׳₪׳™׳׳•׳×',
+              'ניהול זמני תפילות',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 22,
@@ -539,7 +539,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
                     ),
                     SizedBox(height: 20),
                     Text(
-                      '׳˜׳•׳¢׳ ׳ ׳×׳•׳ ׳™׳...',
+                      'טוען נתונים...',
                       style: TextStyle(
                         fontSize: 18,
                         color: Colors.grey[600],
@@ -557,7 +557,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
                     controller: _scrollController,
                     padding: EdgeInsets.all(20),
                     children: [
-                      // ׳›׳•׳×׳¨׳× ׳׳¢׳•׳¦׳‘׳×
+                      // כותרת מעוצבת
                       Container(
                         padding: EdgeInsets.all(20),
                         decoration: BoxDecoration(
@@ -585,7 +585,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Text(
-                                  '׳–׳׳ ׳™ ׳×׳₪׳™׳׳•׳× ׳™׳׳™ ׳—׳•׳',
+                                  'זמני תפילות ימי חול',
                                   style: TextStyle(
                                     fontSize: 26,
                                     fontWeight: FontWeight.bold,
@@ -595,7 +595,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
                                 ),
                                 SizedBox(height: 5),
                                 Text(
-                                  '׳¢׳¨׳•׳ ׳•׳¢׳“׳›׳ ׳׳× ׳–׳׳ ׳™ ׳”׳×׳₪׳™׳׳•׳×',
+                                  'ערוך ועדכן את זמני התפילות',
                                   style: TextStyle(
                                     fontSize: 15,
                                     color: Colors.grey[600],
@@ -629,7 +629,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
                       ),
                       SizedBox(height: 30),
 
-                      // ׳×׳₪׳™׳׳•׳× ׳§׳™׳™׳׳•׳×
+                      // תפילות קיימות
                       ..._tefilotData.asMap().entries.map((entry) {
                         int index = entry.key;
                         var item = entry.value;
@@ -653,7 +653,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
                               boxShadow: [
                                 BoxShadow(
                                   color: _getTefilaColor(
-                                    item['׳¡׳•׳’ ׳×׳₪׳™׳׳”'],
+                                    item['סוג תפילה'],
                                   ).withValues(alpha: 0.15),
                                   blurRadius: 20,
                                   offset: Offset(0, 10),
@@ -664,7 +664,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
                               borderRadius: BorderRadius.circular(20),
                               child: Stack(
                                 children: [
-                                  // ׳₪׳¡ ׳¦׳‘׳¢׳•׳ ׳™ ׳‘׳¦׳“
+                                  // פס צבעוני בצד
                                   Positioned(
                                     right: 0,
                                     top: 0,
@@ -674,9 +674,9 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
                                       decoration: BoxDecoration(
                                         gradient: LinearGradient(
                                           colors: [
-                                            _getTefilaColor(item['׳¡׳•׳’ ׳×׳₪׳™׳׳”']),
+                                            _getTefilaColor(item['סוג תפילה']),
                                             _getTefilaColor(
-                                              item['׳¡׳•׳’ ׳×׳₪׳™׳׳”'],
+                                              item['סוג תפילה'],
                                             ).withValues(alpha: 0.5),
                                           ],
                                           begin: Alignment.topCenter,
@@ -691,7 +691,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
                                       crossAxisAlignment:
                                           CrossAxisAlignment.end,
                                       children: [
-                                        // ׳›׳•׳×׳¨׳× ׳¢׳ ׳׳™׳™׳§׳•׳ ׳•׳׳—׳™׳§׳”
+                                        // כותרת עם אייקון ומחיקה
                                         Row(
                                           mainAxisAlignment:
                                               MainAxisAlignment.spaceBetween,
@@ -709,23 +709,23 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
                                                   Icons.delete_rounded,
                                                   color: Colors.red,
                                                 ),
-                                                tooltip: '׳׳—׳§ ׳×׳₪׳™׳׳”',
+                                                tooltip: 'מחק תפילה',
                                                 onPressed:
                                                     () => _confirmDelete(
                                                       idStr,
-                                                      item['׳¡׳•׳’ ׳×׳₪׳™׳׳”'],
+                                                      item['סוג תפילה'],
                                                     ),
                                               ),
                                             ),
                                             Row(
                                               children: [
                                                 Text(
-                                                  '${item['׳¡׳•׳’ ׳×׳₪׳™׳׳”']}',
+                                                  '${item['סוג תפילה']}',
                                                   style: TextStyle(
                                                     fontSize: 22,
                                                     fontWeight: FontWeight.bold,
                                                     color: _getTefilaColor(
-                                                      item['׳¡׳•׳’ ׳×׳₪׳™׳׳”'],
+                                                      item['סוג תפילה'],
                                                     ),
                                                   ),
                                                   textDirection:
@@ -736,7 +736,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
                                                   padding: EdgeInsets.all(10),
                                                   decoration: BoxDecoration(
                                                     color: _getTefilaColor(
-                                                      item['׳¡׳•׳’ ׳×׳₪׳™׳׳”'],
+                                                      item['סוג תפילה'],
                                                     ).withValues(alpha: 0.15),
                                                     borderRadius:
                                                         BorderRadius.circular(
@@ -745,10 +745,10 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
                                                   ),
                                                   child: Icon(
                                                     _getTefilaIcon(
-                                                      item['׳¡׳•׳’ ׳×׳₪׳™׳׳”'],
+                                                      item['סוג תפילה'],
                                                     ),
                                                     color: _getTefilaColor(
-                                                      item['׳¡׳•׳’ ׳×׳₪׳™׳׳”'],
+                                                      item['סוג תפילה'],
                                                     ),
                                                     size: 24,
                                                   ),
@@ -759,18 +759,18 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
                                         ),
                                         SizedBox(height: 20),
 
-                                        // ׳©׳“׳” ׳©׳¢׳”
+                                        // שדה שעה
                                         TextFormField(
                                           controller: _timeControllers[idStr],
                                           decoration: InputDecoration(
-                                            labelText: '׳©׳¢׳”',
+                                            labelText: 'שעה',
                                             labelStyle: TextStyle(
                                               color: Colors.grey[600],
                                             ),
                                             prefixIcon: Icon(
                                               Icons.access_time_rounded,
                                               color: _getTefilaColor(
-                                                item['׳¡׳•׳’ ׳×׳₪׳™׳׳”'],
+                                                item['סוג תפילה'],
                                               ),
                                             ),
                                             filled: true,
@@ -785,7 +785,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
                                                   BorderRadius.circular(15),
                                               borderSide: BorderSide(
                                                 color: _getTefilaColor(
-                                                  item['׳¡׳•׳’ ׳×׳₪׳™׳׳”'],
+                                                  item['סוג תפילה'],
                                                 ),
                                                 width: 2,
                                               ),
@@ -804,18 +804,18 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
                                         ),
                                         SizedBox(height: 15),
 
-                                        // ׳©׳“׳” ׳”׳¢׳¨׳•׳×
+                                        // שדה הערות
                                         TextFormField(
                                           controller: _notesControllers[idStr],
                                           decoration: InputDecoration(
-                                            labelText: '׳”׳¢׳¨׳•׳×',
+                                            labelText: 'הערות',
                                             labelStyle: TextStyle(
                                               color: Colors.grey[600],
                                             ),
                                             prefixIcon: Icon(
                                               Icons.notes_rounded,
                                               color: _getTefilaColor(
-                                                item['׳¡׳•׳’ ׳×׳₪׳™׳׳”'],
+                                                item['סוג תפילה'],
                                               ),
                                             ),
                                             filled: true,
@@ -830,7 +830,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
                                                   BorderRadius.circular(15),
                                               borderSide: BorderSide(
                                                 color: _getTefilaColor(
-                                                  item['׳¡׳•׳’ ׳×׳₪׳™׳׳”'],
+                                                  item['סוג תפילה'],
                                                 ),
                                                 width: 2,
                                               ),
@@ -852,7 +852,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
 
                       SizedBox(height: 20),
 
-                      // ׳׳₪׳¨׳™׳“ ׳׳¢׳•׳¦׳‘
+                      // מפריד מעוצב
                       Row(
                         children: [
                           Expanded(
@@ -895,12 +895,12 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
 
                       SizedBox(height: 20),
 
-                      // ׳›׳¨׳˜׳™׳¡ ׳×׳₪׳™׳׳” ׳—׳“׳©׳”
+                      // כרטיס תפילה חדשה
                       _buildNewItemCard(),
 
                       SizedBox(height: 30),
 
-                      // ׳›׳₪׳×׳•׳¨ ׳©׳׳™׳¨׳” ׳׳¢׳•׳¦׳‘
+                      // כפתור שמירה מעוצב
                       Container(
                         height: 60,
                         decoration: BoxDecoration(
@@ -931,7 +931,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                '׳©׳׳•׳¨ ׳©׳™׳ ׳•׳™׳™׳',
+                                'שמור שינויים',
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
@@ -983,12 +983,12 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            // ׳›׳•׳×׳¨׳×
+            // כותרת
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Text(
-                  '׳”׳•׳¡׳₪׳× ׳×׳₪׳™׳׳” ׳—׳“׳©׳”',
+                  'הוספת תפילה חדשה',
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -1020,7 +1020,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
             ),
             SizedBox(height: 25),
 
-            // ׳¡׳•׳’ ׳×׳₪׳™׳׳”
+            // סוג תפילה
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -1035,7 +1035,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
               ),
               child: DropdownButtonFormField<String>(
                 decoration: InputDecoration(
-                  labelText: '׳¡׳•׳’ ׳×׳₪׳™׳׳”',
+                  labelText: 'סוג תפילה',
                   labelStyle: TextStyle(color: Colors.grey[600]),
                   prefixIcon: Icon(
                     Icons.category_rounded,
@@ -1053,7 +1053,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
                   ),
                 ),
                 value: _selectedNewTefilaType,
-                hint: Text('׳‘׳—׳¨ ׳×׳₪׳™׳׳”', textAlign: TextAlign.right),
+                hint: Text('בחר תפילה', textAlign: TextAlign.right),
                 isExpanded: true,
                 items:
                     _tefilotOptions.map((String value) {
@@ -1090,7 +1090,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
             ),
             SizedBox(height: 20),
 
-            // ׳©׳¢׳”
+            // שעה
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -1106,7 +1106,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
               child: TextFormField(
                 controller: _newTefilaTimeDisplayController,
                 decoration: InputDecoration(
-                  labelText: '׳©׳¢׳” (HH:MM)',
+                  labelText: 'שעה (HH:MM)',
                   labelStyle: TextStyle(color: Colors.grey[600]),
                   prefixIcon: Icon(
                     Icons.schedule_rounded,
@@ -1135,7 +1135,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
             ),
             SizedBox(height: 20),
 
-            // ׳”׳¢׳¨׳•׳×
+            // הערות
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -1151,7 +1151,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
               child: TextFormField(
                 controller: _newTefilaNotesController,
                 decoration: InputDecoration(
-                  labelText: '׳”׳¢׳¨׳•׳× (׳׳•׳₪׳¦׳™׳•׳ ׳׳™)',
+                  labelText: 'הערות (אופציונלי)',
                   labelStyle: TextStyle(color: Colors.grey[600]),
                   prefixIcon: Icon(
                     Icons.note_add_rounded,

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Centralized theme and UI styling for consistent design across app
@@ -66,7 +66,7 @@ class ThemeHelpers {
                     color: Colors.white,
                   ),
                   iconSize: 30,
-                  tooltip: '׳—׳–׳¨׳”',
+                  tooltip: 'חזרה',
                   onPressed:
                       onBackPressed ??
                       () {

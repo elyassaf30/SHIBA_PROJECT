@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Widget to display when data is loading
@@ -8,7 +8,7 @@ class LoadingStateWidget extends StatelessWidget {
 
   const LoadingStateWidget({
     super.key,
-    this.message = '׳˜׳•׳¢׳...',
+    this.message = 'טוען...',
     this.backgroundColor,
   });
 
@@ -41,9 +41,9 @@ class ErrorStateWidget extends StatelessWidget {
 
   const ErrorStateWidget({
     super.key,
-    this.errorMessage = '׳׳™׳¨׳¢׳” ׳©׳’׳™׳׳” ׳‘׳˜׳¢׳™׳ ׳× ׳”׳ ׳×׳•׳ ׳™׳',
+    this.errorMessage = 'אירעה שגיאה בטעינת הנתונים',
     this.onRetry,
-    this.retryButtonText = '׳ ׳¡׳” ׳©׳•׳‘',
+    this.retryButtonText = 'נסה שוב',
   });
 
   @override
@@ -57,7 +57,7 @@ class ErrorStateWidget extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Text(
-              errorMessage ?? '׳׳™׳¨׳¢׳” ׳©׳’׳™׳׳” ׳‘׳˜׳¢׳™׳ ׳× ׳”׳ ׳×׳•׳ ׳™׳',
+              errorMessage ?? 'אירעה שגיאה בטעינת הנתונים',
               textAlign: TextAlign.center,
               style: GoogleFonts.alef(fontSize: 16, color: Colors.grey[700]),
             ),
@@ -67,7 +67,7 @@ class ErrorStateWidget extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: onRetry,
               icon: Icon(Icons.refresh),
-              label: Text(retryButtonText ?? '׳ ׳¡׳” ׳©׳•׳‘'),
+              label: Text(retryButtonText ?? 'נסה שוב'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Color(0xFF6C63FF),
                 foregroundColor: Colors.white,
@@ -87,7 +87,7 @@ class OfflineBanner extends StatelessWidget {
 
   const OfflineBanner({
     super.key,
-    this.message = '׳׳×׳” ׳‘׳׳¦׳‘ ׳׳•׳₪׳׳™׳™׳',
+    this.message = 'אתה במצב אופליין',
     this.backgroundColor,
   });
 
@@ -108,7 +108,7 @@ class OfflineBanner extends StatelessWidget {
           Icon(Icons.cloud_off, color: Colors.white, size: 20),
           SizedBox(width: 8),
           Text(
-            message ?? '׳׳×׳” ׳‘׳׳¦׳‘ ׳׳•׳₪׳׳™׳™׳',
+            message ?? 'אתה במצב אופליין',
             style: GoogleFonts.alef(
               fontSize: 14,
               color: Colors.white,

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
@@ -50,10 +50,10 @@ class _GeneralDetailScreenState extends State<GeneralDetailScreen> {
     final cachedTime = prefs.getInt(cacheTimeKey);
     final now = DateTime.now().millisecondsSinceEpoch;
 
-    // ׳‘׳“׳™׳§׳× ׳—׳™׳‘׳•׳¨ ׳׳׳™׳ ׳˜׳¨׳ ׳˜
+    // בדיקת חיבור לאינטרנט
     final hasInternet = await _checkInternetConnection();
 
-    // ׳׳ ׳™׳© ׳׳™׳“׳¢ ׳׳•׳§׳“׳ ׳‘׳§׳׳©, ׳”׳¦׳’ ׳׳•׳×׳• ׳×׳—׳™׳׳”
+    // אם יש מידע מוקדם בקאש, הצג אותו תחילה
     if (cachedData != null) {
       setState(() {
         info = cachedData;
@@ -63,36 +63,36 @@ class _GeneralDetailScreenState extends State<GeneralDetailScreen> {
         }
       });
 
-      // ׳׳ ׳”׳׳™׳“׳¢ ׳¢׳“׳™׳™׳ ׳¨׳׳•׳•׳ ׳˜׳™ (׳₪׳—׳•׳× ׳׳©׳¢׳”) ׳•׳™׳© ׳׳™׳ ׳˜׳¨׳ ׳˜, ׳׳ ׳¦׳¨׳™׳ ׳׳˜׳¢׳•׳ ׳׳—׳“׳©
+      // אם המידע עדיין רלוונטי (פחות משעה) ויש אינטרנט, לא צריך לטעון מחדש
       if (cachedTime != null && now - cachedTime < 3600000 && hasInternet) {
         return;
       }
     }
 
-    // ׳׳ ׳׳™׳ ׳׳™׳ ׳˜׳¨׳ ׳˜ ׳•׳׳™׳ ׳§׳׳©
+    // אם אין אינטרנט ואין קאש
     if (!hasInternet) {
       setState(() {
         _isOffline = true;
         _isLoading = false;
         if (cachedData == null) {
           _hasError = true;
-          _errorMessage = '׳׳™׳ ׳—׳™׳‘׳•׳¨ ׳׳׳™׳ ׳˜׳¨׳ ׳˜ ׳•׳׳ ׳ ׳׳¦׳ ׳׳™׳“׳¢ ׳©׳׳•׳¨';
+          _errorMessage = 'אין חיבור לאינטרנט ולא נמצא מידע שמור';
         }
       });
       return;
     }
 
-    // ׳ ׳™׳¡׳™׳•׳ ׳׳˜׳¢׳•׳ ׳׳”׳©׳¨׳×
+    // ניסיון לטעון מהשרת
     try {
       final response = await Supabase.instance.client
-          .from('׳›׳׳׳™')
-          .select('׳׳™׳“׳¢')
-          .eq('׳¡׳•׳’', widget.type ?? '')
+          .from('כללי')
+          .select('מידע')
+          .eq('סוג', widget.type ?? '')
           .maybeSingle()
-          .timeout(Duration(seconds: 10)); // timeout ׳©׳ 10 ׳©׳ ׳™׳•׳×
+          .timeout(Duration(seconds: 10)); // timeout של 10 שניות
 
       setState(() {
-        info = response != null ? (response['׳׳™׳“׳¢'] as String?) : null;
+        info = response != null ? (response['מידע'] as String?) : null;
         _isLoading = false;
         _isOffline = false;
       });
@@ -102,7 +102,7 @@ class _GeneralDetailScreenState extends State<GeneralDetailScreen> {
         await prefs.setInt(cacheTimeKey, now);
       }
     } catch (e) {
-      debugPrint('׳©׳’׳™׳׳” ׳‘-fetchInfoByType: $e');
+      debugPrint('שגיאה ב-fetchInfoByType: $e');
 
       setState(() {
         _isLoading = false;
@@ -113,11 +113,11 @@ class _GeneralDetailScreenState extends State<GeneralDetailScreen> {
           _isOffline = true;
           if (cachedData == null) {
             _hasError = true;
-            _errorMessage = '׳—׳™׳‘׳•׳¨ ׳׳©׳¨׳× ׳ ׳›׳©׳ - ׳‘׳“׳•׳§ ׳׳× ׳”׳—׳™׳‘׳•׳¨ ׳׳׳™׳ ׳˜׳¨׳ ׳˜';
+            _errorMessage = 'חיבור לשרת נכשל - בדוק את החיבור לאינטרנט';
           }
         } else {
           _hasError = true;
-          _errorMessage = '׳׳™׳¨׳¢׳” ׳©׳’׳™׳׳” ׳‘׳˜׳¢׳™׳ ׳× ׳”׳׳™׳“׳¢. ׳ ׳¡׳” ׳©׳•׳‘ ׳׳׳•׳—׳¨ ׳™׳•׳×׳¨.';
+          _errorMessage = 'אירעה שגיאה בטעינת המידע. נסה שוב מאוחר יותר.';
         }
       });
     }
@@ -142,8 +142,8 @@ class _GeneralDetailScreenState extends State<GeneralDetailScreen> {
           Expanded(
             child: Text(
               info != null
-                  ? '׳׳¦׳™׳’ ׳׳™׳“׳¢ ׳©׳׳•׳¨ - ׳׳™׳ ׳—׳™׳‘׳•׳¨ ׳׳׳™׳ ׳˜׳¨׳ ׳˜'
-                  : '׳׳™׳ ׳—׳™׳‘׳•׳¨ ׳׳׳™׳ ׳˜׳¨׳ ׳˜',
+                  ? 'מציג מידע שמור - אין חיבור לאינטרנט'
+                  : 'אין חיבור לאינטרנט',
               style: TextStyle(
                 color: Colors.orange[800],
                 fontSize: 14,
@@ -164,12 +164,12 @@ class _GeneralDetailScreenState extends State<GeneralDetailScreen> {
 
     if (_isOffline) {
       errorIcon = Icons.wifi_off;
-      errorTitle = '׳׳™׳ ׳—׳™׳‘׳•׳¨ ׳׳׳™׳ ׳˜׳¨׳ ׳˜';
-      errorSubtitle = '׳‘׳“׳•׳§ ׳׳× ׳”׳—׳™׳‘׳•׳¨ ׳©׳׳ ׳•׳ ׳¡׳” ׳©׳•׳‘';
+      errorTitle = 'אין חיבור לאינטרנט';
+      errorSubtitle = 'בדוק את החיבור שלך ונסה שוב';
     } else {
       errorIcon = Icons.error_outline;
-      errorTitle = '׳©׳’׳™׳׳” ׳‘׳˜׳¢׳™׳ ׳× ׳”׳׳™׳“׳¢';
-      errorSubtitle = _errorMessage ?? '׳׳™׳¨׳¢׳” ׳©׳’׳™׳׳” ׳׳ ׳¦׳₪׳•׳™׳”';
+      errorTitle = 'שגיאה בטעינת המידע';
+      errorSubtitle = _errorMessage ?? 'אירעה שגיאה לא צפויה';
     }
 
     return Column(
@@ -196,7 +196,7 @@ class _GeneralDetailScreenState extends State<GeneralDetailScreen> {
         ElevatedButton.icon(
           onPressed: fetchInfoByType,
           icon: Icon(Icons.refresh),
-          label: Text('׳ ׳¡׳” ׳©׳•׳‘'),
+          label: Text('נסה שוב'),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blue[700],
             foregroundColor: Colors.white,
@@ -223,7 +223,7 @@ class _GeneralDetailScreenState extends State<GeneralDetailScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          widget.type ?? '׳₪׳¨׳˜׳™׳ ׳›׳׳׳™׳™׳',
+          widget.type ?? 'פרטים כלליים',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 24,
@@ -245,7 +245,7 @@ class _GeneralDetailScreenState extends State<GeneralDetailScreen> {
       ),
       body: Stack(
         children: [
-          // ׳¨׳§׳¢ ׳×׳׳•׳ ׳” ׳׳׳ ׳¢׳ ׳˜׳™׳₪׳•׳ ׳‘׳©׳’׳™׳׳•׳×
+          // רקע תמונה מלא עם טיפול בשגיאות
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
@@ -257,7 +257,7 @@ class _GeneralDetailScreenState extends State<GeneralDetailScreen> {
                   },
                 ),
               ),
-              // ׳¨׳§׳¢ ׳—׳׳•׳₪׳™ ׳׳ ׳”׳×׳׳•׳ ׳” ׳׳ ׳ ׳˜׳¢׳ ׳×
+              // רקע חלופי אם התמונה לא נטענת
               child: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -270,7 +270,7 @@ class _GeneralDetailScreenState extends State<GeneralDetailScreen> {
             ),
           ),
 
-          // ׳×׳•׳›׳ ׳׳׳ ׳”׳׳×׳—׳™׳ ׳׳׳׳¢׳׳”
+          // תוכן מלא המתחיל מלמעלה
           SingleChildScrollView(
             child: Container(
               constraints: BoxConstraints(
@@ -281,11 +281,11 @@ class _GeneralDetailScreenState extends State<GeneralDetailScreen> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [Colors.transparent, Colors.white.withValues(alpha: 0.9)],
-                  stops: [0.3, 0.5], // ׳”׳×׳—׳׳× ׳׳¢׳‘׳¨ ׳¦׳‘׳¢ ׳׳”׳©׳׳™׳© ׳”׳¢׳׳™׳•׳
+                  stops: [0.3, 0.5], // התחלת מעבר צבע מהשליש העליון
                 ),
               ),
               padding: EdgeInsets.only(
-                top: 100, // ׳׳¨׳•׳•׳— ׳׳›׳•׳×׳¨׳×
+                top: 100, // מרווח לכותרת
                 left: 24,
                 right: 24,
                 bottom: 40,
@@ -293,10 +293,10 @@ class _GeneralDetailScreenState extends State<GeneralDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // ׳‘׳׳ ׳¨ ׳׳¦׳‘ ׳׳•׳₪׳׳™׳™׳
+                  // באנר מצב אופליין
                   _buildOfflineBanner(),
 
-                  // ׳›׳¨׳˜׳™׳¡ ׳×׳•׳›׳
+                  // כרטיס תוכן
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.95),
@@ -334,7 +334,7 @@ class _GeneralDetailScreenState extends State<GeneralDetailScreen> {
               ),
               SizedBox(height: 16),
               Text(
-                '׳˜׳•׳¢׳ ׳׳™׳“׳¢...',
+                'טוען מידע...',
                 style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               ),
             ],
@@ -353,7 +353,7 @@ class _GeneralDetailScreenState extends State<GeneralDetailScreen> {
           Icon(Icons.info_outline, size: 50, color: Colors.grey[600]),
           SizedBox(height: 16),
           Text(
-            '׳׳ ׳ ׳׳¦׳ ׳׳™׳“׳¢ ׳–׳׳™׳',
+            'לא נמצא מידע זמין',
             style: TextStyle(fontSize: 18, color: Colors.grey[700]),
             textAlign: TextAlign.center,
           ),
@@ -361,7 +361,7 @@ class _GeneralDetailScreenState extends State<GeneralDetailScreen> {
           ElevatedButton.icon(
             onPressed: fetchInfoByType,
             icon: Icon(Icons.refresh),
-            label: Text('׳¨׳¢׳ ׳'),
+            label: Text('רענן'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue[700],
               foregroundColor: Colors.white,
@@ -381,14 +381,14 @@ class _GeneralDetailScreenState extends State<GeneralDetailScreen> {
           textAlign: TextAlign.justify,
         ),
 
-        // ׳›׳₪׳×׳•׳¨ ׳¨׳¢׳ ׳•׳ ׳‘׳×׳—׳×׳™׳×
+        // כפתור רענון בתחתית
         if (_isOffline || _hasError)
           Padding(
             padding: EdgeInsets.only(top: 24),
             child: ElevatedButton.icon(
               onPressed: fetchInfoByType,
               icon: Icon(Icons.refresh),
-              label: Text('׳¨׳¢׳ ׳ ׳׳™׳“׳¢'),
+              label: Text('רענן מידע'),
               style: ElevatedButton.styleFrom(
                 backgroundColor:
                     _isOffline ? Colors.orange[700] : Colors.blue[700],

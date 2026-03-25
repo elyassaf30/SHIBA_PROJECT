@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:rabbi_shiba/services/data_service.dart';
@@ -63,7 +63,7 @@ class ShabatScreenState extends State<ShabatScreen>
 
   Future<List<Map<String, dynamic>>?> _fetchShabbatFromSupabase() async {
     try {
-      final response = await Supabase.instance.client.from('׳©׳‘׳×').select();
+      final response = await Supabase.instance.client.from('שבת').select();
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       rethrow;
@@ -71,8 +71,8 @@ class ShabatScreenState extends State<ShabatScreen>
   }
 
   IconData _getIconForShabat(String type) {
-    if (type.toLowerCase().contains('׳×׳₪׳™׳׳”')) return FontAwesomeIcons.wineGlass;
-    if (type.toLowerCase().contains('׳©׳™׳¢׳•׳¨')) return FontAwesomeIcons.bookOpen;
+    if (type.toLowerCase().contains('תפילה')) return FontAwesomeIcons.wineGlass;
+    if (type.toLowerCase().contains('שיעור')) return FontAwesomeIcons.bookOpen;
     return FontAwesomeIcons.wineGlass;
   }
 
@@ -84,8 +84,8 @@ class ShabatScreenState extends State<ShabatScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: ThemeHelpers.buildDefaultAppBar(
-        title: '׳׳™׳“׳¢ ׳©׳‘׳×',
-        subtitle: '׳›׳ ׳׳” ׳©׳¦׳¨׳™׳ ׳׳“׳¢׳× ׳׳©׳‘׳×',
+        title: 'מידע שבת',
+        subtitle: 'כל מה שצריך לדעת לשבת',
         context: context,
       ),
       body: Stack(
@@ -113,7 +113,7 @@ class ShabatScreenState extends State<ShabatScreen>
             Icon(Icons.search_off, size: 50, color: Colors.white70),
             SizedBox(height: 16),
             Text(
-              '׳׳ ׳ ׳׳¦׳׳• ׳×׳•׳¦׳׳•׳×',
+              'לא נמצאו תוצאות',
               style: TextStyle(fontSize: 20, color: Colors.white),
             ),
           ],
@@ -126,13 +126,13 @@ class ShabatScreenState extends State<ShabatScreen>
       itemCount: filteredData.length,
       itemBuilder: (context, index) {
         final item = filteredData[index];
-        final info = item['׳׳™׳“׳¢'] ?? '';
-        final type = item['׳¡׳•׳’'] ?? '׳׳ ׳¦׳•׳™׳ ׳¡׳•׳’';
+        final info = item['מידע'] ?? '';
+        final type = item['סוג'] ?? 'לא צוין סוג';
 
         return AnimatedSwitcher(
           duration: Duration(milliseconds: 300),
           child: Card(
-            key: ValueKey(item['׳¡׳•׳’']),
+            key: ValueKey(item['סוג']),
             margin: EdgeInsets.only(bottom: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(15),

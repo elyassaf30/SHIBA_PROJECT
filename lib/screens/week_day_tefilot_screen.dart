@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rabbi_shiba/utils/theme_helpers.dart';
 
@@ -35,14 +35,14 @@ class _WeekdayTefilotScreenState extends State<WeekdayTefilotScreen> {
   Future<void> fetchTefilotData() async {
     try {
       final response =
-          await Supabase.instance.client.from('׳–׳׳ ׳™ ׳×׳₪׳™׳׳•׳× ׳™׳׳™ ׳—׳•׳').select();
+          await Supabase.instance.client.from('זמני תפילות ימי חול').select();
 
       final data = List<Map<String, dynamic>>.from(response);
       Map<String, List<Map<String, dynamic>>> grouped = {};
 
       // Group tefilot by type
       for (var tefila in data) {
-        final type = tefila['׳¡׳•׳’ ׳×׳₪׳™׳׳”'] ?? '׳׳ ׳™׳“׳•׳¢';
+        final type = tefila['סוג תפילה'] ?? 'לא ידוע';
         if (!grouped.containsKey(type)) {
           grouped[type] = [];
         }
@@ -52,8 +52,8 @@ class _WeekdayTefilotScreenState extends State<WeekdayTefilotScreen> {
       // Sort each group by time ascending
       grouped.forEach((key, value) {
         value.sort((a, b) {
-          final timeA = a['׳©׳¢׳”'] ?? '';
-          final timeB = b['׳©׳¢׳”'] ?? '';
+          final timeA = a['שעה'] ?? '';
+          final timeB = b['שעה'] ?? '';
           try {
             final parsedA = TimeOfDay(
               hour: int.parse(timeA.split(':')[0]),
@@ -72,8 +72,8 @@ class _WeekdayTefilotScreenState extends State<WeekdayTefilotScreen> {
         });
       });
 
-      // Sort the groups by predefined order: ׳©׳—׳¨׳™׳×, ׳׳ ׳—׳”, ׳¢׳¨׳‘׳™׳×
-      final List<String> tefilaOrder = ['׳©׳—׳¨׳™׳×', '׳׳ ׳—׳”', '׳¢׳¨׳‘׳™׳×'];
+      // Sort the groups by predefined order: שחרית, מנחה, ערבית
+      final List<String> tefilaOrder = ['שחרית', 'מנחה', 'ערבית'];
       Map<String, List<Map<String, dynamic>>> sortedGrouped = {
         for (var type in tefilaOrder)
           if (grouped.containsKey(type)) type: grouped[type]!,
@@ -89,33 +89,33 @@ class _WeekdayTefilotScreenState extends State<WeekdayTefilotScreen> {
     try {
       final response =
           await Supabase.instance.client
-              .from('׳›׳׳׳™')
-              .select('׳׳™׳“׳¢')
-              .eq('׳¡׳•׳’', '׳©׳׳™׳׳× ׳×׳₪׳™׳׳™׳')
+              .from('כללי')
+              .select('מידע')
+              .eq('סוג', 'שאילת תפילין')
               .single();
 
-      final info = response['׳׳™׳“׳¢'] ?? '׳׳™׳ ׳׳™׳“׳¢ ׳–׳׳™׳ ׳¢׳ ׳©׳׳™׳׳× ׳×׳₪׳™׳׳™׳';
+      final info = response['מידע'] ?? 'אין מידע זמין על שאילת תפילין';
 
       setState(() {
         tefilinInfo = info;
       });
     } catch (e) {
-      setState(() => tefilinInfo = '׳׳ ׳ ׳™׳×׳ ׳׳˜׳¢׳•׳ ׳׳™׳“׳¢ ׳¢׳ ׳×׳₪׳™׳׳™׳');
+      setState(() => tefilinInfo = 'לא ניתן לטעון מידע על תפילין');
       debugPrint('Error fetching tefilin info: $e');
     }
   }
 
   IconData getIconForTefilaType(String type) {
-    if (type.contains('׳©׳—׳¨׳™׳×')) return Icons.wb_sunny;
-    if (type.contains('׳׳ ׳—׳”')) return Icons.wb_cloudy;
-    if (type.contains('׳¢׳¨׳‘׳™׳×')) return Icons.nights_stay;
+    if (type.contains('שחרית')) return Icons.wb_sunny;
+    if (type.contains('מנחה')) return Icons.wb_cloudy;
+    if (type.contains('ערבית')) return Icons.nights_stay;
     return Icons.access_time;
   }
 
   Color getColorForTefilaType(String type) {
-    if (type.contains('׳©׳—׳¨׳™׳×')) return Colors.orange.shade700;
-    if (type.contains('׳׳ ׳—׳”')) return Colors.blue.shade700;
-    if (type.contains('׳¢׳¨׳‘׳™׳×')) return Colors.indigo.shade800;
+    if (type.contains('שחרית')) return Colors.orange.shade700;
+    if (type.contains('מנחה')) return Colors.blue.shade700;
+    if (type.contains('ערבית')) return Colors.indigo.shade800;
     return Colors.grey.shade700;
   }
 
@@ -165,8 +165,8 @@ class _WeekdayTefilotScreenState extends State<WeekdayTefilotScreen> {
           ...tefilot.asMap().entries.map((entry) {
             final index = entry.key;
             final tefila = entry.value;
-            final note = tefila['׳”׳¢׳¨׳•׳×'] ?? '';
-            final time = tefila['׳©׳¢׳”'] ?? '׳׳ ׳¦׳•׳™׳ ׳©׳¢׳”';
+            final note = tefila['הערות'] ?? '';
+            final time = tefila['שעה'] ?? 'לא צוין שעה';
             final isLast = index == tefilot.length - 1;
 
             return Container(
@@ -218,7 +218,7 @@ class _WeekdayTefilotScreenState extends State<WeekdayTefilotScreen> {
                                   children: [
                                     Icon(Icons.info, color: color),
                                     SizedBox(width: 8),
-                                    Text('׳”׳¢׳¨׳”'),
+                                    Text('הערה'),
                                   ],
                                 ),
                                 content: Text(
@@ -232,7 +232,7 @@ class _WeekdayTefilotScreenState extends State<WeekdayTefilotScreen> {
                                       foregroundColor: color,
                                     ),
                                     onPressed: () => Navigator.pop(context),
-                                    child: Text('׳¡׳’׳•׳¨'),
+                                    child: Text('סגור'),
                                   ),
                                 ],
                               ),
@@ -287,7 +287,7 @@ class _WeekdayTefilotScreenState extends State<WeekdayTefilotScreen> {
               Icon(Icons.auto_stories, color: Colors.white, size: 28),
               SizedBox(width: 12),
               Text(
-                '׳©׳׳™׳׳× ׳×׳₪׳™׳׳™׳',
+                'שאילת תפילין',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -316,7 +316,7 @@ class _WeekdayTefilotScreenState extends State<WeekdayTefilotScreen> {
         elevation: 0,
         centerTitle: true,
         title: Text(
-          '׳–׳׳ ׳™ ׳×׳₪׳™׳׳•׳× - ׳™׳׳™ ׳—׳•׳',
+          'זמני תפילות - ימי חול',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 24,
@@ -360,7 +360,7 @@ class _WeekdayTefilotScreenState extends State<WeekdayTefilotScreen> {
                     ),
                     SizedBox(height: 16),
                     Text(
-                      '׳˜׳•׳¢׳ ׳ ׳×׳•׳ ׳™׳...',
+                      'טוען נתונים...',
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.grey.shade700,

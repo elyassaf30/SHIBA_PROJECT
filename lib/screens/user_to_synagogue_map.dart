@@ -1,11 +1,11 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert'; // ׳—׳•׳‘׳” ׳‘׳©׳‘׳™׳ jsonDecode/jsonEncode
-import 'package:connectivity_plus/connectivity_plus.dart'; // ׳¢׳‘׳•׳¨ ׳‘׳“׳™׳§׳× ׳—׳™׳‘׳•׳¨ ׳׳™׳ ׳˜׳¨׳ ׳˜
+import 'dart:convert'; // חובה בשביל jsonDecode/jsonEncode
+import 'package:connectivity_plus/connectivity_plus.dart'; // עבור בדיקת חיבור אינטרנט
 import 'package:rabbi_shiba/utils/theme_helpers.dart';
 
 class UserToSynagogueMap extends StatefulWidget {
@@ -58,7 +58,7 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
       setState(() {
         _loading = false;
       });
-      _showErrorDialog("׳׳™׳ ׳׳™׳ ׳˜׳¨׳ ׳˜", "׳׳ ׳ ׳™׳×׳ ׳׳”׳×׳—׳‘׳¨ ׳׳¨׳©׳×.");
+      _showErrorDialog("אין אינטרנט", "לא ניתן להתחבר לרשת.");
       return;
     }
     await _fetchSynagogueLocations();
@@ -95,16 +95,16 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
       if (cachedData != null && cachedTime != null) {
         final difference = currentTime - cachedTime;
         if (difference < 3600000) {
-          // ׳₪׳—׳•׳× ׳׳©׳¢׳” (3600 ׳©׳ ׳™׳•׳× * 1000 ׳׳™׳׳™ ׳©׳ ׳™׳•׳×)
-          // ׳™׳© ׳§׳׳© ׳×׳§׳™׳ - ׳˜׳•׳¢׳ ׳׳”׳§׳׳©
+          // פחות משעה (3600 שניות * 1000 מילי שניות)
+          // יש קאש תקין - טוען מהקאש
           final List<dynamic> data = jsonDecode(cachedData);
 
           setState(() {
             _synagogueLocations = {
               for (var item in data)
-                item['׳©׳ ׳”׳‘׳™׳× ׳›׳ ׳¡׳×'] as String: LatLng(
-                  (item['׳׳•׳¨׳'] as double).toDouble(),
-                  (item['׳¨׳•׳—׳‘'] as double).toDouble(),
+                item['שם הבית כנסת'] as String: LatLng(
+                  (item['אורך'] as double).toDouble(),
+                  (item['רוחב'] as double).toDouble(),
                 ),
             };
             if (_synagogueLocations.isNotEmpty) {
@@ -115,15 +115,15 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
         }
       }
 
-      // ׳׳™׳ ׳§׳׳© ׳×׳§׳™׳ ׳׳• ׳©׳¢׳‘׳¨׳” ׳©׳¢׳” - ׳˜׳•׳¢׳ ׳׳—׳“׳© ׳׳”׳©׳¨׳×
+      // אין קאש תקין או שעברה שעה - טוען מחדש מהשרת
       final response = await supabase
-          .from('׳‘׳×׳™ ׳›׳ ׳¡׳×')
-          .select('"׳©׳ ׳”׳‘׳™׳× ׳›׳ ׳¡׳×", "׳׳•׳¨׳", "׳¨׳•׳—׳‘"');
+          .from('בתי כנסת')
+          .select('"שם הבית כנסת", "אורך", "רוחב"');
 
       if (response.isEmpty) {
         setState(() {
           _loading = false;
-          _synagogueLocations = {}; // ׳׳ ׳׳™׳ ׳ ׳×׳•׳ ׳™׳, ׳”׳¦׳’ ׳¨׳§ ׳׳× ׳”׳׳™׳§׳•׳ ׳©׳ ׳”׳׳©׳×׳׳©
+          _synagogueLocations = {}; // אם אין נתונים, הצג רק את המיקום של המשתמש
         });
         return;
       }
@@ -133,9 +133,9 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
       setState(() {
         _synagogueLocations = {
           for (var item in data)
-            item['׳©׳ ׳”׳‘׳™׳× ׳›׳ ׳¡׳×'] as String: LatLng(
-              (item['׳׳•׳¨׳'] as double).toDouble(),
-              (item['׳¨׳•׳—׳‘'] as double).toDouble(),
+            item['שם הבית כנסת'] as String: LatLng(
+              (item['אורך'] as double).toDouble(),
+              (item['רוחב'] as double).toDouble(),
             ),
         };
         if (_synagogueLocations.isNotEmpty) {
@@ -143,7 +143,7 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
         }
       });
 
-      // ׳©׳׳™׳¨׳” ׳׳§׳׳©
+      // שמירה לקאש
       await prefs.setString('synagogue_locations', jsonEncode(data));
       await prefs.setInt('synagogue_locations_time', currentTime);
     } catch (e) {
@@ -151,7 +151,7 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
       setState(() {
         _loading = false;
         _synagogueLocations =
-            {}; // ׳׳ ׳׳ ׳”׳¦׳׳—׳ ׳• ׳׳˜׳¢׳•׳ ׳׳× ׳”׳ ׳×׳•׳ ׳™׳ ׳׳”׳©׳¨׳×, ׳ ׳¦׳™׳’ ׳¨׳§ ׳׳× ׳”׳׳™׳§׳•׳ ׳©׳ ׳”׳׳©׳×׳׳©
+            {}; // אם לא הצלחנו לטעון את הנתונים מהשרת, נציג רק את המיקום של המשתמש
       });
     }
   }
@@ -259,7 +259,7 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
       Marker(
         markerId: MarkerId('current_location'),
         position: _currentLocation!,
-        infoWindow: InfoWindow(title: '׳”׳׳™׳§׳•׳ ׳©׳׳™'),
+        infoWindow: InfoWindow(title: 'המיקום שלי'),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
       ),
     );
@@ -373,20 +373,20 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
 
   void _showLocationServiceError() {
     _showErrorDialog(
-      '׳©׳™׳¨׳•׳× ׳”׳׳™׳§׳•׳ ׳׳ ׳•׳˜׳¨׳',
-      '׳׳ ׳ ׳”׳₪׳¢׳ ׳׳× ׳©׳™׳¨׳•׳× ׳”׳׳™׳§׳•׳ ׳‘׳”׳’׳“׳¨׳•׳× ׳”׳׳›׳©׳™׳¨',
+      'שירות המיקום מנוטרל',
+      'אנא הפעל את שירות המיקום בהגדרות המכשיר',
     );
   }
 
   void _showLocationPermissionError() {
     _showErrorDialog(
-      '׳”׳¨׳©׳׳•׳× ׳׳™׳§׳•׳ ׳ ׳“׳¨׳©׳•׳×',
-      '׳׳ ׳ ׳׳©׳¨ ׳”׳¨׳©׳׳•׳× ׳׳™׳§׳•׳ ׳›׳“׳™ ׳׳”׳©׳×׳׳© ׳‘׳×׳›׳•׳ ׳” ׳–׳•',
+      'הרשאות מיקום נדרשות',
+      'אנא אשר הרשאות מיקום כדי להשתמש בתכונה זו',
     );
   }
 
   void _showLocationError() {
-    _showErrorDialog('׳©׳’׳™׳׳” ׳‘׳׳™׳§׳•׳', '׳׳ ׳ ׳™׳×׳ ׳׳§׳‘׳•׳¢ ׳׳× ׳”׳׳™׳§׳•׳ ׳”׳ ׳•׳›׳—׳™');
+    _showErrorDialog('שגיאה במיקום', 'לא ניתן לקבוע את המיקום הנוכחי');
   }
 
   void _showErrorDialog(String title, String message) {
@@ -399,7 +399,7 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text('׳׳™׳©׳•׳¨'),
+                child: Text('אישור'),
               ),
             ],
           ),
@@ -415,7 +415,7 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
         elevation: 0,
         centerTitle: true,
         title: Text(
-          '׳‘׳×׳™ ׳›׳ ׳¡׳× ׳‘׳׳¨׳›׳– ׳”׳¨׳₪׳•׳׳™',
+          'בתי כנסת במרכז הרפואי',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 24,
@@ -438,7 +438,7 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
       body: Stack(
         children: [
           Positioned.fill(child: ThemeHelpers.buildDefaultBackground()),
-          // ׳¢׳™׳’׳•׳ ׳˜׳¢׳™׳ ׳” ׳©׳׳•׳₪׳™׳¢ ׳¢׳“ ׳©׳”׳׳₪׳” ׳ ׳˜׳¢׳ ׳×
+          // עיגול טעינה שמופיע עד שהמפה נטענת
           if (_loading)
             Center(
               child: CircularProgressIndicator(

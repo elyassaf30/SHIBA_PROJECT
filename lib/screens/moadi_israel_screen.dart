@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -46,7 +46,7 @@ class _MoadiIsraelScreenState extends State<MoadiIsraelScreen>
 
     if (cachedData != null && cachedTime != null) {
       final now = DateTime.now().millisecondsSinceEpoch;
-      // ׳‘׳“׳™׳§׳” ׳׳ ׳¢׳‘׳¨׳• ׳₪׳—׳•׳× ׳׳©׳¢׳” (3600000 ׳׳™׳׳™׳©׳ ׳™׳•׳×)
+      // בדיקה אם עברו פחות משעה (3600000 מילישניות)
       if (now - cachedTime < 3600000) {
         final decodedData = List<Map<String, dynamic>>.from(
           json.decode(cachedData),
@@ -60,14 +60,14 @@ class _MoadiIsraelScreenState extends State<MoadiIsraelScreen>
         return;
       }
     }
-    // ׳׳ ׳׳™׳ ׳§׳׳© ׳׳• ׳©׳¢׳‘׳¨׳” ׳©׳¢׳”, ׳ ׳˜׳¢׳ ׳׳—׳“׳© ׳׳”׳©׳¨׳×
+    // אם אין קאש או שעברה שעה, נטען מחדש מהשרת
     await fetchMoadiIsraelData();
   }
 
   Future<void> fetchMoadiIsraelData() async {
     try {
       final response =
-          await Supabase.instance.client.from('׳׳•׳¢׳“׳™ ׳™׳©׳¨׳׳').select();
+          await Supabase.instance.client.from('מועדי ישראל').select();
       final data = List<Map<String, dynamic>>.from(response);
 
       final prefs = await SharedPreferences.getInstance();
@@ -92,14 +92,14 @@ class _MoadiIsraelScreenState extends State<MoadiIsraelScreen>
 
   IconData _getIconForHoliday(String holidayName) {
     final name = holidayName.toLowerCase();
-    if (name.contains('׳₪׳¡׳—')) return FontAwesomeIcons.breadSlice;
-    if (name.contains('׳©׳‘׳×')) return FontAwesomeIcons.solidStar;
-    if (name.contains('׳¨׳׳© ׳”׳©׳ ׳”')) return FontAwesomeIcons.appleAlt;
-    if (name.contains('׳™׳•׳ ׳›׳™׳₪׳•׳¨')) return FontAwesomeIcons.prayingHands;
-    if (name.contains('׳¡׳•׳›׳•׳×')) return FontAwesomeIcons.campground;
-    if (name.contains('׳—׳ ׳•׳›׳”')) return FontAwesomeIcons.menorah;
-    if (name.contains('׳₪׳•׳¨׳™׳')) return FontAwesomeIcons.mask;
-    if (name.contains('׳™׳•׳ ׳”׳¢׳¦׳׳׳•׳×')) return FontAwesomeIcons.flag;
+    if (name.contains('פסח')) return FontAwesomeIcons.breadSlice;
+    if (name.contains('שבת')) return FontAwesomeIcons.solidStar;
+    if (name.contains('ראש השנה')) return FontAwesomeIcons.appleAlt;
+    if (name.contains('יום כיפור')) return FontAwesomeIcons.prayingHands;
+    if (name.contains('סוכות')) return FontAwesomeIcons.campground;
+    if (name.contains('חנוכה')) return FontAwesomeIcons.menorah;
+    if (name.contains('פורים')) return FontAwesomeIcons.mask;
+    if (name.contains('יום העצמאות')) return FontAwesomeIcons.flag;
     return FontAwesomeIcons.calendarDay;
   }
 
@@ -112,7 +112,7 @@ class _MoadiIsraelScreenState extends State<MoadiIsraelScreen>
         elevation: 0,
         centerTitle: true,
         title: Text(
-          '׳׳•׳¢׳“׳™ ׳™׳©׳¨׳׳',
+          'מועדי ישראל',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 24,
@@ -134,7 +134,7 @@ class _MoadiIsraelScreenState extends State<MoadiIsraelScreen>
       ),
       body: Stack(
         children: [
-          // ׳¨׳§׳¢ ׳¢׳ ׳׳₪׳§׳˜
+          // רקע עם אפקט
           Positioned.fill(child: ThemeHelpers.buildDefaultBackground()),
           Container(
             decoration: BoxDecoration(
@@ -175,7 +175,7 @@ class _MoadiIsraelScreenState extends State<MoadiIsraelScreen>
                                 ),
                                 SizedBox(height: 16),
                                 Text(
-                                  '׳׳ ׳ ׳׳¦׳׳• ׳×׳•׳¦׳׳•׳×',
+                                  'לא נמצאו תוצאות',
                                   style: TextStyle(
                                     fontSize: 20,
                                     color: Colors.white,
@@ -192,14 +192,14 @@ class _MoadiIsraelScreenState extends State<MoadiIsraelScreen>
                             itemCount: filteredData.length,
                             itemBuilder: (context, index) {
                               final item = filteredData[index];
-                              final holidayName = item['׳¡׳•׳’ ׳”׳׳•׳¢׳“'] ?? '׳׳•׳¢׳“';
-                              final info = item['׳׳™׳“׳¢'] ?? '';
+                              final holidayName = item['סוג המועד'] ?? 'מועד';
+                              final info = item['מידע'] ?? '';
                               final shouldExpand = false;
 
                               return AnimatedSwitcher(
                                 duration: Duration(milliseconds: 300),
                                 child: Card(
-                                  key: ValueKey(item['׳¡׳•׳’ ׳”׳׳•׳¢׳“']),
+                                  key: ValueKey(item['סוג המועד']),
                                   margin: EdgeInsets.only(bottom: 16),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(15),

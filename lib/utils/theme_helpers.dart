@@ -5,9 +5,15 @@ import 'package:google_fonts/google_fonts.dart';
 class ThemeHelpers {
   // Gradient colors used throughout the app
   static const List<Color> defaultGradientColors = [
-    Color(0xFFE3F2FD),
-    Color(0xFFBBDEFB),
-    Color(0xFF90CAF9),
+    Color(0xFF56CCF2),
+    Color(0xFF7DD3FC),
+    Color(0xFFDDEAFB),
+  ];
+
+  static const List<Color> alternateGradientColors = [
+    Color(0xFF67D4F7),
+    Color(0xFF9EDCFB),
+    Color(0xFFEAF3FF),
   ];
 
   // Primary color
@@ -20,14 +26,11 @@ class ThemeHelpers {
     Alignment? begin,
     Alignment? end,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: begin ?? Alignment.topCenter,
-          end: end ?? Alignment.bottomCenter,
-          colors: colors ?? defaultGradientColors,
-        ),
-      ),
+    return _AnimatedGradientBackground(
+      primaryColors: colors ?? defaultGradientColors,
+      secondaryColors: alternateGradientColors,
+      begin: begin ?? Alignment.topCenter,
+      end: end ?? Alignment.bottomCenter,
     );
   }
 
@@ -163,3 +166,71 @@ class ThemeHelpers {
   );
 }
 
+class _AnimatedGradientBackground extends StatefulWidget {
+  const _AnimatedGradientBackground({
+    required this.primaryColors,
+    required this.secondaryColors,
+    required this.begin,
+    required this.end,
+  });
+
+  final List<Color> primaryColors;
+  final List<Color> secondaryColors;
+  final Alignment begin;
+  final Alignment end;
+
+  @override
+  State<_AnimatedGradientBackground> createState() =>
+      _AnimatedGradientBackgroundState();
+}
+
+class _AnimatedGradientBackgroundState
+    extends State<_AnimatedGradientBackground>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 8),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final t = Curves.easeInOut.transform(_controller.value);
+        final colors = List<Color>.generate(widget.primaryColors.length, (
+          index,
+        ) {
+          final fallback = widget.primaryColors[index];
+          final to =
+              index < widget.secondaryColors.length
+                  ? widget.secondaryColors[index]
+                  : fallback;
+          return Color.lerp(fallback, to, t) ?? fallback;
+        });
+
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: widget.begin,
+              end: widget.end,
+              colors: colors,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}

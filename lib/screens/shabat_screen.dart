@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:rabbi_shiba/services/data_service.dart';
 import 'package:rabbi_shiba/utils/animation_helpers.dart';
 import 'package:rabbi_shiba/utils/theme_helpers.dart';
@@ -23,7 +24,6 @@ class ShabatScreenState extends State<ShabatScreen>
   @override
   void initState() {
     super.initState();
-    // Use animation helpers for consistency
     _animationController = AnimationHelpers.createFadeController(
       this,
       durationMs: 1000,
@@ -76,21 +76,30 @@ class ShabatScreenState extends State<ShabatScreen>
     return FontAwesomeIcons.wineGlass;
   }
 
-  Widget _buildBackground() {
-    return ThemeHelpers.buildDefaultBackground();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: ThemeHelpers.buildDefaultAppBar(
-        title: 'מידע שבת',
-        subtitle: 'כל מה שצריך לדעת לשבת',
-        context: context,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        flexibleSpace: ThemeHelpers.buildDefaultBackground(),
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Color.fromARGB(255, 8, 8, 8)),
+        title: Text(
+          'מידע שבת',
+          style: GoogleFonts.alef(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: const Color.fromARGB(255, 17, 17, 17),
+          ),
+        ),
       ),
       body: Stack(
         children: [
-          Positioned.fill(child: _buildBackground()),
+          Positioned.fill(child: ThemeHelpers.buildDefaultBackground()),
           FadeTransition(
             opacity: _fadeAnimation,
             child: StateBuilder(
@@ -110,11 +119,18 @@ class ShabatScreenState extends State<ShabatScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.search_off, size: 50, color: Colors.white70),
-            SizedBox(height: 16),
+            Icon(
+              Icons.search_off_rounded,
+              size: 48,
+              color: const Color(0xFF94A3B8),
+            ),
+            const SizedBox(height: 14),
             Text(
               'לא נמצאו תוצאות',
-              style: TextStyle(fontSize: 20, color: Colors.white),
+              style: GoogleFonts.alef(
+                fontSize: 17,
+                color: const Color(0xFF64748B),
+              ),
             ),
           ],
         ),
@@ -122,7 +138,7 @@ class ShabatScreenState extends State<ShabatScreen>
     }
 
     return ListView.builder(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.only(top: 100, bottom: 24, left: 16, right: 16),
       itemCount: filteredData.length,
       itemBuilder: (context, index) {
         final item = filteredData[index];
@@ -130,49 +146,12 @@ class ShabatScreenState extends State<ShabatScreen>
         final type = item['סוג'] ?? 'לא צוין סוג';
 
         return AnimatedSwitcher(
-          duration: Duration(milliseconds: 300),
-          child: Card(
+          duration: const Duration(milliseconds: 300),
+          child: _ShabatTile(
             key: ValueKey(item['סוג']),
-            margin: EdgeInsets.only(bottom: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
-            ),
-            elevation: 5,
-            color: Colors.deepPurple.withValues(alpha: 0.8),
-            child: Theme(
-              data: Theme.of(
-                context,
-              ).copyWith(dividerColor: Colors.transparent),
-              child: ExpansionTile(
-                title: Center(
-                  child: Text(
-                    type,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  ),
-                ),
-                leading: FaIcon(_getIconForShabat(type), color: Colors.white),
-                iconColor: Colors.white,
-                collapsedIconColor: Colors.white,
-                children: [
-                  Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Text(
-                      info,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        height: 1.6,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            type: type,
+            info: info,
+            icon: _getIconForShabat(type),
           ),
         );
       },
@@ -180,3 +159,150 @@ class ShabatScreenState extends State<ShabatScreen>
   }
 }
 
+// ─────────────────────────────────────────────
+// כרטיס שבת מורחב
+// ─────────────────────────────────────────────
+class _ShabatTile extends StatefulWidget {
+  final String type;
+  final String info;
+  final IconData icon;
+
+  const _ShabatTile({
+    super.key,
+    required this.type,
+    required this.info,
+    required this.icon,
+  });
+
+  @override
+  State<_ShabatTile> createState() => _ShabatTileState();
+}
+
+class _ShabatTileState extends State<_ShabatTile>
+    with SingleTickerProviderStateMixin {
+  bool _expanded = false;
+  late AnimationController _ctrl;
+  late Animation<double> _expandAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 260),
+    );
+    _expandAnim = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _toggle() {
+    setState(() => _expanded = !_expanded);
+    _expanded ? _ctrl.forward() : _ctrl.reverse();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.82),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.black.withValues(alpha: 0.06),
+          width: 0.8,
+        ),
+      ),
+      child: Column(
+        children: [
+          // ─── כותרת ───
+          InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: _toggle,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(
+                children: [
+                  // חץ
+                  AnimatedRotation(
+                    turns: _expanded ? 0.5 : 0.0,
+                    duration: const Duration(milliseconds: 260),
+                    child: const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 22,
+                      color: Color(0xFF378ADD),
+                    ),
+                  ),
+                  const Spacer(),
+                  // שם
+                  Flexible(
+                    child: Text(
+                      widget.type,
+                      textDirection: TextDirection.rtl,
+                      textAlign: TextAlign.right,
+                      style: GoogleFonts.alef(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF0F172A),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  // אייקון
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF534AB7).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Center(
+                      child: FaIcon(
+                        widget.icon,
+                        size: 17,
+                        color: const Color(0xFF534AB7),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // ─── תוכן מורחב ───
+          SizeTransition(
+            sizeFactor: _expandAnim,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    height: 0.8,
+                    color: Colors.black.withValues(alpha: 0.07),
+                    margin: const EdgeInsets.only(bottom: 12),
+                  ),
+                  Text(
+                    widget.info,
+                    textDirection: TextDirection.rtl,
+                    textAlign: TextAlign.right,
+                    style: GoogleFonts.alef(
+                      fontSize: 14,
+                      height: 1.8,
+                      color: const Color(0xFF334155),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

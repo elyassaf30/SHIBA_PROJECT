@@ -8,7 +8,6 @@ import 'package:rabbi_shiba/screens/user_to_synagogue_map.dart';
 import 'package:rabbi_shiba/screens/zmanim_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:kosher_dart/kosher_dart.dart';
 import 'package:intl/intl.dart' as intl;
 import 'dart:async';
@@ -18,7 +17,6 @@ import 'AdminLoginScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rabbi_shiba/utils/theme_helpers.dart';
 
-// Map of common Parasha names translations from English to Hebrew.
 const Map<String, String> parashaTranslations = {
   'Parashat Bereshit': 'בראשית',
   'Parashat Noach': 'נח',
@@ -45,7 +43,7 @@ const Map<String, String> parashaTranslations = {
   'Parashat Pekudei': 'פקודי',
   'Parashat Vayikra': 'ויקרא',
   'Parashat Tzav': 'צו',
-  'Parashat Shemini': 'שמיני',
+  'Parashat Shmini': 'שמיני',
   'Parashat Tazria': 'תזריע',
   'Parashat Metzora': 'מצורע',
   'Parashat Acharei Mot': 'אחרי-מות',
@@ -76,7 +74,9 @@ const Map<String, String> parashaTranslations = {
   'Parashat Vezot Haberakhah': 'וזאת הברכה',
 };
 
-// ✅ 1. ווידג'ט להצגת תאריך עברי ופרשה
+// ─────────────────────────────────────────────
+// 1. HebrewDateBanner
+// ─────────────────────────────────────────────
 class HebrewDateBanner extends StatefulWidget {
   const HebrewDateBanner({super.key});
 
@@ -100,7 +100,6 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
       final prefs = await SharedPreferences.getInstance();
       final nowDate = DateTime.now();
 
-      // טעינה מהשרת כדי לקבל את התאריך העברי הנוכחי
       final formattedDate =
           '${nowDate.year}-${nowDate.month.toString().padLeft(2, '0')}-${nowDate.day.toString().padLeft(2, '0')}';
 
@@ -115,11 +114,9 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
         String fetchedHebrewDate = data['hebrew'] ?? 'לא זמין';
         String fetchedParasha = '';
 
-        // בדיקה אם התאריך העברי השתנה (כלומר עבר צאת הכוכבים ויום עברי חדש)
         final cachedHebrewDate = prefs.getString('cachedHebrewDate');
 
         if (cachedHebrewDate == fetchedHebrewDate) {
-          // אותו יום עברי - השתמש ב-cache של הפרשה
           final cachedParasha = prefs.getString('parasha');
           if (mounted) {
             setState(() {
@@ -131,7 +128,6 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
           return;
         }
 
-        // יום עברי חדש - טען את הפרשה מחדש
         if (data['events'] != null) {
           final events = List<String>.from(data['events']);
           final englishParasha = events.firstWhere(
@@ -145,7 +141,6 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
           }
         }
 
-        // שמירה ב-cache - התאריך העברי הוא המפתח
         await prefs.setString('hebrewDate', fetchedHebrewDate);
         await prefs.setString('parasha', fetchedParasha);
         await prefs.setString('cachedHebrewDate', fetchedHebrewDate);
@@ -179,38 +174,25 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),
-        decoration: BoxDecoration(
-          color: Color(0xFFFFF9C4),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Color(0xFFFDD835), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 6,
-              offset: Offset(0, 3),
-            ),
-          ],
-        ),
+      return _InfoRow(
+        icon: Icons.calendar_today_outlined,
+        iconColor: const Color(0xFF378ADD),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            SizedBox(
-              width: 16,
-              height: 16,
+            const SizedBox(
+              width: 14,
+              height: 14,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: Color(0xFFF57F17),
+                color: Color(0xFF378ADD),
               ),
             ),
-            SizedBox(width: 10),
+            const SizedBox(width: 8),
             Text(
               'טוען תאריך עברי...',
               style: GoogleFonts.alef(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFFF57F17),
+                fontSize: 13,
+                color: const Color(0xFF378ADD),
               ),
             ),
           ],
@@ -218,59 +200,40 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
       );
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),
-      decoration: BoxDecoration(
-        color: Color(0xFFFFF9C4),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Color(0xFFFDD835), width: 1.5),
-        boxShadow: [
-          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
-        ],
-      ),
-      child: Column(
+    return _InfoRow(
+      icon: Icons.calendar_today_outlined,
+      iconColor: const Color(0xFF378ADD),
+      child: Row(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.calendar_today, color: Color(0xFFF57F17), size: 20),
-              SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  hebrewDate,
-                  textDirection: TextDirection.rtl,
-                  style: GoogleFonts.alef(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFF57F17),
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                ),
+          Flexible(
+            child: Text(
+              hebrewDate,
+              textDirection: TextDirection.rtl,
+              style: GoogleFonts.alef(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF0F172A),
               ),
-            ],
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
           if (parasha.isNotEmpty) ...[
-            SizedBox(height: 6),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.book, color: Color(0xFFF57F17), size: 18),
-                SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    'פרשת $parasha',
-                    textDirection: TextDirection.rtl,
-                    style: GoogleFonts.alef(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFFF57F17),
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                  ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE6F1FB),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                'פרשת $parasha',
+                textDirection: TextDirection.rtl,
+                style: GoogleFonts.alef(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF0C447C),
                 ),
-              ],
+              ),
             ),
           ],
         ],
@@ -279,7 +242,9 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
   }
 }
 
-// ✅ 2. ווידג'ט להצגת הזמן הבא (נץ/שקיעה)
+// ─────────────────────────────────────────────
+// 2. NextZmanBanner
+// ─────────────────────────────────────────────
 class NextZmanBanner extends StatefulWidget {
   const NextZmanBanner({super.key});
 
@@ -307,7 +272,7 @@ class _NextZmanBannerState extends State<NextZmanBanner> {
 
   void _startZmanCheck() {
     _fetchNextZman();
-    _zmanCheckTimer = Timer.periodic(Duration(minutes: 5), (timer) {
+    _zmanCheckTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
       _fetchNextZman();
     });
   }
@@ -317,7 +282,6 @@ class _NextZmanBannerState extends State<NextZmanBanner> {
       final now = DateTime.now();
       final currentMinutes = now.hour * 60 + now.minute;
 
-      // ליצור Zmanim calendar עבור ירושלים (ברירת מחדל)
       final geoLocation = GeoLocation.setLocation(
         'ירושלים',
         31.7683,
@@ -328,13 +292,11 @@ class _NextZmanBannerState extends State<NextZmanBanner> {
       final zmanimCalendar = ComplexZmanimCalendar.intGeoLocation(geoLocation);
       final dateFormat = intl.DateFormat('HH:mm');
 
-      // קח את הזמנים החשובים
       final sunrise = zmanimCalendar.getSunrise();
       final sunset = zmanimCalendar.getSunset();
 
       Map<String, dynamic>? nextZman;
 
-      // בדוק איזה זמן הוא הבא
       if (sunrise != null) {
         final sunriseMinutes = sunrise.hour * 60 + sunrise.minute;
         if (sunriseMinutes > currentMinutes) {
@@ -384,49 +346,30 @@ class _NextZmanBannerState extends State<NextZmanBanner> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return SizedBox.shrink();
+    if (_isLoading || _nextZman == 'לא זמין' || _nextZman == 'שגיאה') {
+      return const SizedBox.shrink();
     }
 
-    if (_nextZman == 'לא זמין' || _nextZman == 'שגיאה') {
-      return SizedBox.shrink();
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),
-      decoration: BoxDecoration(
-        color: Color(0xFFFFF9C4),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Color(0xFFFDD835), width: 1.5),
-        boxShadow: [
-          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.max,
-        children: [
-          Icon(Icons.wb_sunny, color: Color(0xFFF57F17), size: 20),
-          SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              '$_nextZmanLabel בשעה $_nextZman',
-              textDirection: TextDirection.rtl,
-              style: GoogleFonts.alef(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFFF57F17),
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
+    return _InfoRow(
+      icon: Icons.wb_sunny_outlined,
+      iconColor: const Color(0xFFEF9F27),
+      child: Text(
+        '$_nextZmanLabel בשעה $_nextZman',
+        textDirection: TextDirection.rtl,
+        style: GoogleFonts.alef(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: const Color(0xFF0F172A),
+        ),
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }
 }
 
-// ✅ 3. ווידג'ט להצגת התפילה הבאה
+// ─────────────────────────────────────────────
+// 3. NextPrayerBanner
+// ─────────────────────────────────────────────
 class NextPrayerBanner extends StatefulWidget {
   const NextPrayerBanner({super.key});
 
@@ -452,7 +395,7 @@ class _NextPrayerBannerState extends State<NextPrayerBanner> {
 
   void _startPrayerTimeCheck() {
     _fetchAndDetermineNextPrayer();
-    _prayerCheckTimer = Timer.periodic(Duration(minutes: 1), (timer) {
+    _prayerCheckTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
       _fetchAndDetermineNextPrayer();
     });
   }
@@ -502,50 +445,74 @@ class _NextPrayerBannerState extends State<NextPrayerBanner> {
 
   @override
   Widget build(BuildContext context) {
-    if (_nextPrayerTime == null) {
-      return SizedBox.shrink();
-    }
+    if (_nextPrayerTime == null) return const SizedBox.shrink();
 
-    final time = _nextPrayerTime!['שעה'];
+    final time = _nextPrayerTime!['שעה'] as String;
     final type = _nextPrayerTime!['סוג תפילה'];
     final displayTime = time.length >= 5 ? time.substring(0, 5) : time;
 
+    return _InfoRow(
+      icon: Icons.schedule_outlined,
+      iconColor: const Color(0xFF1D9E75),
+      child: Text.rich(
+        TextSpan(
+          style: GoogleFonts.alef(fontSize: 14, color: const Color(0xFF0F172A)),
+          children: [
+            const TextSpan(text: 'תפילה הבאה: '),
+            TextSpan(
+              text: '$type',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            TextSpan(text: ' — $displayTime'),
+          ],
+        ),
+        textDirection: TextDirection.rtl,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// Helper: _InfoRow — שורת מידע אחידה
+// ─────────────────────────────────────────────
+class _InfoRow extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final Widget child;
+
+  const _InfoRow({
+    required this.icon,
+    required this.iconColor,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: Color(0xFFE0F7FA),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Color(0xFF4DD0E1), width: 1.5),
-        boxShadow: [
-          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
-        ],
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: Colors.black.withValues(alpha: 0.07),
+          width: 0.8,
+        ),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.max,
         children: [
-          Icon(Icons.schedule, color: Color(0xFF00ACC1), size: 20),
-          SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              'התפילה הבאה: $type בשעה $displayTime',
-              textDirection: TextDirection.rtl,
-              style: GoogleFonts.alef(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF006064),
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
+          Icon(icon, size: 17, color: iconColor),
+          const SizedBox(width: 9),
+          Expanded(child: child),
         ],
       ),
     );
   }
 }
 
-// ✅ 3. מסך EntranceScreen משופר
-
+// ─────────────────────────────────────────────
+// 4. EntranceScreen
+// ─────────────────────────────────────────────
 class EntranceScreen extends StatefulWidget {
   const EntranceScreen({super.key});
 
@@ -557,21 +524,17 @@ class _EntranceScreenState extends State<EntranceScreen>
     with TickerProviderStateMixin {
   final supabase = Supabase.instance.client;
   String rabbiQuote = 'טוען ציטוט...';
-  String rabbiImageUrl = '';
   bool isLoading = true;
-  int _adminTapCount = 0; // secret tap counter for admin
+  int _adminTapCount = 0;
 
   late AnimationController _mainController;
   late AnimationController _quoteController;
-  late AnimationController _buttonController;
 
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
   late Animation<double> _slideAnimation;
   late Animation<double> _quoteOpacityAnimation;
-  late Animation<double> _buttonSlideAnimation;
 
-  // רשימת הבועות - כל האפשרויות
   static final List<Map<String, dynamic>> _bubbles = [
     {
       'label': 'זמני היום',
@@ -651,37 +614,32 @@ class _EntranceScreenState extends State<EntranceScreen>
   void _initializeAnimations() {
     _mainController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1200),
     );
 
     _quoteController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 800),
-    );
-
-    _buttonController = AnimationController(
-      vsync: this,
-      duration: Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 800),
     );
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _mainController,
-        curve: Interval(0.0, 0.6, curve: Curves.easeOut),
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
       ),
     );
 
     _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
       CurvedAnimation(
         parent: _mainController,
-        curve: Interval(0.2, 0.8, curve: Curves.elasticOut),
+        curve: const Interval(0.2, 0.8, curve: Curves.elasticOut),
       ),
     );
 
     _slideAnimation = Tween<double>(begin: 50.0, end: 0.0).animate(
       CurvedAnimation(
         parent: _mainController,
-        curve: Interval(0.0, 0.7, curve: Curves.easeOut),
+        curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
       ),
     );
 
@@ -689,10 +647,6 @@ class _EntranceScreenState extends State<EntranceScreen>
       begin: 0.0,
       end: 1.0,
     ).animate(CurvedAnimation(parent: _quoteController, curve: Curves.easeIn));
-
-    _buttonSlideAnimation = Tween<double>(begin: 30.0, end: 0.0).animate(
-      CurvedAnimation(parent: _buttonController, curve: Curves.easeOut),
-    );
   }
 
   Future<void> _fetchRabbiData() async {
@@ -707,33 +661,18 @@ class _EntranceScreenState extends State<EntranceScreen>
 
       if (!mounted) return;
 
-      if (response == null || response['מידע'] == null) {
-        setState(() {
-          rabbiQuote =
-              'ברוכים הבאים לאפליקציית כשרות דת והלכה של מרכז רפואי שיבא. כאן תמצאו את כל המידע הדרוש לכם לשמירה על הלכות הכשרות והדת במרכז הרפואי.';
-          isLoading = false;
-        });
-      } else {
-        setState(() {
-          rabbiQuote =
-              response['מידע']?.toString() ??
-              'ברוכים הבאים לאפליקציית כשרות דת והלכה של מרכז רפואי שיבא.';
-          isLoading = false;
-        });
-      }
-
-      _mainController.forward();
-
-      Future.delayed(Duration(milliseconds: 400), () {
-        if (mounted) {
-          _quoteController.forward();
-        }
+      setState(() {
+        rabbiQuote =
+            (response == null || response['מידע'] == null)
+                ? 'ברוכים הבאים לאפליקציית כשרות דת והלכה של מרכז רפואי שיבא. כאן תמצאו את כל המידע הדרוש לכם לשמירה על הלכות הכשרות והדת במרכז הרפואי.'
+                : response['מידע']?.toString() ??
+                    'ברוכים הבאים לאפליקציית כשרות דת והלכה של מרכז רפואי שיבא.';
+        isLoading = false;
       });
 
-      Future.delayed(Duration(milliseconds: 800), () {
-        if (mounted) {
-          _buttonController.forward();
-        }
+      _mainController.forward();
+      Future.delayed(const Duration(milliseconds: 400), () {
+        if (mounted) _quoteController.forward();
       });
     } catch (e) {
       if (!mounted) return;
@@ -744,7 +683,6 @@ class _EntranceScreenState extends State<EntranceScreen>
       });
       _mainController.forward();
       _quoteController.forward();
-      _buttonController.forward();
       debugPrint('Error fetching rabbi data: $e');
     }
   }
@@ -753,31 +691,42 @@ class _EntranceScreenState extends State<EntranceScreen>
   void dispose() {
     _mainController.dispose();
     _quoteController.dispose();
-    _buttonController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
     final safeAreaHeight =
-        screenHeight -
+        MediaQuery.of(context).size.height -
         MediaQuery.of(context).padding.top -
         MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.transparent,
       drawer: _buildDrawer(),
       appBar: AppBar(
         elevation: 0,
+        scrolledUnderElevation: 0,
         backgroundColor: Colors.transparent,
-        iconTheme: IconThemeData(color: Color(0xFF1E293B)),
+        surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.transparent,
+        flexibleSpace: ThemeHelpers.buildDefaultBackground(),
+        iconTheme: IconThemeData(
+          color: const Color.fromARGB(255, 13, 13, 14).withValues(alpha: 0.9),
+        ),
         title: Text(
           'כשרות דת והלכה',
           style: GoogleFonts.alef(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF1E293B),
+            color: const Color.fromARGB(
+              255,
+              14,
+              15,
+              17,
+            ).withValues(alpha: 0.92),
           ),
           textDirection: TextDirection.rtl,
         ),
@@ -785,11 +734,7 @@ class _EntranceScreenState extends State<EntranceScreen>
       ),
       body: Stack(
         children: [
-          Positioned.fill(
-            child: ThemeHelpers.buildDefaultBackground(
-              colors: [Color(0xFFF8FAFC), Color(0xFFE2E8F0), Color(0xFFCBD5E1)],
-            ),
-          ),
+          Positioned.fill(child: ThemeHelpers.buildDefaultBackground()),
           SafeArea(
             child: Padding(
               padding: EdgeInsets.symmetric(
@@ -799,85 +744,20 @@ class _EntranceScreenState extends State<EntranceScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // 1. תאריך עברי ופרשה - ראשון
-                  HebrewDateBanner(),
-
-                  SizedBox(height: 10),
-
-                  // 2. באנר הזמן הבא - שני
-                  NextZmanBanner(),
-
-                  SizedBox(height: 10),
-
-                  // 3. באנר התפילה הבאה - שלישי
-                  NextPrayerBanner(),
-
-                  SizedBox(height: safeAreaHeight * 0.02),
-
-                  // 4. Header Section - רביעי (with secret admin tap)
-                  AnimatedBuilder(
-                    animation: _mainController,
-                    builder: (context, child) {
-                      return GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () {
-                          _adminTapCount++;
-                          if (_adminTapCount >= 5) {
-                            _adminTapCount = 0;
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => AdminLoginScreen(),
-                              ),
-                            );
-                          }
-                        },
-                        child: Transform.translate(
-                          offset: Offset(0, _slideAnimation.value),
-                          child: FadeTransition(
-                            opacity: _fadeAnimation,
-                            child: ScaleTransition(
-                              scale: _scaleAnimation,
-                              child: _buildHeader(),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-
-                  SizedBox(height: safeAreaHeight * 0.02),
-
-                  // 5. Quote Section - חמישי, תופס את רוב המסך
+                  _buildQuickInfoPanel(),
+                  SizedBox(height: safeAreaHeight * 0.018),
                   Expanded(
                     child: AnimatedBuilder(
                       animation: _quoteController,
-                      builder: (context, child) {
-                        return FadeTransition(
-                          opacity: _quoteOpacityAnimation,
-                          child:
-                              isLoading
-                                  ? _buildLoadingWidget()
-                                  : _buildQuoteCard(),
-                        );
-                      },
+                      builder:
+                          (context, child) => FadeTransition(
+                            opacity: _quoteOpacityAnimation,
+                            child:
+                                isLoading
+                                    ? _buildLoadingWidget()
+                                    : _buildWelcomeCard(),
+                          ),
                     ),
-                  ),
-
-                  SizedBox(height: safeAreaHeight * 0.02),
-
-                  // 6. Buttons Section - שישי
-                  AnimatedBuilder(
-                    animation: _buttonController,
-                    builder: (context, child) {
-                      return Transform.translate(
-                        offset: Offset(0, _buttonSlideAnimation.value),
-                        child: FadeTransition(
-                          opacity: _buttonController,
-                          child: _buildButtonsSection(),
-                        ),
-                      );
-                    },
                   ),
                 ],
               ),
@@ -888,50 +768,225 @@ class _EntranceScreenState extends State<EntranceScreen>
     );
   }
 
-  Widget _buildHeader() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Title
-        Text(
-          'ברוכים הבאים',
-          style: GoogleFonts.alef(
-            fontSize: MediaQuery.of(context).size.width * 0.075,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF1E293B),
-            height: 1.2,
-          ),
-          textAlign: TextAlign.center,
+  Widget _buildQuickInfoPanel() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color.fromARGB(
+            255,
+            255,
+            255,
+            255,
+          ).withValues(alpha: 0.35),
+          width: 0.8,
         ),
-
-        SizedBox(height: 4),
-
-        // Subtitle
-        Text(
-          'מחלקת כשרות דת והלכה',
-          style: GoogleFonts.alef(
-            fontSize: MediaQuery.of(context).size.width * 0.042,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF475569),
-            height: 1.3,
-          ),
-          textAlign: TextAlign.center,
-        ),
-
-        SizedBox(height: 12),
-
-        // Decorative line
-        Container(
-          height: 3,
-          width: 60,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(2),
-            gradient: LinearGradient(
-              colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // כותרת
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8, right: 2),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  'מידע מהיר',
+                  style: GoogleFonts.alef(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const Icon(
+                  Icons.dashboard_customize_outlined,
+                  size: 15,
+                  color: Color(0xFF378ADD),
+                ),
+              ],
             ),
           ),
-        ),
-      ],
+          const HebrewDateBanner(),
+          const SizedBox(height: 6),
+          const NextZmanBanner(),
+          const SizedBox(height: 6),
+          const NextPrayerBanner(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWelcomeCard() {
+    return AnimatedBuilder(
+      animation: _mainController,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(0, _slideAnimation.value),
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: ScaleTransition(
+              scale: _scaleAnimation,
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    _adminTapCount++;
+                    if (_adminTapCount >= 5) {
+                      _adminTapCount = 0;
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => AdminLoginScreen()),
+                      );
+                    }
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    constraints: const BoxConstraints(maxWidth: 560),
+                    padding: EdgeInsets.all(
+                      MediaQuery.of(context).size.width * 0.05,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // כותרת
+                        Text(
+                          'ברוכים הבאים',
+                          style: GoogleFonts.alef(
+                            fontSize: MediaQuery.of(context).size.width * 0.075,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF0F172A),
+                            height: 1.2,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'מחלקת כשרות דת והלכה',
+                          style: GoogleFonts.alef(
+                            fontSize: MediaQuery.of(context).size.width * 0.042,
+                            fontWeight: FontWeight.w400,
+                            color: const Color(0xFF64748B),
+                            height: 1.3,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 14),
+
+                        // קו
+                        Container(
+                          height: 2,
+                          width: 40,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(2),
+                            color: const Color(0xFF378ADD),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+
+                        // תמונת הרב
+                        Container(
+                          width: MediaQuery.of(context).size.width * 0.18,
+                          height: MediaQuery.of(context).size.width * 0.18,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(
+                              MediaQuery.of(context).size.width * 0.09,
+                            ),
+                            border: Border.all(
+                              color: const Color(0xFFB5D4F4),
+                              width: 2,
+                            ),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(
+                              MediaQuery.of(context).size.width * 0.09,
+                            ),
+                            child: Image.asset(
+                              'assets/hrav.png',
+                              fit: BoxFit.cover,
+                              alignment: Alignment.topCenter,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // ציטוט
+                        Icon(
+                          Icons.format_quote,
+                          size: 22,
+                          color: const Color(0xFF378ADD).withValues(alpha: 0.6),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: Colors.black.withValues(alpha: 0.06),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Text(
+                            rabbiQuote,
+                            style: GoogleFonts.alef(
+                              fontSize:
+                                  MediaQuery.of(context).size.width * 0.042,
+                              height: 1.75,
+                              color: const Color(0xFF334155),
+                              fontWeight: FontWeight.w400,
+                            ),
+                            textAlign: TextAlign.center,
+                            textDirection: TextDirection.rtl,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // שם הרב
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE6F1FB),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'הרב יואב חנניה אוקנין',
+                            style: GoogleFonts.alef(
+                              fontSize:
+                                  MediaQuery.of(context).size.width * 0.038,
+                              fontWeight: FontWeight.w500,
+                              color: const Color(0xFF0C447C),
+                            ),
+                            textDirection: TextDirection.rtl,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -940,189 +995,59 @@ class _EntranceScreenState extends State<EntranceScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SizedBox(
-            width: 50,
-            height: 50,
+          const SizedBox(
+            width: 40,
+            height: 40,
             child: CircularProgressIndicator(
-              color: Color(0xFF3B82F6),
-              strokeWidth: 3,
+              color: Color(0xFF378ADD),
+              strokeWidth: 2.5,
             ),
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 16),
           Text(
             '...טוען',
-            style: GoogleFonts.alef(fontSize: 16, color: Color(0xFF64748B)),
+            style: GoogleFonts.alef(
+              fontSize: 15,
+              color: const Color(0xFF64748B),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildQuoteCard() {
-    return SingleChildScrollView(
-      physics: BouncingScrollPhysics(),
-      child: Padding(
-        padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.045),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Rabbi Image - קטן יותר
-            Container(
-              width: MediaQuery.of(context).size.width * 0.16,
-              height: MediaQuery.of(context).size.width * 0.16,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(
-                  MediaQuery.of(context).size.width * 0.08,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0xFF3B82F6).withValues(alpha: 0.2),
-                    blurRadius: 15,
-                    offset: Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(
-                  MediaQuery.of(context).size.width * 0.08,
-                ),
-                child: Image.asset(
-                  'assets/hrav.png',
-                  fit: BoxFit.cover,
-                  alignment: Alignment.topCenter,
-                ),
-              ),
-            ),
-
-            SizedBox(height: 12),
-
-            // Quote mark - קטן יותר
-            Icon(
-              Icons.format_quote,
-              size: 24,
-              color: Color(0xFF3B82F6).withValues(alpha: 0.6),
-            ),
-
-            SizedBox(height: 8),
-
-            // Quote text
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                rabbiQuote,
-                style: GoogleFonts.alef(
-                  fontSize: MediaQuery.of(context).size.width * 0.042,
-                  height: 1.7,
-                  color: Color(0xFF374151),
-                  fontWeight: FontWeight.w400,
-                ),
-                textAlign: TextAlign.center,
-                textDirection: TextDirection.rtl,
-              ),
-            ),
-
-            SizedBox(height: 12),
-
-            // Attribution - קומפקטי יותר
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                color: Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                'הרב יואב חנניה אוקנין',
-                style: GoogleFonts.alef(
-                  fontSize: MediaQuery.of(context).size.width * 0.038,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF1E293B),
-                ),
-                textDirection: TextDirection.rtl,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildButtonsSection() {
-    return Column(
-      children: [
-        SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => ChatScreen()),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Color(0xFF3B82F6),
-              elevation: 8,
-              shadowColor: Colors.black.withValues(alpha: 0.15),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: Color(0xFF3B82F6), width: 2),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                FaIcon(
-                  FontAwesomeIcons.whatsapp,
-                  size: 20,
-                  color: Color(0xFF25D366),
-                ),
-                SizedBox(width: 10),
-                Text(
-                  'יצירת קשר עם הרב',
-                  style: GoogleFonts.alef(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildDrawer() {
     return Drawer(
       child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFF8FAFC), Color(0xFFE2E8F0)],
-          ),
-        ),
+        color: const Color(0xFFF8FAFC),
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
-                ),
-              ),
+              decoration: const BoxDecoration(color: Color(0xFF1D4ED8)),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.menu_book, size: 40, color: Colors.white),
-                  SizedBox(height: 12),
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.menu_book,
+                      size: 26,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
                   Text(
                     'תפריט ראשי',
                     textDirection: TextDirection.rtl,
                     style: GoogleFonts.alef(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
                       color: Colors.white,
                     ),
                   ),
@@ -1133,17 +1058,30 @@ class _EntranceScreenState extends State<EntranceScreen>
               return Directionality(
                 textDirection: TextDirection.rtl,
                 child: ListTile(
-                  leading: Icon(
-                    bubble['icon'],
-                    color: bubble['color'],
-                    size: 24,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 2,
+                  ),
+                  leading: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: (bubble['color'] as Color).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: Icon(
+                      bubble['icon'],
+                      color: bubble['color'],
+                      size: 20,
+                    ),
                   ),
                   title: Text(
                     bubble['label'],
                     textDirection: TextDirection.rtl,
                     style: GoogleFonts.alef(
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: FontWeight.w500,
+                      color: const Color(0xFF0F172A),
                     ),
                   ),
                   onTap: () {
@@ -1158,17 +1096,17 @@ class _EntranceScreenState extends State<EntranceScreen>
                               opacity: animation,
                               child: child,
                             ),
-                        transitionDuration: Duration(milliseconds: 300),
+                        transitionDuration: const Duration(milliseconds: 300),
                       ),
                     );
                   },
                 ),
               );
             }),
+            const SizedBox(height: 16),
           ],
         ),
       ),
     );
   }
 }
-

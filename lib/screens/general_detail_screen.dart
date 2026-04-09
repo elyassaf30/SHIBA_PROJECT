@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:rabbi_shiba/utils/theme_helpers.dart';
 import 'dart:io';
 
 class GeneralDetailScreen extends StatefulWidget {
@@ -245,30 +246,8 @@ class _GeneralDetailScreenState extends State<GeneralDetailScreen> {
       ),
       body: Stack(
         children: [
-          // רקע תמונה מלא עם טיפול בשגיאות
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage('assets/siba4.png'),
-                  fit: BoxFit.cover,
-                  onError: (exception, stackTrace) {
-                    debugPrint('Background image error: $exception');
-                  },
-                ),
-              ),
-              // רקע חלופי אם התמונה לא נטענת
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0xFFE3F2FD), Color(0xFFBBDEFB)],
-                  ),
-                ),
-              ),
-            ),
-          ),
+          // רקע מתחלף אנימציה
+          Positioned.fill(child: ThemeHelpers.buildDefaultBackground()),
 
           // תוכן מלא המתחיל מלמעלה
           SingleChildScrollView(
@@ -280,7 +259,10 @@ class _GeneralDetailScreenState extends State<GeneralDetailScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Colors.white.withValues(alpha: 0.9)],
+                  colors: [
+                    Colors.transparent,
+                    Colors.white.withValues(alpha: 0.9),
+                  ],
                   stops: [0.3, 0.5], // התחלת מעבר צבע מהשליש העליון
                 ),
               ),
@@ -404,4 +386,3 @@ class _GeneralDetailScreenState extends State<GeneralDetailScreen> {
     );
   }
 }
-

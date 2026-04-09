@@ -18,7 +18,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // העברת הגדרת הבועות לקבוע כדי למנוע יצירה מחדש
   static final List<Map<String, dynamic>> _bubbles = [
     {
       'label': 'זמני היום',
@@ -88,12 +87,6 @@ class _HomeScreenState extends State<HomeScreen> {
     },
   ];
 
-  @override
-  void initState() {
-    super.initState();
-    // No additional initialization needed - using ThemeHelpers for styles
-  }
-
   Widget _buildAppBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -126,8 +119,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
-  // Shabbat banner removed
 
   Widget _buildBackground() {
     return ThemeHelpers.buildDefaultBackground();

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:kosher_dart/kosher_dart.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
+import 'package:rabbi_shiba/utils/theme_helpers.dart';
+import 'package:flutter/material.dart' as ui;
 
 class ZmanimScreen extends StatefulWidget {
   const ZmanimScreen({super.key});
@@ -31,7 +34,6 @@ class _ZmanimScreenState extends State<ZmanimScreen> {
     });
 
     try {
-      // נסה לקבל מיקום מדויק, אחרת השתמש במיקום ברירת מחדל (ירושלים)
       Position? position;
       try {
         LocationPermission permission = await Geolocator.checkPermission();
@@ -43,14 +45,13 @@ class _ZmanimScreenState extends State<ZmanimScreen> {
             permission == LocationPermission.always) {
           position = await Geolocator.getCurrentPosition(
             desiredAccuracy: LocationAccuracy.medium,
-          ).timeout(Duration(seconds: 5));
+          ).timeout(const Duration(seconds: 5));
           _locationName = 'מיקום נוכחי';
         }
       } catch (e) {
         debugPrint('לא ניתן לקבל מיקום מדויק, משתמש במיקום ברירת מחדל');
       }
 
-      // אם לא הצלחנו לקבל מיקום, השתמש בירושלים כברירת מחדל
       final latitude = position?.latitude ?? 31.7683;
       final longitude = position?.longitude ?? 35.2137;
 
@@ -83,73 +84,89 @@ class _ZmanimScreenState extends State<ZmanimScreen> {
     return DateFormat('HH:mm').format(time);
   }
 
-  Widget _buildZmanCard({
-    required String title,
-    required String time,
-    required IconData icon,
-    required Color color,
-    String? subtitle,
-  }) {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.3),
-            blurRadius: 8,
-            offset: Offset(0, 4),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        flexibleSpace: ThemeHelpers.buildDefaultBackground(),
+        centerTitle: true,
+        title: Text(
+          'זמני היום',
+          style: GoogleFonts.alef(
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
+            color: const Color.fromARGB(255, 8, 8, 9),
+          ),
+        ),
+        iconTheme: const IconThemeData(color: Color.fromARGB(255, 16, 19, 24)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded, size: 22),
+            onPressed: _initializeZmanim,
+            tooltip: 'רענן זמנים',
           ),
         ],
       ),
+      body: Stack(
+        children: [
+          Positioned.fill(child: ThemeHelpers.buildDefaultBackground()),
+          if (_isLoading)
+            _buildLoading()
+          else if (_errorMessage != null)
+            _buildError()
+          else
+            _buildContent(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoading() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const CircularProgressIndicator(
+            color: Color(0xFF378ADD),
+            strokeWidth: 2.5,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'טוען זמנים...',
+            style: GoogleFonts.alef(
+              fontSize: 16,
+              color: const Color(0xFF334155),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildError() {
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Row(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 28),
+            Icon(Icons.error_outline_rounded, size: 52, color: Colors.red[300]),
+            const SizedBox(height: 14),
+            Text(
+              _errorMessage!,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.alef(fontSize: 15, color: Colors.red[700]),
             ),
-            SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  if (subtitle != null)
-                    Text(
-                      subtitle,
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                    ),
-                ],
-              ),
-            ),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                time,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
+            const SizedBox(height: 20),
+            OutlinedButton.icon(
+              onPressed: _initializeZmanim,
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: Text('נסה שוב', style: GoogleFonts.alef()),
             ),
           ],
         ),
@@ -157,249 +174,331 @@ class _ZmanimScreenState extends State<ZmanimScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        title: Text(
-          'זמני היום',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-            color: Colors.white,
-            shadows: [
-              Shadow(blurRadius: 10, color: Colors.black, offset: Offset(2, 2)),
-            ],
-          ),
+  Widget _buildContent() {
+    return RefreshIndicator(
+      onRefresh: _initializeZmanim,
+      color: const Color.fromARGB(255, 15, 17, 18),
+      child: ListView(
+        padding: const EdgeInsets.only(
+          top: 90,
+          bottom: 24,
+          left: 16,
+          right: 16,
         ),
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Colors.deepPurple.withValues(alpha: 0.7), Colors.transparent],
+        children: [
+          // ─── כרטיס תאריך עברי ───
+          if (_jewishCalendar != null && _hebrewFormatter != null) ...[
+            _DateCard(
+              hebrewDate: _hebrewFormatter!.format(_jewishCalendar!),
+              locationName: _locationName,
             ),
+            const SizedBox(height: 16),
+          ],
+
+          // ─── קטגוריה: בוקר ───
+          _SectionHeader(title: 'בוקר'),
+          const SizedBox(height: 6),
+          _ZmanTile(
+            title: 'עלות השחר',
+            subtitle: '72 דקות לפני הנץ',
+            time: _formatTime(_zmanimCalendar?.getAlos72()),
+            icon: Icons.nightlight_round,
+            accentColor: const Color(0xFF534AB7),
           ),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh, color: Colors.white),
-            onPressed: _initializeZmanim,
-            tooltip: 'רענן זמנים',
+          _ZmanTile(
+            title: 'הנץ החמה',
+            time: _formatTime(_zmanimCalendar?.getSunrise()),
+            icon: Icons.wb_sunny_rounded,
+            accentColor: const Color(0xFFBA7517),
           ),
-        ],
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFE3F2FD), Color(0xFFBBDEFB), Color(0xFF90CAF9)],
+          _ZmanTile(
+            title: 'סוף זמן ק"ש (גר"א)',
+            time: _formatTime(_zmanimCalendar?.getSofZmanShmaGRA()),
+            icon: Icons.menu_book_rounded,
+            accentColor: const Color(0xFF185FA5),
           ),
-        ),
-        child:
-            _isLoading
-                ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircularProgressIndicator(),
-                      SizedBox(height: 16),
-                      Text(
-                        'טוען זמנים...',
-                        style: TextStyle(fontSize: 18, color: Colors.black87),
-                      ),
-                    ],
-                  ),
-                )
-                : _errorMessage != null
-                ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 60,
-                        color: Colors.red[300],
-                      ),
-                      SizedBox(height: 16),
-                      Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Text(
-                          _errorMessage!,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 16, color: Colors.red),
-                        ),
-                      ),
-                      ElevatedButton(
-                        onPressed: _initializeZmanim,
-                        child: Text('נסה שוב'),
-                      ),
-                    ],
-                  ),
-                )
-                : RefreshIndicator(
-                  onRefresh: _initializeZmanim,
-                  child: ListView(
-                    padding: EdgeInsets.only(top: 100, bottom: 16),
-                    children: [
-                      // כותרת תאריך עברי
-                      if (_jewishCalendar != null && _hebrewFormatter != null)
-                        Container(
-                          margin: EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          padding: EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.deepPurple,
-                                Colors.deepPurple[700]!,
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.deepPurple.withValues(alpha: 0.4),
-                                blurRadius: 8,
-                                offset: Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            children: [
-                              Text(
-                                _hebrewFormatter!.format(_jewishCalendar!),
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                _locationName,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.white70,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+          _ZmanTile(
+            title: 'סוף זמן תפילה (גר"א)',
+            time: _formatTime(_zmanimCalendar?.getSofZmanTfilaGRA()),
+            icon: Icons.access_time_rounded,
+            accentColor: const Color(0xFF0F6E56),
+          ),
 
-                      SizedBox(height: 8),
+          const SizedBox(height: 14),
 
-                      // זמני היום
-                      _buildZmanCard(
-                        title: 'עלות השחר',
-                        time: _formatTime(_zmanimCalendar?.getAlos72()),
-                        icon: Icons.nightlight_round,
-                        color: Colors.indigo,
-                        subtitle: '72 דקות לפני הנץ',
-                      ),
-                      _buildZmanCard(
-                        title: 'הנץ החמה',
-                        time: _formatTime(_zmanimCalendar?.getSunrise()),
-                        icon: Icons.wb_sunny,
-                        color: Colors.orange,
-                      ),
-                      _buildZmanCard(
-                        title: 'סוף זמן ק"ש (גר"א)',
-                        time: _formatTime(_zmanimCalendar?.getSofZmanShmaGRA()),
-                        icon: Icons.menu_book,
-                        color: Colors.blue[700]!,
-                      ),
-                      _buildZmanCard(
-                        title: 'סוף זמן תפילה (גר"א)',
-                        time: _formatTime(
-                          _zmanimCalendar?.getSofZmanTfilaGRA(),
-                        ),
-                        icon: Icons.access_time,
-                        color: Colors.teal,
-                      ),
-                      _buildZmanCard(
-                        title: 'חצות היום',
-                        time: _formatTime(_zmanimCalendar?.getChatzos()),
-                        icon: Icons.wb_twilight,
-                        color: Colors.amber[700]!,
-                      ),
-                      _buildZmanCard(
-                        title: 'מנחה גדולה',
-                        time: _formatTime(_zmanimCalendar?.getMinchaGedola()),
-                        icon: Icons.wb_cloudy,
-                        color: Colors.blue[600]!,
-                      ),
-                      _buildZmanCard(
-                        title: 'מנחה קטנה',
-                        time: _formatTime(_zmanimCalendar?.getMinchaKetana()),
-                        icon: Icons.cloud,
-                        color: Colors.lightBlue,
-                      ),
-                      _buildZmanCard(
-                        title: 'פלג המנחה',
-                        time: _formatTime(_zmanimCalendar?.getPlagHamincha()),
-                        icon: Icons.cloud_queue,
-                        color: Colors.cyan,
-                      ),
-                      _buildZmanCard(
-                        title: 'שקיעה',
-                        time: _formatTime(_zmanimCalendar?.getSunset()),
-                        icon: Icons.wb_twilight,
-                        color: Colors.deepOrange,
-                      ),
-                      _buildZmanCard(
-                        title: 'צאת הכוכבים',
-                        time: _formatTime(_zmanimCalendar?.getTzais()),
-                        icon: Icons.nights_stay,
-                        color: Colors.indigo[900]!,
-                        subtitle: 'סוף השבת והחג',
-                      ),
-                      _buildZmanCard(
-                        title: 'חצות הלילה',
-                        time: _formatTime(_zmanimCalendar?.getSolarMidnight()),
-                        icon: Icons.bedtime,
-                        color: Colors.deepPurple[900]!,
-                      ),
+          // ─── קטגוריה: צהריים ───
+          _SectionHeader(title: 'צהריים'),
+          const SizedBox(height: 6),
+          _ZmanTile(
+            title: 'חצות היום',
+            time: _formatTime(_zmanimCalendar?.getChatzos()),
+            icon: Icons.wb_twilight_rounded,
+            accentColor: const Color(0xFF854F0B),
+          ),
+          _ZmanTile(
+            title: 'מנחה גדולה',
+            time: _formatTime(_zmanimCalendar?.getMinchaGedola()),
+            icon: Icons.wb_cloudy_rounded,
+            accentColor: const Color(0xFF185FA5),
+          ),
+          _ZmanTile(
+            title: 'מנחה קטנה',
+            time: _formatTime(_zmanimCalendar?.getMinchaKetana()),
+            icon: Icons.cloud_rounded,
+            accentColor: const Color(0xFF1D9E75),
+          ),
+          _ZmanTile(
+            title: 'פלג המנחה',
+            time: _formatTime(_zmanimCalendar?.getPlagHamincha()),
+            icon: Icons.cloud_queue_rounded,
+            accentColor: const Color(0xFF0F6E56),
+          ),
 
-                      SizedBox(height: 16),
+          const SizedBox(height: 14),
 
-                      // הערה
-                      Container(
-                        margin: EdgeInsets.symmetric(horizontal: 16),
-                        padding: EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.amber[50],
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.amber[300]!),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.info_outline, color: Colors.amber[800]),
-                            SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'הזמנים מחושבים לפי המיקום שלך',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.amber[900],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+          // ─── קטגוריה: ערב ───
+          _SectionHeader(title: 'ערב'),
+          const SizedBox(height: 6),
+          _ZmanTile(
+            title: 'שקיעה',
+            time: _formatTime(_zmanimCalendar?.getSunset()),
+            icon: Icons.wb_twilight_rounded,
+            accentColor: const Color(0xFF993C1D),
+          ),
+          // צאת הכוכבים הרגיל — getTzais() = 8.5 מעלות (לא צאת שבת/חג)
+          _ZmanTile(
+            title: 'צאת הכוכבים',
+            subtitle: '8.5 מעלות',
+            time: _formatTime(_zmanimCalendar?.getTzais()),
+            icon: Icons.nights_stay_rounded,
+            accentColor: const Color(0xFF3C3489),
+          ),
+          _ZmanTile(
+            title: 'חצות הלילה',
+            time: _formatTime(_zmanimCalendar?.getSolarMidnight()),
+            icon: Icons.bedtime_rounded,
+            accentColor: const Color(0xFF26215C),
+          ),
+
+          const SizedBox(height: 16),
+
+          // ─── הערה ───
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.55),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFFEF9F27).withValues(alpha: 0.4),
+                width: 0.8,
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.info_outline_rounded,
+                  size: 17,
+                  color: Color(0xFFBA7517),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'הזמנים מחושבים לפי המיקום שלך',
+                    textDirection: ui.TextDirection.rtl,
+                    style: GoogleFonts.alef(
+                      fontSize: 13,
+                      color: const Color(0xFF854F0B),
+                    ),
                   ),
                 ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
+// ─────────────────────────────────────────────
+// כרטיס תאריך עברי
+// ─────────────────────────────────────────────
+class _DateCard extends StatelessWidget {
+  final String hebrewDate;
+  final String locationName;
+
+  const _DateCard({required this.hebrewDate, required this.locationName});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.5),
+          width: 0.8,
+        ),
+      ),
+      child: Column(
+        children: [
+          Text(
+            hebrewDate,
+            textAlign: TextAlign.center,
+            textDirection: ui.TextDirection.rtl,
+            style: GoogleFonts.alef(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF0F172A),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.location_on_outlined,
+                size: 14,
+                color: Color(0xFF64748B),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                locationName,
+                style: GoogleFonts.alef(
+                  fontSize: 13,
+                  color: const Color(0xFF64748B),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// כותרת קטגוריה
+// ─────────────────────────────────────────────
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  const _SectionHeader({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 4, bottom: 2),
+      child: Row(
+        children: [
+          Container(
+            width: 3,
+            height: 16,
+            decoration: BoxDecoration(
+              color: const Color(0xFF378ADD),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            textDirection: ui.TextDirection.rtl,
+            style: GoogleFonts.alef(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF475569),
+              letterSpacing: 0.3,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// שורת זמן
+// ─────────────────────────────────────────────
+class _ZmanTile extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+  final String time;
+  final IconData icon;
+  final Color accentColor;
+
+  const _ZmanTile({
+    required this.title,
+    required this.time,
+    required this.icon,
+    required this.accentColor,
+    this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.78),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: Colors.black.withValues(alpha: 0.06),
+          width: 0.8,
+        ),
+      ),
+      child: Row(
+        children: [
+          // שעה
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: accentColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              time,
+              style: GoogleFonts.alef(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: accentColor,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+
+          // שם + תת-כותרת
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  title,
+                  textDirection: ui.TextDirection.rtl,
+                  style: GoogleFonts.alef(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF0F172A),
+                  ),
+                ),
+                if (subtitle != null)
+                  Text(
+                    subtitle!,
+                    textDirection: ui.TextDirection.rtl,
+                    style: GoogleFonts.alef(
+                      fontSize: 12,
+                      color: const Color(0xFF94A3B8),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+
+          // אייקון
+          Icon(icon, size: 20, color: accentColor.withValues(alpha: 0.7)),
+        ],
+      ),
+    );
+  }
+}

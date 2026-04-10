@@ -226,6 +226,7 @@ class _ShabatTileState extends State<_ShabatTile>
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   // חץ
                   AnimatedRotation(
@@ -237,7 +238,7 @@ class _ShabatTileState extends State<_ShabatTile>
                       color: Color(0xFF378ADD),
                     ),
                   ),
-                  const Spacer(),
+                  const SizedBox(width: 12),
                   // שם
                   Flexible(
                     child: Text(
@@ -251,7 +252,7 @@ class _ShabatTileState extends State<_ShabatTile>
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 12),
                   // אייקון
                   Container(
                     width: 38,

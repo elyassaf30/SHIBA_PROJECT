@@ -204,21 +204,9 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
       icon: Icons.calendar_today_outlined,
       iconColor: const Color(0xFF378ADD),
       child: Row(
+        textDirection: TextDirection.rtl,
         children: [
-          Flexible(
-            child: Text(
-              hebrewDate,
-              textDirection: TextDirection.rtl,
-              style: GoogleFonts.alef(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF0F172A),
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
           if (parasha.isNotEmpty) ...[
-            const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
@@ -235,7 +223,20 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
                 ),
               ),
             ),
+            const SizedBox(width: 8),
           ],
+          Flexible(
+            child: Text(
+              hebrewDate,
+              textDirection: TextDirection.rtl,
+              style: GoogleFonts.alef(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF0F172A),
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
     );

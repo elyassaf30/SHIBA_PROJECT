@@ -50,6 +50,7 @@ dependencies:
   app_links: ^6.4.0
   intl: ^0.20.2
   kosher_dart: ^2.0.18
+  webview_flutter: ^4.9.0
  
 
 dev_dependencies:

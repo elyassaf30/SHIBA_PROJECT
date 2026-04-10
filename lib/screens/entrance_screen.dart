@@ -6,6 +6,7 @@ import 'package:rabbi_shiba/screens/general_detail_screen.dart';
 import 'package:rabbi_shiba/screens/week_day_tefilot_screen.dart';
 import 'package:rabbi_shiba/screens/user_to_synagogue_map.dart';
 import 'package:rabbi_shiba/screens/zmanim_screen.dart';
+import 'package:rabbi_shiba/screens/torah_weekly_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:kosher_dart/kosher_dart.dart';
@@ -16,6 +17,7 @@ import 'dart:convert';
 import 'AdminLoginScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rabbi_shiba/utils/theme_helpers.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 const Map<String, String> parashaTranslations = {
   'Parashat Bereshit': 'בראשית',
@@ -75,6 +77,28 @@ const Map<String, String> parashaTranslations = {
 };
 
 // ─────────────────────────────────────────────
+// Design Tokens
+// ─────────────────────────────────────────────
+class _AppColors {
+  static const navy = Color(0xFF0C2D5E);
+  static const blue = Color(0xFF1A5FB4);
+  static const skyBlue = Color(0xFF4A90D9);
+  static const lightBlue = Color(0xFFD6E8F9);
+  static const gold = Color(0xFFB8960C);
+  static const goldLight = Color(0xFFFDF3D0);
+  static const surface = Color(0xFFF8FAFF);
+  static const cardBg = Colors.white;
+  static const textPrimary = Color(0xFF0D1B33);
+  static const textSecondary = Color(0xFF4A5568);
+  static const textMuted = Color(0xFF94A3B8);
+  static const divider = Color(0xFFE2EAF4);
+  static const teal = Color(0xFF0D7C60);
+  static const tealLight = Color(0xFFD4F0E8);
+  static const amber = Color(0xFFB45309);
+  static const amberLight = Color(0xFFFEF3C7);
+}
+
+// ─────────────────────────────────────────────
 // 1. HebrewDateBanner
 // ─────────────────────────────────────────────
 class HebrewDateBanner extends StatefulWidget {
@@ -99,7 +123,6 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final nowDate = DateTime.now();
-
       final formattedDate =
           '${nowDate.year}-${nowDate.month.toString().padLeft(2, '0')}-${nowDate.day.toString().padLeft(2, '0')}';
 
@@ -113,7 +136,6 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
         final data = json.decode(response.body);
         String fetchedHebrewDate = data['hebrew'] ?? 'לא זמין';
         String fetchedParasha = '';
-
         final cachedHebrewDate = prefs.getString('cachedHebrewDate');
 
         if (cachedHebrewDate == fetchedHebrewDate) {
@@ -134,7 +156,6 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
             (event) => event.startsWith('Parashat'),
             orElse: () => '',
           );
-
           if (englishParasha.isNotEmpty) {
             fetchedParasha =
                 parashaTranslations[englishParasha] ?? englishParasha;
@@ -153,20 +174,18 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
           });
         }
       } else {
-        if (mounted) {
+        if (mounted)
           setState(() {
             hebrewDate = 'שגיאה בטעינה';
             isLoading = false;
           });
-        }
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted)
         setState(() {
           hebrewDate = 'שגיאה בטעינה';
           isLoading = false;
         });
-      }
       debugPrint('שגיאה ב-fetchHebrewDateAndParasha: $e');
     }
   }
@@ -174,52 +193,51 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return _InfoRow(
+      return _InfoChip(
         icon: Icons.calendar_today_outlined,
-        iconColor: const Color(0xFF378ADD),
+        iconColor: _AppColors.blue,
+        bgColor: _AppColors.lightBlue,
         child: Row(
           children: [
             const SizedBox(
-              width: 14,
-              height: 14,
+              width: 12,
+              height: 12,
               child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Color(0xFF378ADD),
+                strokeWidth: 1.5,
+                color: _AppColors.blue,
               ),
             ),
             const SizedBox(width: 8),
             Text(
               'טוען תאריך עברי...',
-              style: GoogleFonts.alef(
-                fontSize: 13,
-                color: const Color(0xFF378ADD),
-              ),
+              style: GoogleFonts.alef(fontSize: 13, color: _AppColors.blue),
             ),
           ],
         ),
       );
     }
 
-    return _InfoRow(
+    return _InfoChip(
       icon: Icons.calendar_today_outlined,
-      iconColor: const Color(0xFF378ADD),
+      iconColor: _AppColors.blue,
+      bgColor: _AppColors.lightBlue,
       child: Row(
         textDirection: TextDirection.rtl,
         children: [
           if (parasha.isNotEmpty) ...[
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 2),
               decoration: BoxDecoration(
-                color: const Color(0xFFE6F1FB),
+                color: _AppColors.navy.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
                 'פרשת $parasha',
                 textDirection: TextDirection.rtl,
                 style: GoogleFonts.alef(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFF0C447C),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: _AppColors.navy,
                 ),
               ),
             ),
@@ -230,9 +248,9 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
               hebrewDate,
               textDirection: TextDirection.rtl,
               style: GoogleFonts.alef(
-                fontSize: 14,
+                fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: const Color(0xFF0F172A),
+                color: _AppColors.textPrimary,
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -273,26 +291,24 @@ class _NextZmanBannerState extends State<NextZmanBanner> {
 
   void _startZmanCheck() {
     _fetchNextZman();
-    _zmanCheckTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
-      _fetchNextZman();
-    });
+    _zmanCheckTimer = Timer.periodic(
+      const Duration(minutes: 5),
+      (timer) => _fetchNextZman(),
+    );
   }
 
   void _fetchNextZman() async {
     try {
       final now = DateTime.now();
       final currentMinutes = now.hour * 60 + now.minute;
-
       final geoLocation = GeoLocation.setLocation(
         'ירושלים',
         31.7683,
         35.2137,
         now,
       );
-
       final zmanimCalendar = ComplexZmanimCalendar.intGeoLocation(geoLocation);
       final dateFormat = intl.DateFormat('HH:mm');
-
       final sunrise = zmanimCalendar.getSunrise();
       final sunset = zmanimCalendar.getSunset();
 
@@ -336,31 +352,30 @@ class _NextZmanBannerState extends State<NextZmanBanner> {
         });
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted)
         setState(() {
           _nextZman = 'שגיאה';
           _isLoading = false;
         });
-      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading || _nextZman == 'לא זמין' || _nextZman == 'שגיאה') {
+    if (_isLoading || _nextZman == 'לא זמין' || _nextZman == 'שגיאה')
       return const SizedBox.shrink();
-    }
 
-    return _InfoRow(
+    return _InfoChip(
       icon: Icons.wb_sunny_outlined,
-      iconColor: const Color(0xFFEF9F27),
+      iconColor: _AppColors.amber,
+      bgColor: _AppColors.amberLight,
       child: Text(
         '$_nextZmanLabel בשעה $_nextZman',
         textDirection: TextDirection.rtl,
         style: GoogleFonts.alef(
-          fontSize: 14,
+          fontSize: 13,
           fontWeight: FontWeight.w500,
-          color: const Color(0xFF0F172A),
+          color: _AppColors.textPrimary,
         ),
         overflow: TextOverflow.ellipsis,
       ),
@@ -396,49 +411,41 @@ class _NextPrayerBannerState extends State<NextPrayerBanner> {
 
   void _startPrayerTimeCheck() {
     _fetchAndDetermineNextPrayer();
-    _prayerCheckTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
-      _fetchAndDetermineNextPrayer();
-    });
+    _prayerCheckTimer = Timer.periodic(
+      const Duration(minutes: 1),
+      (timer) => _fetchAndDetermineNextPrayer(),
+    );
   }
 
   void _fetchAndDetermineNextPrayer() async {
     try {
       final now = DateTime.now();
       final currentMinutes = now.hour * 60 + now.minute;
-
       final response = await Supabase.instance.client
           .from('זמני תפילות ימי חול')
           .select('שעה, "סוג תפילה"');
-
       final data = List<Map<String, dynamic>>.from(response);
       Map<String, dynamic>? nextPrayer;
-
       data.sort((a, b) => a['שעה'].compareTo(b['שעה']));
 
       for (var item in data) {
         final timeString = item['שעה'];
         final parts = timeString.split(':');
         if (parts.length < 2) continue;
-
-        final prayerHour = int.tryParse(parts[0]) ?? 0;
-        final prayerMinute = int.tryParse(parts[1]) ?? 0;
-        final prayerMinutes = prayerHour * 60 + prayerMinute;
-
+        final prayerMinutes =
+            (int.tryParse(parts[0]) ?? 0) * 60 + (int.tryParse(parts[1]) ?? 0);
         if (prayerMinutes > currentMinutes) {
           nextPrayer = item;
           break;
         }
       }
 
-      if (nextPrayer == null && data.isNotEmpty) {
-        nextPrayer = data.first;
-      }
+      if (nextPrayer == null && data.isNotEmpty) nextPrayer = data.first;
 
-      if (mounted) {
+      if (mounted)
         setState(() {
           _nextPrayerTime = nextPrayer;
         });
-      }
     } catch (e) {
       // מטפל בשגיאה בשקט
     }
@@ -452,17 +459,21 @@ class _NextPrayerBannerState extends State<NextPrayerBanner> {
     final type = _nextPrayerTime!['סוג תפילה'];
     final displayTime = time.length >= 5 ? time.substring(0, 5) : time;
 
-    return _InfoRow(
+    return _InfoChip(
       icon: Icons.schedule_outlined,
-      iconColor: const Color(0xFF1D9E75),
+      iconColor: _AppColors.teal,
+      bgColor: _AppColors.tealLight,
       child: Text.rich(
         TextSpan(
-          style: GoogleFonts.alef(fontSize: 14, color: const Color(0xFF0F172A)),
+          style: GoogleFonts.alef(fontSize: 13, color: _AppColors.textPrimary),
           children: [
             const TextSpan(text: 'תפילה הבאה: '),
             TextSpan(
               text: '$type',
-              style: const TextStyle(fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                color: _AppColors.teal,
+              ),
             ),
             TextSpan(text: ' — $displayTime'),
           ],
@@ -475,35 +486,42 @@ class _NextPrayerBannerState extends State<NextPrayerBanner> {
 }
 
 // ─────────────────────────────────────────────
-// Helper: _InfoRow — שורת מידע אחידה
+// Helper: _InfoChip — שורת מידע משודרגת
 // ─────────────────────────────────────────────
-class _InfoRow extends StatelessWidget {
+class _InfoChip extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
+  final Color bgColor;
   final Widget child;
 
-  const _InfoRow({
+  const _InfoChip({
     required this.icon,
     required this.iconColor,
+    required this.bgColor,
     required this.child,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: Colors.black.withValues(alpha: 0.07),
-          width: 0.8,
-        ),
+        color: bgColor.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: iconColor.withValues(alpha: 0.2), width: 0.8),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 17, color: iconColor),
-          const SizedBox(width: 9),
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 15, color: iconColor),
+          ),
+          const SizedBox(width: 10),
           Expanded(child: child),
         ],
       ),
@@ -528,13 +546,22 @@ class _EntranceScreenState extends State<EntranceScreen>
   bool isLoading = true;
   int _adminTapCount = 0;
 
+  Map<String, dynamic>? latestVideo;
+  bool videoLoading = true;
+  bool showVideoPlayer = false;
+  bool _hideNewVideoBadge = false;
+  String? _badgeVideoId;
+
   late AnimationController _mainController;
   late AnimationController _quoteController;
+  late AnimationController _panelController;
 
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
   late Animation<double> _slideAnimation;
   late Animation<double> _quoteOpacityAnimation;
+  late Animation<double> _panelSlideAnimation;
+  late Animation<double> _panelFadeAnimation;
 
   static final List<Map<String, dynamic>> _bubbles = [
     {
@@ -610,6 +637,7 @@ class _EntranceScreenState extends State<EntranceScreen>
     super.initState();
     _initializeAnimations();
     _fetchRabbiData();
+    _fetchLatestVideo();
   }
 
   void _initializeAnimations() {
@@ -617,10 +645,13 @@ class _EntranceScreenState extends State<EntranceScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     );
-
     _quoteController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
+    );
+    _panelController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
     );
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -629,25 +660,30 @@ class _EntranceScreenState extends State<EntranceScreen>
         curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
       ),
     );
-
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+    _scaleAnimation = Tween<double>(begin: 0.92, end: 1.0).animate(
       CurvedAnimation(
         parent: _mainController,
         curve: const Interval(0.2, 0.8, curve: Curves.elasticOut),
       ),
     );
-
-    _slideAnimation = Tween<double>(begin: 50.0, end: 0.0).animate(
+    _slideAnimation = Tween<double>(begin: 40.0, end: 0.0).animate(
       CurvedAnimation(
         parent: _mainController,
         curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
       ),
     );
-
     _quoteOpacityAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
     ).animate(CurvedAnimation(parent: _quoteController, curve: Curves.easeIn));
+    _panelSlideAnimation = Tween<double>(
+      begin: -20.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(parent: _panelController, curve: Curves.easeOut));
+    _panelFadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _panelController, curve: Curves.easeIn));
   }
 
   Future<void> _fetchRabbiData() async {
@@ -659,9 +695,7 @@ class _EntranceScreenState extends State<EntranceScreen>
               .eq('סוג', 'דבר הרב')
               .limit(1)
               .maybeSingle();
-
       if (!mounted) return;
-
       setState(() {
         rabbiQuote =
             (response == null || response['מידע'] == null)
@@ -670,7 +704,7 @@ class _EntranceScreenState extends State<EntranceScreen>
                     'ברוכים הבאים לאפליקציית כשרות דת והלכה של מרכז רפואי שיבא.';
         isLoading = false;
       });
-
+      _panelController.forward();
       _mainController.forward();
       Future.delayed(const Duration(milliseconds: 400), () {
         if (mounted) _quoteController.forward();
@@ -682,16 +716,208 @@ class _EntranceScreenState extends State<EntranceScreen>
             'ברוכים הבאים לאפליקציית כשרות דת והלכה של מרכז רפואי שיבא. כאן תמצאו את כל המידע הדרוש לכם לשמירה על הלכות הכשרות והדת במרכז הרפואי.';
         isLoading = false;
       });
+      _panelController.forward();
       _mainController.forward();
       _quoteController.forward();
       debugPrint('Error fetching rabbi data: $e');
     }
   }
 
+  Future<void> _fetchLatestVideo() async {
+    try {
+      final response = await supabase
+          .from('סרטוני_רב')
+          .select()
+          .eq('פעיל', true)
+          .order('תאריך_הוספה', ascending: false)
+          .limit(1);
+      if (!mounted) return;
+
+      final Map<String, dynamic>? nextVideo =
+          response.isNotEmpty ? response[0] : null;
+      final String? nextVideoId = nextVideo?['id']?.toString();
+
+      setState(() {
+        // Show the badge again only when a different video arrives.
+        if (nextVideoId != null && nextVideoId != _badgeVideoId) {
+          _hideNewVideoBadge = false;
+          _badgeVideoId = nextVideoId;
+        }
+        latestVideo = nextVideo;
+        videoLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        latestVideo = null;
+        videoLoading = false;
+      });
+      debugPrint('Error fetching latest video: $e');
+    }
+  }
+
+  Widget _buildLatestVideoCard() {
+    if (latestVideo == null) return const SizedBox.shrink();
+
+    final title = latestVideo!['כותרת'] ?? 'סרטון חדש';
+    final description = latestVideo!['תיאור'] ?? '';
+    final thumbnailUrl = latestVideo!['תמונה_thumbnail'];
+    final googleDriveUrl = latestVideo!['קישור_גוגל_דרייב'] ?? '';
+
+    if (showVideoPlayer) return _buildVideoPlayer(title, googleDriveUrl);
+
+    return GestureDetector(
+      onTap:
+          () => setState(() {
+            showVideoPlayer = true;
+            _hideNewVideoBadge = true;
+          }),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _AppColors.blue.withValues(alpha: 0.2)),
+          boxShadow: [
+            BoxShadow(
+              color: _AppColors.navy.withValues(alpha: 0.12),
+              blurRadius: 16,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Container(
+              height: 150,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  colors: [
+                    _AppColors.navy.withValues(alpha: 0.95),
+                    _AppColors.blue.withValues(alpha: 0.75),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                image:
+                    thumbnailUrl != null
+                        ? DecorationImage(
+                          image: NetworkImage(thumbnailUrl),
+                          fit: BoxFit.cover,
+                          colorFilter: ColorFilter.mode(
+                            Colors.black.withValues(alpha: 0.35),
+                            BlendMode.darken,
+                          ),
+                        )
+                        : null,
+              ),
+            ),
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.5),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: _AppColors.navy.withValues(alpha: 0.3),
+                            blurRadius: 10,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                      padding: const EdgeInsets.all(10),
+                      child: const Icon(
+                        Icons.play_arrow_rounded,
+                        size: 22,
+                        color: _AppColors.navy,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.alef(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                          if (description.isNotEmpty) ...[
+                            const SizedBox(height: 3),
+                            Text(
+                              description,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textDirection: TextDirection.rtl,
+                              style: GoogleFonts.alef(
+                                fontSize: 12,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (!showVideoPlayer && !_hideNewVideoBadge)
+              Positioned(
+                top: 10,
+                right: 10,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD62B2B).withValues(alpha: 0.92),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    'סרטון חדש',
+                    style: GoogleFonts.alef(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _mainController.dispose();
     _quoteController.dispose();
+    _panelController.dispose();
     super.dispose();
   }
 
@@ -715,38 +941,23 @@ class _EntranceScreenState extends State<EntranceScreen>
         shadowColor: Colors.transparent,
         flexibleSpace: ThemeHelpers.buildDefaultBackground(),
         iconTheme: IconThemeData(
-          color: const Color.fromARGB(255, 13, 13, 14).withValues(alpha: 0.9),
+          color: _AppColors.navy.withValues(alpha: 0.85),
         ),
-        title: Text(
-          'כשרות דת והלכה',
-          style: GoogleFonts.alef(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: const Color.fromARGB(
-              255,
-              14,
-              15,
-              17,
-            ).withValues(alpha: 0.92),
-          ),
-          textDirection: TextDirection.rtl,
-        ),
-        centerTitle: true,
       ),
       body: Stack(
         children: [
           Positioned.fill(child: ThemeHelpers.buildDefaultBackground()),
           SafeArea(
             child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: screenWidth * 0.05,
-                vertical: safeAreaHeight * 0.02,
+              padding: EdgeInsets.fromLTRB(
+                screenWidth * 0.048,
+                safeAreaHeight * 0.006,
+                screenWidth * 0.048,
+                0,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildQuickInfoPanel(),
-                  SizedBox(height: safeAreaHeight * 0.018),
                   Expanded(
                     child: AnimatedBuilder(
                       animation: _quoteController,
@@ -760,6 +971,19 @@ class _EntranceScreenState extends State<EntranceScreen>
                           ),
                     ),
                   ),
+                  SizedBox(height: safeAreaHeight * 0.012),
+                  AnimatedBuilder(
+                    animation: _panelController,
+                    builder:
+                        (context, child) => Transform.translate(
+                          offset: Offset(0, _panelSlideAnimation.value),
+                          child: FadeTransition(
+                            opacity: _panelFadeAnimation,
+                            child: child,
+                          ),
+                        ),
+                    child: _buildQuickInfoPanel(),
+                  ),
                 ],
               ),
             ),
@@ -769,52 +993,137 @@ class _EntranceScreenState extends State<EntranceScreen>
     );
   }
 
+  Widget _buildVideoPlayer(String title, String googleDriveUrl) {
+    final embedUrl = _convertGoogleDriveUrlToEmbed(googleDriveUrl);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            GestureDetector(
+              onTap: () => setState(() => showVideoPlayer = false),
+              child: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: _AppColors.lightBlue,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.close_rounded,
+                  size: 18,
+                  color: _AppColors.blue,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                title,
+                textAlign: TextAlign.right,
+                textDirection: TextDirection.rtl,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.alef(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: _AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Container(
+          height: 250,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Colors.black,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: WebViewWidget(
+              controller:
+                  WebViewController()
+                    ..setJavaScriptMode(JavaScriptMode.unrestricted)
+                    ..loadRequest(Uri.parse(embedUrl)),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _convertGoogleDriveUrlToEmbed(String url) {
+    String fileId = '';
+    if (url.contains('/d/')) {
+      final parts = url.split('/d/');
+      if (parts.length > 1) fileId = parts[1].split('/')[0];
+    } else if (url.contains('id=')) {
+      final parts = url.split('id=');
+      if (parts.length > 1) fileId = parts[1].split('&')[0];
+    }
+    return 'https://drive.google.com/file/d/$fileId/preview';
+  }
+
+  bool _shouldReplaceRabbiTextWithVideo() {
+    return DateTime.now().weekday == DateTime.friday && latestVideo != null;
+  }
+
   Widget _buildQuickInfoPanel() {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.18),
+        color: Colors.white.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color.fromARGB(
-            255,
-            255,
-            255,
-            255,
-          ).withValues(alpha: 0.35),
-          width: 0.8,
-        ),
+        border: Border.all(color: _AppColors.divider, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: _AppColors.navy.withValues(alpha: 0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // כותרת
+          // כותרת פאנל
           Padding(
-            padding: const EdgeInsets.only(bottom: 8, right: 2),
+            padding: const EdgeInsets.only(bottom: 10, right: 2),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Text(
                   'מידע מהיר',
                   style: GoogleFonts.alef(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF0F172A),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: _AppColors.textSecondary,
+                    letterSpacing: 0.3,
                   ),
                 ),
                 const SizedBox(width: 6),
-                const Icon(
-                  Icons.dashboard_customize_outlined,
-                  size: 15,
-                  color: Color(0xFF378ADD),
+                Container(
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    color: _AppColors.lightBlue,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Icon(
+                    Icons.dashboard_customize_outlined,
+                    size: 13,
+                    color: _AppColors.blue,
+                  ),
                 ),
               ],
             ),
           ),
           const HebrewDateBanner(),
-          const SizedBox(height: 6),
+          const SizedBox(height: 7),
           const NextZmanBanner(),
-          const SizedBox(height: 6),
+          const SizedBox(height: 7),
           const NextPrayerBanner(),
         ],
       ),
@@ -831,156 +1140,280 @@ class _EntranceScreenState extends State<EntranceScreen>
             opacity: _fadeAnimation,
             child: ScaleTransition(
               scale: _scaleAnimation,
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () {
-                    _adminTapCount++;
-                    if (_adminTapCount >= 5) {
-                      _adminTapCount = 0;
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => AdminLoginScreen()),
-                      );
-                    }
-                  },
-                  child: Container(
-                    width: double.infinity,
-                    constraints: const BoxConstraints(maxWidth: 560),
-                    padding: EdgeInsets.all(
-                      MediaQuery.of(context).size.width * 0.05,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.8),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.5),
-                        width: 0.8,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  _adminTapCount++;
+                  if (_adminTapCount >= 5) {
+                    _adminTapCount = 0;
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => AdminLoginScreen()),
+                    );
+                  }
+                },
+                child: Container(
+                  width: double.infinity,
+                  height: double.infinity,
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.88),
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(color: _AppColors.divider, width: 1),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _AppColors.navy.withValues(alpha: 0.08),
+                        blurRadius: 30,
+                        offset: const Offset(0, 8),
                       ),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // כותרת
-                        Text(
-                          'ברוכים הבאים',
-                          style: GoogleFonts.alef(
-                            fontSize: MediaQuery.of(context).size.width * 0.075,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF0F172A),
-                            height: 1.2,
-                          ),
-                          textAlign: TextAlign.center,
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      // Header Banner (fixed)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 18,
+                          horizontal: 20,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'מחלקת כשרות דת והלכה',
-                          style: GoogleFonts.alef(
-                            fontSize: MediaQuery.of(context).size.width * 0.042,
-                            fontWeight: FontWeight.w400,
-                            color: const Color(0xFF64748B),
-                            height: 1.3,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [_AppColors.navy, Color(0xFF1A5FB4)],
+                            begin: Alignment.topRight,
+                            end: Alignment.bottomLeft,
                           ),
-                          textAlign: TextAlign.center,
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(27),
+                          ),
                         ),
-                        const SizedBox(height: 14),
+                        child: Column(
+                          children: [
+                            Container(
+                              width: MediaQuery.of(context).size.width * 0.18,
+                              height: MediaQuery.of(context).size.width * 0.18,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(
+                                  MediaQuery.of(context).size.width * 0.09,
+                                ),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.4),
+                                  width: 2.5,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.25),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(
+                                  MediaQuery.of(context).size.width * 0.09,
+                                ),
+                                child: Image.asset(
+                                  'assets/hrav.png',
+                                  fit: BoxFit.cover,
+                                  alignment: Alignment.topCenter,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              'ברוכים הבאים',
+                              style: GoogleFonts.alef(
+                                fontSize:
+                                    MediaQuery.of(context).size.width * 0.072,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                                height: 1.2,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'מחלקת כשרות דת והלכה',
+                              style: GoogleFonts.alef(
+                                fontSize:
+                                    MediaQuery.of(context).size.width * 0.038,
+                                fontWeight: FontWeight.w400,
+                                color: Colors.white.withValues(alpha: 0.75),
+                                letterSpacing: 0.5,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
 
-                        // קו
-                        Container(
-                          height: 2,
-                          width: 40,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(2),
-                            color: const Color(0xFF378ADD),
+                      // Body Content
+                      Expanded(
+                        child: Padding(
+                          padding: EdgeInsets.all(
+                            MediaQuery.of(context).size.width * 0.05,
                           ),
-                        ),
-                        const SizedBox(height: 18),
+                          child: Column(
+                            children: [
+                              // שם הרב (fixed)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 7,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _AppColors.lightBlue,
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(
+                                    color: _AppColors.blue.withValues(
+                                      alpha: 0.25,
+                                    ),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.person_outline_rounded,
+                                      size: 14,
+                                      color: _AppColors.navy,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'הרב יואב חנניה אוקנין',
+                                      style: GoogleFonts.alef(
+                                        fontSize:
+                                            MediaQuery.of(context).size.width *
+                                            0.036,
+                                        fontWeight: FontWeight.w600,
+                                        color: _AppColors.navy,
+                                      ),
+                                      textDirection: TextDirection.rtl,
+                                    ),
+                                  ],
+                                ),
+                              ),
 
-                        // תמונת הרב
-                        Container(
-                          width: MediaQuery.of(context).size.width * 0.18,
-                          height: MediaQuery.of(context).size.width * 0.18,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(
-                              MediaQuery.of(context).size.width * 0.09,
-                            ),
-                            border: Border.all(
-                              color: const Color(0xFFB5D4F4),
-                              width: 2,
-                            ),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(
-                              MediaQuery.of(context).size.width * 0.09,
-                            ),
-                            child: Image.asset(
-                              'assets/hrav.png',
-                              fit: BoxFit.cover,
-                              alignment: Alignment.topCenter,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
+                              const SizedBox(height: 12),
 
-                        // ציטוט
-                        Icon(
-                          Icons.format_quote,
-                          size: 22,
-                          color: const Color(0xFF378ADD).withValues(alpha: 0.6),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: Colors.black.withValues(alpha: 0.06),
-                              width: 0.8,
-                            ),
-                          ),
-                          child: Text(
-                            rabbiQuote,
-                            style: GoogleFonts.alef(
-                              fontSize:
-                                  MediaQuery.of(context).size.width * 0.042,
-                              height: 1.75,
-                              color: const Color(0xFF334155),
-                              fontWeight: FontWeight.w400,
-                            ),
-                            textAlign: TextAlign.center,
-                            textDirection: TextDirection.rtl,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Container(
+                                      height: 1,
+                                      color: _AppColors.divider,
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                    ),
+                                    child: Icon(
+                                      Icons.format_quote_rounded,
+                                      size: 18,
+                                      color: _AppColors.blue.withValues(
+                                        alpha: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Container(
+                                      height: 1,
+                                      color: _AppColors.divider,
+                                    ),
+                                  ),
+                                ],
+                              ),
 
-                        // שם הרב
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE6F1FB),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            'הרב יואב חנניה אוקנין',
-                            style: GoogleFonts.alef(
-                              fontSize:
-                                  MediaQuery.of(context).size.width * 0.038,
-                              fontWeight: FontWeight.w500,
-                              color: const Color(0xFF0C447C),
-                            ),
-                            textDirection: TextDirection.rtl,
+                              const SizedBox(height: 12),
+
+                              // Only this area is scrollable.
+                              Expanded(
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    return SingleChildScrollView(
+                                      physics: const BouncingScrollPhysics(),
+                                      child: ConstrainedBox(
+                                        constraints: BoxConstraints(
+                                          minHeight: constraints.maxHeight,
+                                        ),
+                                        child: Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 14,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: _AppColors.surface,
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                            border: Border.all(
+                                              color: _AppColors.divider,
+                                            ),
+                                          ),
+                                          child:
+                                              _shouldReplaceRabbiTextWithVideo()
+                                                  ? _buildLatestVideoCard()
+                                                  : Text(
+                                                    rabbiQuote,
+                                                    style: GoogleFonts.alef(
+                                                      fontSize:
+                                                          MediaQuery.of(
+                                                            context,
+                                                          ).size.width *
+                                                          0.04,
+                                                      height: 1.8,
+                                                      color:
+                                                          _AppColors
+                                                              .textSecondary,
+                                                      fontWeight:
+                                                          FontWeight.w400,
+                                                    ),
+                                                    textAlign: TextAlign.center,
+                                                    textDirection:
+                                                        TextDirection.rtl,
+                                                  ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+
+                              const SizedBox(height: 6),
+
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _AppColors.goldLight,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: _AppColors.gold.withValues(
+                                      alpha: 0.3,
+                                    ),
+                                  ),
+                                ),
+                                child: Text(
+                                  'מרכז רפואי שיבא',
+                                  style: GoogleFonts.alef(
+                                    fontSize:
+                                        MediaQuery.of(context).size.width *
+                                        0.033,
+                                    fontWeight: FontWeight.w500,
+                                    color: _AppColors.gold,
+                                  ),
+                                  textDirection: TextDirection.rtl,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -996,21 +1429,28 @@ class _EntranceScreenState extends State<EntranceScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(
-            width: 40,
-            height: 40,
-            child: CircularProgressIndicator(
-              color: Color(0xFF378ADD),
-              strokeWidth: 2.5,
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: _AppColors.lightBlue,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Center(
+              child: SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(
+                  color: _AppColors.blue,
+                  strokeWidth: 2.5,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 16),
           Text(
             '...טוען',
-            style: GoogleFonts.alef(
-              fontSize: 15,
-              color: const Color(0xFF64748B),
-            ),
+            style: GoogleFonts.alef(fontSize: 15, color: _AppColors.textMuted),
           ),
         ],
       ),
@@ -1020,60 +1460,85 @@ class _EntranceScreenState extends State<EntranceScreen>
   Widget _buildDrawer() {
     return Drawer(
       child: Container(
-        color: const Color(0xFFF8FAFC),
+        color: _AppColors.surface,
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
-              decoration: const BoxDecoration(color: Color(0xFF1D4ED8)),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [_AppColors.navy, Color(0xFF1A5FB4)],
+                  begin: Alignment.topRight,
+                  end: Alignment.bottomLeft,
+                ),
+              ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: 52,
+                    height: 52,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.white.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.25),
+                      ),
                     ),
                     child: const Icon(
-                      Icons.menu_book,
+                      Icons.menu_book_rounded,
                       size: 26,
                       color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                   Text(
                     'תפריט ראשי',
                     textDirection: TextDirection.rtl,
                     style: GoogleFonts.alef(
                       fontSize: 20,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                       color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'כשרות דת והלכה',
+                    textDirection: TextDirection.rtl,
+                    style: GoogleFonts.alef(
+                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.65),
                     ),
                   ),
                 ],
               ),
             ),
+            const SizedBox(height: 6),
             ..._bubbles.map((bubble) {
               return Directionality(
                 textDirection: TextDirection.rtl,
                 child: ListTile(
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 20,
-                    vertical: 2,
+                    vertical: 3,
                   ),
                   leading: Container(
-                    width: 36,
-                    height: 36,
+                    width: 38,
+                    height: 38,
                     decoration: BoxDecoration(
-                      color: (bubble['color'] as Color).withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(9),
+                      color: (bubble['color'] as Color).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: (bubble['color'] as Color).withValues(
+                          alpha: 0.2,
+                        ),
+                        width: 0.8,
+                      ),
                     ),
                     child: Icon(
                       bubble['icon'],
                       color: bubble['color'],
-                      size: 20,
+                      size: 19,
                     ),
                   ),
                   title: Text(
@@ -1082,7 +1547,7 @@ class _EntranceScreenState extends State<EntranceScreen>
                     style: GoogleFonts.alef(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
-                      color: const Color(0xFF0F172A),
+                      color: _AppColors.textPrimary,
                     ),
                   ),
                   onTap: () {
@@ -1104,7 +1569,24 @@ class _EntranceScreenState extends State<EntranceScreen>
                 ),
               );
             }),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Container(height: 1, color: _AppColors.divider),
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                'מרכז רפואי שיבא',
+                textAlign: TextAlign.right,
+                style: GoogleFonts.alef(
+                  fontSize: 11,
+                  color: _AppColors.textMuted,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
           ],
         ),
       ),

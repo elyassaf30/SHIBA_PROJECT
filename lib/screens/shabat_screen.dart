@@ -94,7 +94,7 @@ class ShabatScreenState extends State<ShabatScreen>
             fontSize: 20,
             fontWeight: FontWeight.w700,
             color: const Color.fromARGB(255, 17, 17, 17),
-          ),
+          )
         ),
       ),
       body: Stack(

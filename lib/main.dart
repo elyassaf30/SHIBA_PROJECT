@@ -6,6 +6,8 @@ import 'dart:convert';
 import 'package:rabbi_shiba/screens/entrance_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:rabbi_shiba/services/notification_service.dart';
+import 'package:rabbi_shiba/services/video_check_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,6 +59,18 @@ void main() async {
     });
   } catch (e) {
     debugPrint('❌ OneSignal initialization error: $e');
+  }
+
+  // Local Notifications (handled by OneSignal)
+  // NotificationService methods are kept for compatibility
+  debugPrint('✅ Notification service ready (OneSignal).');
+
+  // Check for new videos
+  try {
+    await VideoCheckService.checkForNewVideos();
+    debugPrint('✅ Video check completed.');
+  } catch (e) {
+    debugPrint('❌ Video check error: $e');
   }
 
   // Listen to Supabase table changes
@@ -437,4 +451,3 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 }
-

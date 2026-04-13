@@ -8,6 +8,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:rabbi_shiba/services/notification_service.dart';
 import 'package:rabbi_shiba/services/video_check_service.dart';
+import 'package:rabbi_shiba/utils/theme_helpers.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -304,149 +305,145 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFF8FAFC), Color(0xFFE2E8F0), Color(0xFFCBD5E1)],
-            stops: [0.0, 0.7, 1.0],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Spacer(flex: 2),
+      backgroundColor: Colors.transparent,
+      body: Stack(
+        children: [
+          Positioned.fill(child: ThemeHelpers.buildDefaultBackground()),
+          SafeArea(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Spacer(flex: 2),
 
-                // Logo Section
-                AnimatedBuilder(
-                  animation: Listenable.merge([_logoController]),
-                  builder: (context, child) {
-                    return Transform.scale(
-                      scale: _logoScaleAnimation.value,
-                      child: Opacity(
-                        opacity: _logoOpacityAnimation.value,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(30),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 30,
-                                offset: Offset(0, 15),
+                  // Logo Section
+                  AnimatedBuilder(
+                    animation: Listenable.merge([_logoController]),
+                    builder: (context, child) {
+                      return Transform.scale(
+                        scale: _logoScaleAnimation.value,
+                        child: Opacity(
+                          opacity: _logoOpacityAnimation.value,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(30),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 30,
+                                  offset: Offset(0, 15),
+                                ),
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(30),
+                              child: Image.asset(
+                                'assets/icon.jpeg',
+                                width: 200,
+                                height: 200,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+
+                  SizedBox(height: 40),
+
+                  // Text Section
+                  AnimatedBuilder(
+                    animation: Listenable.merge([_textController]),
+                    builder: (context, child) {
+                      return Transform.translate(
+                        offset: Offset(0, _textSlideAnimation.value),
+                        child: Opacity(
+                          opacity: _textOpacityAnimation.value,
+                          child: Column(
+                            children: [
+                              Text(
+                                'מרכז רפואי שיבא',
+                                style: GoogleFonts.alef(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF1E293B),
+                                  height: 1.2,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'מחלקת כשרות דת והלכה',
+                                style: GoogleFonts.alef(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFF475569),
+                                  height: 1.3,
+                                ),
+                                textAlign: TextAlign.center,
                               ),
                             ],
                           ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(30),
-                            child: Image.asset(
-                              'assets/icon.jpeg',
-                              width: 200,
-                              height: 200,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
                         ),
-                      ),
-                    );
-                  },
-                ),
+                      );
+                    },
+                  ),
 
-                SizedBox(height: 40),
+                  Spacer(flex: 2),
 
-                // Text Section
-                AnimatedBuilder(
-                  animation: Listenable.merge([_textController]),
-                  builder: (context, child) {
-                    return Transform.translate(
-                      offset: Offset(0, _textSlideAnimation.value),
-                      child: Opacity(
-                        opacity: _textOpacityAnimation.value,
+                  // Progress Section
+                  AnimatedBuilder(
+                    animation: _progressController,
+                    builder: (context, child) {
+                      return Opacity(
+                        opacity: _progressAnimation.value,
                         child: Column(
                           children: [
-                            Text(
-                              'מרכז רפואי שיבא',
-                              style: GoogleFonts.alef(
-                                fontSize: 28,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF1E293B),
-                                height: 1.2,
+                            Container(
+                              width: 200,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.3),
+                                borderRadius: BorderRadius.circular(2),
                               ),
-                              textAlign: TextAlign.center,
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              'מחלקת כשרות דת והלכה',
-                              style: GoogleFonts.alef(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFF475569),
-                                height: 1.3,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-
-                Spacer(flex: 2),
-
-                // Progress Section
-                AnimatedBuilder(
-                  animation: _progressController,
-                  builder: (context, child) {
-                    return Opacity(
-                      opacity: _progressAnimation.value,
-                      child: Column(
-                        children: [
-                          Container(
-                            width: 200,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.3),
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                            child: FractionallySizedBox(
-                              alignment: Alignment.centerRight,
-                              widthFactor: _progressAnimation.value,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      Color(0xFF3B82F6),
-                                      Color(0xFF1D4ED8),
-                                    ],
+                              child: FractionallySizedBox(
+                                alignment: Alignment.centerRight,
+                                widthFactor: _progressAnimation.value,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Color(0xFF3B82F6),
+                                        Color(0xFF1D4ED8),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(2),
                                   ),
-                                  borderRadius: BorderRadius.circular(2),
                                 ),
                               ),
                             ),
-                          ),
-                          SizedBox(height: 20),
-                          Text(
-                            '...טוען',
-                            style: GoogleFonts.alef(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF64748B),
+                            SizedBox(height: 20),
+                            Text(
+                              '...טוען',
+                              style: GoogleFonts.alef(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF64748B),
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
 
-                SizedBox(height: 60),
-              ],
+                  SizedBox(height: 60),
+                ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

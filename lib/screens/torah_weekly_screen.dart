@@ -47,7 +47,6 @@ class _TorahWeeklyScreenState extends State<TorahWeeklyScreen> {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        flexibleSpace: ThemeHelpers.buildDefaultBackground(),
         iconTheme: const IconThemeData(color: Color(0xFF0F172A)),
         title: Text(
           'סרטוני הרב',

@@ -901,7 +901,6 @@ class _EntranceScreenState extends State<EntranceScreen>
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         shadowColor: Colors.transparent,
-        flexibleSpace: ThemeHelpers.buildDefaultBackground(),
         iconTheme: IconThemeData(
           color: _AppColors.navy.withValues(alpha: 0.85),
         ),

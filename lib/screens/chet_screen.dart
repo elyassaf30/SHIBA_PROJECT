@@ -80,17 +80,11 @@ class ChatScreen extends StatelessWidget {
           ),
         ),
         backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        shadowColor: Colors.transparent,
         centerTitle: true,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Colors.green[800]!.withValues(alpha: 0.7), Colors.transparent],
-            ),
-          ),
-        ),
       ),
       body: Stack(
         children: [
@@ -209,4 +203,3 @@ class ChatScreen extends StatelessWidget {
     );
   }
 }
-

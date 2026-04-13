@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rabbi_shiba/screens/admin_tfilot_screen.dart';
+import 'package:rabbi_shiba/utils/theme_helpers.dart';
 
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key});
@@ -67,73 +68,87 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: Text('התחברות מנהל', style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.red.shade900,
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        shadowColor: Colors.transparent,
         iconTheme: IconThemeData(color: Colors.white),
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Text(
-                  'כניסה למערכת הניהול',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 30),
-                TextFormField(
-                  controller: _emailController,
-                  decoration: InputDecoration(
-                    labelText: 'דוא"ל',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'נא להזין דוא"ל';
-                    }
-                    return null;
-                  },
-                ),
-                SizedBox(height: 15),
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: 'סיסמה',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.lock),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'נא להזין סיסמה';
-                    }
-                    return null;
-                  },
-                ),
-                SizedBox(height: 30),
-                _isLoading
-                    ? CircularProgressIndicator()
-                    : ElevatedButton(
-                      onPressed: _signIn,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red.shade900,
-                        minimumSize: Size(double.infinity, 50),
-                      ),
-                      child: Text(
-                        'התחבר',
-                        style: TextStyle(fontSize: 18, color: Colors.white),
+      body: Stack(
+        children: [
+          Positioned.fill(child: ThemeHelpers.buildDefaultBackground()),
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Text(
+                      'כניסה למערכת הניהול',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-              ],
+                    SizedBox(height: 30),
+                    TextFormField(
+                      controller: _emailController,
+                      decoration: InputDecoration(
+                        labelText: 'דוא"ל',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.email),
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'נא להזין דוא"ל';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 15),
+                    TextFormField(
+                      controller: _passwordController,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        labelText: 'סיסמה',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.lock),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'נא להזין סיסמה';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 30),
+                    _isLoading
+                        ? CircularProgressIndicator()
+                        : ElevatedButton(
+                          onPressed: _signIn,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red.shade900,
+                            minimumSize: Size(double.infinity, 50),
+                          ),
+                          child: Text(
+                            'התחבר',
+                            style: TextStyle(fontSize: 18, color: Colors.white),
+                          ),
+                        ),
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

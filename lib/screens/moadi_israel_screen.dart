@@ -109,7 +109,6 @@ class _MoadiIsraelScreenState extends State<MoadiIsraelScreen>
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        flexibleSpace: ThemeHelpers.buildDefaultBackground(),
         centerTitle: true,
         iconTheme: const IconThemeData(color: Color.fromARGB(255, 18, 19, 23)),
         title: Text(

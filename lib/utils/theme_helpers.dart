@@ -1,183 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-/// Centralized theme and UI styling for consistent design across app
 class ThemeHelpers {
-  // Gradient colors used throughout the app
-  static const List<Color> defaultGradientColors = [
-    Color(0xFF56CCF2),
-    Color(0xFF7DD3FC),
-    Color(0xFFDDEAFB),
-  ];
-
-  static const List<Color> alternateGradientColors = [
-    Color(0xFF67D4F7),
-    Color(0xFF9EDCFB),
-    Color(0xFFEAF3FF),
-  ];
-
-  // Primary color
-  static const Color primaryColor = Color(0xFF6C63FF);
-  static const Color secondaryColor = Color(0xFF6C63FF);
-
-  /// Builds the standard gradient background used across all screens
-  static Widget buildDefaultBackground({
-    List<Color>? colors,
-    Alignment? begin,
-    Alignment? end,
-  }) {
-    return _AnimatedGradientBackground(
-      primaryColors: colors ?? defaultGradientColors,
-      secondaryColors: alternateGradientColors,
-      begin: begin ?? Alignment.topCenter,
-      end: end ?? Alignment.bottomCenter,
-    );
+  static Widget buildDefaultBackground() {
+    return const _AnimatedGradientBackground();
   }
-
-  /// Builds the standard app bar used across screens
-  static PreferredSize buildDefaultAppBar({
-    required String title,
-    required String subtitle,
-    VoidCallback? onBackPressed,
-    BuildContext? context,
-  }) {
-    final isRtl =
-        context != null && Directionality.of(context) == TextDirection.rtl;
-
-    return PreferredSize(
-      preferredSize: Size.fromHeight(80),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              primaryColor.withValues(alpha: 0.9),
-              secondaryColor.withValues(alpha: 0.7),
-            ],
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          child: SafeArea(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  icon: Icon(
-                    isRtl ? Icons.arrow_forward : Icons.arrow_back,
-                    color: Colors.white,
-                  ),
-                  iconSize: 30,
-                  tooltip: 'חזרה',
-                  onPressed:
-                      onBackPressed ??
-                      () {
-                        if (context != null) {
-                          Navigator.pop(context);
-                        }
-                      },
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      title,
-                      style: GoogleFonts.alef(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                        color: Colors.white,
-                        shadows: [
-                          Shadow(
-                            blurRadius: 4,
-                            color: Colors.black45,
-                            offset: Offset(1, 1),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (subtitle.isNotEmpty)
-                      Text(
-                        subtitle,
-                        style: GoogleFonts.rubikDirt(
-                          fontSize: 12,
-                          color: Colors.white70,
-                          shadows: [
-                            Shadow(
-                              blurRadius: 2,
-                              color: Colors.black45,
-                              offset: Offset(0.5, 0.5),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-                SizedBox(width: 48),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Common text styles
-
-  static TextStyle get titleStyle => GoogleFonts.alef(
-    fontWeight: FontWeight.bold,
-    fontSize: 28,
-    color: Colors.black,
-    shadows: [
-      Shadow(blurRadius: 5, color: Colors.black45, offset: Offset(1, 1)),
-    ],
-  );
-
-  static TextStyle get subtitleStyle => GoogleFonts.rubikDirt(
-    fontSize: 16,
-    color: Colors.black,
-    shadows: [
-      Shadow(blurRadius: 3, color: Colors.black45, offset: Offset(1, 1)),
-    ],
-  );
-
-  static TextStyle get cardTitleStyle => GoogleFonts.alef(
-    fontWeight: FontWeight.bold,
-    fontSize: 16,
-    color: Colors.white,
-  );
-
-  static TextStyle get cardSubtitleStyle =>
-      TextStyle(fontSize: 14, color: Colors.white70);
-
-  /// Box shadow for cards
-  static final cardBoxShadow = [
-    BoxShadow(
-      color: Colors.black.withValues(alpha: 0.15),
-      blurRadius: 8,
-      offset: Offset(0, 4),
-    ),
-  ];
-
-  /// Border radius for cards
-  static const BorderRadius cardBorderRadius = BorderRadius.all(
-    Radius.circular(16),
-  );
 }
 
 class _AnimatedGradientBackground extends StatefulWidget {
-  const _AnimatedGradientBackground({
-    required this.primaryColors,
-    required this.secondaryColors,
-    required this.begin,
-    required this.end,
-  });
-
-  final List<Color> primaryColors;
-  final List<Color> secondaryColors;
-  final Alignment begin;
-  final Alignment end;
+  const _AnimatedGradientBackground();
 
   @override
   State<_AnimatedGradientBackground> createState() =>
@@ -187,14 +17,60 @@ class _AnimatedGradientBackground extends StatefulWidget {
 class _AnimatedGradientBackgroundState
     extends State<_AnimatedGradientBackground>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
+  late AnimationController _controller;
+
+  // פלטות חזקות ומיוחדות — ירוק-ים-תכלת-כחול בגוונים עמוקים
+  static const _palettes = [
+    // לילה — כחול אוקיינוס עמוק + ירקרק-בתולי
+    [
+      Color(0xFF8EC5D6), // תכלת-ים עמוק
+      Color(0xFF6BAED4), // כחול אוקיינוס
+      Color(0xFF7DC4B8), // ירוק-ים
+      Color(0xFF5B9FBF), // כחול פיורד
+    ],
+    // זריחה — ירוק בוקר + תכלת-זהב
+    [
+      Color(0xFF7EC8A4), // ירוק ג׳ייד בהיר
+      Color(0xFF6AB8CC), // תכלת בהיר
+      Color(0xFF9ECFB0), // ירוק מנטה מיוחד
+      Color(0xFF78BDD4), // כחול-תכלת
+    ],
+    // בוקר — ירקרק-אגם + כחול-אמרלד
+    [
+      Color(0xFF5BBCB0), // ירוק אמרלד
+      Color(0xFF5AA8CC), // כחול ים תיכוני
+      Color(0xFF72C4A8), // ירוק-תכלת זך
+      Color(0xFF639EC0), // כחול-אינדיגו עדין
+    ],
+    // צהריים — ירוק טרופי + תכלת יצירתי
+    [
+      Color(0xFF4DB8A0), // ירוק טרופי
+      Color(0xFF4EA8C8), // כחול-שמים מיוחד
+      Color(0xFF60C4A4), // ירוק אקווה
+      Color(0xFF5294B8), // כחול מיידנייט-ים
+    ],
+    // שקיעה — ירוק-ים מיסטי + כחול-פורפור
+    [
+      Color(0xFF6AADBC), // ירוק-כחול מיסטי
+      Color(0xFF7898CC), // כחול-לבנדר ים
+      Color(0xFF5FBCAC), // ירוק פטרול
+      Color(0xFF6A8EC4), // כחול-אינדיגו מיוחד
+    ],
+    // ערב — כחול נייבי + ירוק מחשוף
+    [
+      Color(0xFF6898C0), // כחול-נייבי עדין
+      Color(0xFF5A9CB0), // ירוק-כחול פטרול
+      Color(0xFF7890C8), // כחול מחשוף
+      Color(0xFF5490A8), // כחול-פלדה
+    ],
+  ];
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 8),
+      duration: const Duration(seconds: 9),
     )..repeat(reverse: true);
   }
 
@@ -204,33 +80,136 @@ class _AnimatedGradientBackgroundState
     super.dispose();
   }
 
+  int _getPaletteIndex() {
+    final hour = DateTime.now().hour;
+    if (hour < 6) return 0;
+    if (hour < 10) return 1;
+    if (hour < 13) return 2;
+    if (hour < 17) return 3;
+    if (hour < 20) return 4;
+    return 5;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final paletteIndex = _getPaletteIndex();
+    final nextPaletteIndex = (paletteIndex + 1) % _palettes.length;
+    final current = _palettes[paletteIndex];
+    final next = _palettes[nextPaletteIndex];
+    final screenSize = MediaQuery.of(context).size;
+
     return AnimatedBuilder(
       animation: _controller,
-      builder: (context, child) {
-        final t = Curves.easeInOut.transform(_controller.value);
-        final colors = List<Color>.generate(widget.primaryColors.length, (
-          index,
-        ) {
-          final fallback = widget.primaryColors[index];
-          final to =
-              index < widget.secondaryColors.length
-                  ? widget.secondaryColors[index]
-                  : fallback;
-          return Color.lerp(fallback, to, t) ?? fallback;
-        });
+      builder: (context, _) {
+        final t = _controller.value;
+        final colors = List.generate(
+          4,
+          (i) => Color.lerp(current[i], next[i], t)!,
+        );
 
-        return DecoratedBox(
+        return Container(
+          width: double.infinity,
+          height: double.infinity,
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              begin: widget.begin,
-              end: widget.end,
-              colors: colors,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [colors[0], colors[1], colors[2], colors[3]],
+              stops: const [0.0, 0.38, 0.65, 1.0],
             ),
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                top: -80,
+                right: -60,
+                child: _FloatingOrb(
+                  size: 320,
+                  color: colors[0].withValues(alpha: 0.45),
+                  animValue: t,
+                  phase: 0.0,
+                ),
+              ),
+              Positioned(
+                bottom: -100,
+                left: -80,
+                child: _FloatingOrb(
+                  size: 360,
+                  color: colors[3].withValues(alpha: 0.38),
+                  animValue: t,
+                  phase: 0.5,
+                ),
+              ),
+              Positioned(
+                top: screenSize.height * 0.32,
+                right: screenSize.width * 0.06,
+                child: _FloatingOrb(
+                  size: 200,
+                  color: colors[1].withValues(alpha: 0.3),
+                  animValue: t,
+                  phase: 0.25,
+                ),
+              ),
+              Positioned(
+                top: screenSize.height * 0.1,
+                left: screenSize.width * 0.04,
+                child: _FloatingOrb(
+                  size: 130,
+                  color: colors[2].withValues(alpha: 0.35),
+                  animValue: t,
+                  phase: 0.75,
+                ),
+              ),
+              Positioned(
+                bottom: screenSize.height * 0.1,
+                left: screenSize.width * 0.3,
+                child: _FloatingOrb(
+                  size: 150,
+                  color: colors[0].withValues(alpha: 0.25),
+                  animValue: t,
+                  phase: 0.6,
+                ),
+              ),
+            ],
           ),
         );
       },
+    );
+  }
+}
+
+class _FloatingOrb extends StatelessWidget {
+  final double size;
+  final Color color;
+  final double animValue;
+  final double phase;
+
+  const _FloatingOrb({
+    required this.size,
+    required this.color,
+    required this.animValue,
+    required this.phase,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = ((animValue + phase) % 1.0) * 2 * 3.14159;
+    final dy = (progress - 3.14159).abs() / 3.14159 * 22 - 11;
+    final dx = dy * 0.45;
+
+    return Transform.translate(
+      offset: Offset(dx, dy),
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [color, color.withValues(alpha: 0.0)],
+            stops: const [0.0, 1.0],
+          ),
+        ),
+      ),
     );
   }
 }

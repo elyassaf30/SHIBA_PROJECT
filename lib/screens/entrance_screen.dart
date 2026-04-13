@@ -12,69 +12,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:kosher_dart/kosher_dart.dart';
 import 'package:intl/intl.dart' as intl;
 import 'dart:async';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'AdminLoginScreen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rabbi_shiba/utils/theme_helpers.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-
-const Map<String, String> parashaTranslations = {
-  'Parashat Bereshit': 'בראשית',
-  'Parashat Noach': 'נח',
-  'Parashat Lech-Lecha': 'לך-לך',
-  'Parashat Vayera': 'וירא',
-  'Parashat Chayei Sarah': 'חיי-שרה',
-  'Parashat Toldot': 'תולדות',
-  'Parashat Vayetzei': 'ויצא',
-  'Parashat Vayishlach': 'וישלח',
-  'Parashat Vayeshev': 'וישב',
-  'Parashat Miketz': 'מקץ',
-  'Parashat Vayigash': 'ויגש',
-  'Parashat Vayechi': 'ויחי',
-  'Parashat Shemot': 'שמות',
-  'Parashat Vaera': 'וָאֵרָא',
-  'Parashat Bo': 'בא',
-  'Parashat Beshalach': 'בשלח',
-  'Parashat Yitro': 'יתרו',
-  'Parashat Mishpatim': 'משפטים',
-  'Parashat Terumah': 'תרומה',
-  'Parashat Tetzaveh': 'תצוה',
-  'Parashat Ki Tisa': 'כי-תשא',
-  'Parashat Vayakhel': 'ויקהל',
-  'Parashat Pekudei': 'פקודי',
-  'Parashat Vayikra': 'ויקרא',
-  'Parashat Tzav': 'צו',
-  'Parashat Shmini': 'שמיני',
-  'Parashat Tazria': 'תזריע',
-  'Parashat Metzora': 'מצורע',
-  'Parashat Acharei Mot': 'אחרי-מות',
-  'Parashat Kedoshim': 'קדושים',
-  'Parashat Emor': 'אמור',
-  'Parashat Behar': 'בהר',
-  'Parashat Bechukotai': 'בחקתי',
-  'Parashat Bamidbar': 'במדבר',
-  'Parashat Nasso': 'נשא',
-  'Parashat Behaalotecha': 'בהעלותך',
-  'Parashat Shlach': 'שלח',
-  'Parashat Korach': 'קורח',
-  'Parashat Chukat': 'חוקת',
-  'Parashat Balak': 'בלק',
-  'Parashat Pinchas': 'פינחס',
-  'Parashat Matot': 'מטות',
-  'Parashat Massei': 'מסעי',
-  'Parashat Devarim': 'דברים',
-  'Parashat Vaetchanan': 'ואתחנן',
-  'Parashat Eikev': 'עקב',
-  'Parashat Reeh': 'ראה',
-  'Parashat Shoftim': 'שופטים',
-  'Parashat Ki Teitzei': 'כי תצא',
-  'Parashat Ki Tavo': 'כי תבוא',
-  'Parashat Nitzavim': 'ניצבים',
-  'Parashat Vayelech': 'וילך',
-  'Parashat Haazinu': 'האזינו',
-  'Parashat Vezot Haberakhah': 'וזאת הברכה',
-};
 
 // ─────────────────────────────────────────────
 // Design Tokens
@@ -121,65 +61,28 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
 
   Future<void> _fetchHebrewDateAndParasha() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final nowDate = DateTime.now();
-      final formattedDate =
-          '${nowDate.year}-${nowDate.month.toString().padLeft(2, '0')}-${nowDate.day.toString().padLeft(2, '0')}';
+      final formatter =
+          HebrewDateFormatter()
+            ..hebrewFormat = true
+            ..useGershGershayim = true;
 
-      final response = await http.get(
-        Uri.parse(
-          'https://www.hebcal.com/converter?cfg=json&date=$formattedDate&g2h=1',
-        ),
-      );
+      final jewishDate = JewishDate();
+      final jewishCalendar = JewishCalendar()..inIsrael = true;
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        String fetchedHebrewDate = data['hebrew'] ?? 'לא זמין';
-        String fetchedParasha = '';
-        final cachedHebrewDate = prefs.getString('cachedHebrewDate');
+      final fetchedHebrewDate = formatter.format(jewishDate);
+      var fetchedParasha = formatter.formatWeeklyParsha(jewishCalendar);
 
-        if (cachedHebrewDate == fetchedHebrewDate) {
-          final cachedParasha = prefs.getString('parasha');
-          if (mounted) {
-            setState(() {
-              hebrewDate = fetchedHebrewDate;
-              parasha = cachedParasha ?? '';
-              isLoading = false;
-            });
-          }
-          return;
-        }
-
-        if (data['events'] != null) {
-          final events = List<String>.from(data['events']);
-          final englishParasha = events.firstWhere(
-            (event) => event.startsWith('Parashat'),
-            orElse: () => '',
-          );
-          if (englishParasha.isNotEmpty) {
-            fetchedParasha =
-                parashaTranslations[englishParasha] ?? englishParasha;
-          }
-        }
-
-        await prefs.setString('hebrewDate', fetchedHebrewDate);
-        await prefs.setString('parasha', fetchedParasha);
-        await prefs.setString('cachedHebrewDate', fetchedHebrewDate);
-
-        if (mounted) {
-          setState(() {
-            hebrewDate = fetchedHebrewDate;
-            parasha = fetchedParasha;
-            isLoading = false;
-          });
-        }
-      } else {
-        if (mounted)
-          setState(() {
-            hebrewDate = 'שגיאה בטעינה';
-            isLoading = false;
-          });
+      // The chip already adds "פרשת" prefix in UI.
+      if (fetchedParasha.startsWith('פרשת ')) {
+        fetchedParasha = fetchedParasha.replaceFirst('פרשת ', '');
       }
+
+      if (!mounted) return;
+      setState(() {
+        hebrewDate = fetchedHebrewDate;
+        parasha = fetchedParasha;
+        isLoading = false;
+      });
     } catch (e) {
       if (mounted)
         setState(() {
@@ -309,40 +212,71 @@ class _NextZmanBannerState extends State<NextZmanBanner> {
       );
       final zmanimCalendar = ComplexZmanimCalendar.intGeoLocation(geoLocation);
       final dateFormat = intl.DateFormat('HH:mm');
-      final sunrise = zmanimCalendar.getSunrise();
-      final sunset = zmanimCalendar.getSunset();
+      final candidates = <Map<String, dynamic>>[];
 
-      Map<String, dynamic>? nextZman;
-
-      if (sunrise != null) {
-        final sunriseMinutes = sunrise.hour * 60 + sunrise.minute;
-        if (sunriseMinutes > currentMinutes) {
-          nextZman = {
-            'time': dateFormat.format(sunrise),
-            'label': 'נץ החמה',
-            'minutes': sunriseMinutes,
-          };
+      void addCandidate(String label, DateTime? time) {
+        if (time == null) return;
+        final minutes = time.hour * 60 + time.minute;
+        if (minutes > currentMinutes) {
+          candidates.add({'label': label, 'time': time, 'minutes': minutes});
         }
       }
 
-      if (sunset != null) {
-        final sunsetMinutes = sunset.hour * 60 + sunset.minute;
-        if (sunsetMinutes > currentMinutes) {
-          if (nextZman == null ||
-              sunsetMinutes < (nextZman['minutes'] as int)) {
-            nextZman = {
-              'time': dateFormat.format(sunset),
-              'label': 'שקיעה',
-              'minutes': sunsetMinutes,
-            };
-          }
+      addCandidate('עלות השחר', zmanimCalendar.getAlos72());
+      addCandidate('נץ החמה', zmanimCalendar.getSunrise());
+      addCandidate('סוף זמן ק״ש', zmanimCalendar.getSofZmanShmaGRA());
+      addCandidate('סוף זמן תפילה', zmanimCalendar.getSofZmanTfilaGRA());
+      addCandidate('חצות היום', zmanimCalendar.getChatzos());
+      addCandidate('מנחה גדולה', zmanimCalendar.getMinchaGedola());
+      addCandidate('מנחה קטנה', zmanimCalendar.getMinchaKetana());
+      addCandidate('פלג המנחה', zmanimCalendar.getPlagHamincha());
+      addCandidate('שקיעה', zmanimCalendar.getSunset());
+      addCandidate(
+        'צאת הכוכבים',
+        zmanimCalendar.getTzaisGeonim7Point083Degrees(),
+      );
+
+      Map<String, dynamic>? nextZman;
+      if (candidates.isNotEmpty) {
+        candidates.sort(
+          (a, b) => (a['minutes'] as int).compareTo(b['minutes'] as int),
+        );
+        nextZman = candidates.first;
+      } else {
+        // אחרי שכל הזמנים עברו - הצג את הזמן הראשון של מחר.
+        final tomorrow = now.add(const Duration(days: 1));
+        final tomorrowGeo = GeoLocation.setLocation(
+          'ירושלים',
+          31.7683,
+          35.2137,
+          tomorrow,
+        );
+        final tomorrowCalendar = ComplexZmanimCalendar.intGeoLocation(
+          tomorrowGeo,
+        );
+
+        final tomorrowAlos = tomorrowCalendar.getAlos72();
+        final tomorrowSunrise = tomorrowCalendar.getSunrise();
+
+        if (tomorrowAlos != null) {
+          nextZman = {
+            'label': 'עלות השחר',
+            'time': tomorrowAlos,
+            'minutes': tomorrowAlos.hour * 60 + tomorrowAlos.minute,
+          };
+        } else if (tomorrowSunrise != null) {
+          nextZman = {
+            'label': 'נץ החמה',
+            'time': tomorrowSunrise,
+            'minutes': tomorrowSunrise.hour * 60 + tomorrowSunrise.minute,
+          };
         }
       }
 
       if (mounted) {
         setState(() {
           if (nextZman != null) {
-            _nextZman = nextZman['time'] as String;
+            _nextZman = dateFormat.format(nextZman['time'] as DateTime);
             _nextZmanLabel = nextZman['label'] as String;
           } else {
             _nextZman = 'לא זמין';
@@ -369,14 +303,22 @@ class _NextZmanBannerState extends State<NextZmanBanner> {
       icon: Icons.wb_sunny_outlined,
       iconColor: _AppColors.amber,
       bgColor: _AppColors.amberLight,
-      child: Text(
-        '$_nextZmanLabel בשעה $_nextZman',
-        textDirection: TextDirection.rtl,
-        style: GoogleFonts.alef(
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-          color: _AppColors.textPrimary,
+      child: Text.rich(
+        TextSpan(
+          style: GoogleFonts.alef(fontSize: 13, color: _AppColors.textPrimary),
+          children: [
+            const TextSpan(text: 'הזמן הבא: '),
+            TextSpan(
+              text: _nextZmanLabel,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                color: _AppColors.amber,
+              ),
+            ),
+            TextSpan(text: ' — $_nextZman'),
+          ],
         ),
+        textDirection: TextDirection.rtl,
         overflow: TextOverflow.ellipsis,
       ),
     );
@@ -540,7 +482,7 @@ class EntranceScreen extends StatefulWidget {
 }
 
 class _EntranceScreenState extends State<EntranceScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   final supabase = Supabase.instance.client;
   String rabbiQuote = 'טוען ציטוט...';
   bool isLoading = true;
@@ -551,6 +493,7 @@ class _EntranceScreenState extends State<EntranceScreen>
   bool showVideoPlayer = false;
   bool _hideNewVideoBadge = false;
   String? _badgeVideoId;
+  int _refreshTick = 0;
 
   late AnimationController _mainController;
   late AnimationController _quoteController;
@@ -635,9 +578,27 @@ class _EntranceScreenState extends State<EntranceScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initializeAnimations();
-    _fetchRabbiData();
-    _fetchLatestVideo();
+    _refreshMainScreen();
+  }
+
+  Future<void> _refreshMainScreen() async {
+    if (!mounted) return;
+
+    setState(() {
+      _refreshTick++;
+      showVideoPlayer = false;
+    });
+
+    await Future.wait([_fetchRabbiData(), _fetchLatestVideo()]);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshMainScreen();
+    }
   }
 
   void _initializeAnimations() {
@@ -915,6 +876,7 @@ class _EntranceScreenState extends State<EntranceScreen>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _mainController.dispose();
     _quoteController.dispose();
     _panelController.dispose();
@@ -951,14 +913,17 @@ class _EntranceScreenState extends State<EntranceScreen>
             child: Padding(
               padding: EdgeInsets.fromLTRB(
                 screenWidth * 0.048,
-                safeAreaHeight * 0.006,
+                0,
                 screenWidth * 0.048,
                 0,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
+                  _buildScreenHeader(),
+                  SizedBox(height: safeAreaHeight * 0.008),
+                  SizedBox(
+                    height: safeAreaHeight * 0.47,
                     child: AnimatedBuilder(
                       animation: _quoteController,
                       builder:
@@ -984,6 +949,7 @@ class _EntranceScreenState extends State<EntranceScreen>
                         ),
                     child: _buildQuickInfoPanel(),
                   ),
+                  SizedBox(height: safeAreaHeight * 0.01),
                 ],
               ),
             ),
@@ -1072,9 +1038,9 @@ class _EntranceScreenState extends State<EntranceScreen>
 
   Widget _buildQuickInfoPanel() {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.72),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: _AppColors.divider, width: 1),
         boxShadow: [
@@ -1090,14 +1056,14 @@ class _EntranceScreenState extends State<EntranceScreen>
         children: [
           // כותרת פאנל
           Padding(
-            padding: const EdgeInsets.only(bottom: 10, right: 2),
+            padding: const EdgeInsets.only(bottom: 8, right: 2),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Text(
                   'מידע מהיר',
                   style: GoogleFonts.alef(
-                    fontSize: 12,
+                    fontSize: 11.5,
                     fontWeight: FontWeight.w700,
                     color: _AppColors.textSecondary,
                     letterSpacing: 0.3,
@@ -1120,11 +1086,51 @@ class _EntranceScreenState extends State<EntranceScreen>
               ],
             ),
           ),
-          const HebrewDateBanner(),
-          const SizedBox(height: 7),
-          const NextZmanBanner(),
-          const SizedBox(height: 7),
-          const NextPrayerBanner(),
+          HebrewDateBanner(key: ValueKey('hebrew_date_$_refreshTick')),
+          const SizedBox(height: 6),
+          NextZmanBanner(key: ValueKey('next_zman_$_refreshTick')),
+          const SizedBox(height: 6),
+          NextPrayerBanner(key: ValueKey('next_prayer_$_refreshTick')),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScreenHeader() {
+    return Transform.translate(
+      offset: const Offset(0, -4),
+      child: Column(
+        children: [
+          Text(
+            'ברוכים הבאים',
+            style: GoogleFonts.alef(
+              fontSize: 36,
+              fontWeight: FontWeight.w700,
+              color: _AppColors.textPrimary,
+            ),
+            textAlign: TextAlign.center,
+            textDirection: TextDirection.rtl,
+          ),
+          const SizedBox(height: 1),
+          Text(
+            'מחלקת כשרות דת והלכה',
+            style: GoogleFonts.alef(
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              color: _AppColors.textSecondary,
+            ),
+            textAlign: TextAlign.center,
+            textDirection: TextDirection.rtl,
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: 84,
+            height: 4,
+            decoration: BoxDecoration(
+              color: _AppColors.blue.withValues(alpha: 0.85),
+              borderRadius: BorderRadius.circular(20),
+            ),
+          ),
         ],
       ),
     );
@@ -1157,263 +1163,125 @@ class _EntranceScreenState extends State<EntranceScreen>
                   height: double.infinity,
                   constraints: const BoxConstraints(maxWidth: 560),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.88),
+                    color: Colors.white.withValues(alpha: 0.42),
                     borderRadius: BorderRadius.circular(28),
-                    border: Border.all(color: _AppColors.divider, width: 1),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.35),
+                      width: 1,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: _AppColors.navy.withValues(alpha: 0.08),
-                        blurRadius: 30,
-                        offset: const Offset(0, 8),
+                        color: _AppColors.navy.withValues(alpha: 0.09),
+                        blurRadius: 24,
+                        offset: const Offset(0, 6),
                       ),
                     ],
                   ),
-                  child: Column(
-                    children: [
-                      // Header Banner (fixed)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 18,
-                          horizontal: 20,
-                        ),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [_AppColors.navy, Color(0xFF1A5FB4)],
-                            begin: Alignment.topRight,
-                            end: Alignment.bottomLeft,
-                          ),
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(27),
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            Container(
-                              width: MediaQuery.of(context).size.width * 0.18,
-                              height: MediaQuery.of(context).size.width * 0.18,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(
-                                  MediaQuery.of(context).size.width * 0.09,
-                                ),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.4),
-                                  width: 2.5,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.25),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(
-                                  MediaQuery.of(context).size.width * 0.09,
-                                ),
-                                child: Image.asset(
-                                  'assets/hrav.png',
-                                  fit: BoxFit.cover,
-                                  alignment: Alignment.topCenter,
-                                ),
-                              ),
+                  child: Padding(
+                    padding: EdgeInsets.all(
+                      MediaQuery.of(context).size.width * 0.045,
+                    ),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: MediaQuery.of(context).size.width * 0.155,
+                          height: MediaQuery.of(context).size.width * 0.155,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(
+                              MediaQuery.of(context).size.width * 0.1,
                             ),
-                            const SizedBox(height: 10),
-                            Text(
-                              'ברוכים הבאים',
-                              style: GoogleFonts.alef(
-                                fontSize:
-                                    MediaQuery.of(context).size.width * 0.072,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                                height: 1.2,
-                              ),
-                              textAlign: TextAlign.center,
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.8),
+                              width: 2,
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'מחלקת כשרות דת והלכה',
-                              style: GoogleFonts.alef(
-                                fontSize:
-                                    MediaQuery.of(context).size.width * 0.038,
-                                fontWeight: FontWeight.w400,
-                                color: Colors.white.withValues(alpha: 0.75),
-                                letterSpacing: 0.5,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Body Content
-                      Expanded(
-                        child: Padding(
-                          padding: EdgeInsets.all(
-                            MediaQuery.of(context).size.width * 0.05,
                           ),
-                          child: Column(
-                            children: [
-                              // שם הרב (fixed)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 7,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: _AppColors.lightBlue,
-                                  borderRadius: BorderRadius.circular(24),
-                                  border: Border.all(
-                                    color: _AppColors.blue.withValues(
-                                      alpha: 0.25,
-                                    ),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.person_outline_rounded,
-                                      size: 14,
-                                      color: _AppColors.navy,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'הרב יואב חנניה אוקנין',
-                                      style: GoogleFonts.alef(
-                                        fontSize:
-                                            MediaQuery.of(context).size.width *
-                                            0.036,
-                                        fontWeight: FontWeight.w600,
-                                        color: _AppColors.navy,
-                                      ),
-                                      textDirection: TextDirection.rtl,
-                                    ),
-                                  ],
-                                ),
-                              ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(
+                              MediaQuery.of(context).size.width * 0.1,
+                            ),
+                            child: Image.asset(
+                              'assets/hrav.png',
+                              fit: BoxFit.cover,
+                              alignment: Alignment.topCenter,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Icon(
+                          Icons.format_quote_rounded,
+                          size: 22,
+                          color: _AppColors.blue.withValues(alpha: 0.7),
+                        ),
+                        const SizedBox(height: 3),
 
-                              const SizedBox(height: 12),
-
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Container(
-                                      height: 1,
-                                      color: _AppColors.divider,
-                                    ),
+                        // Only this area is scrollable.
+                        Expanded(
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              return SingleChildScrollView(
+                                physics: const BouncingScrollPhysics(),
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    minHeight: constraints.maxHeight + 24,
                                   ),
-                                  Padding(
+                                  child: Container(
+                                    width: double.infinity,
+                                    alignment: Alignment.center,
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
+                                      horizontal: 8,
+                                      vertical: 8,
                                     ),
-                                    child: Icon(
-                                      Icons.format_quote_rounded,
-                                      size: 18,
-                                      color: _AppColors.blue.withValues(
-                                        alpha: 0.5,
-                                      ),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Container(
-                                      height: 1,
-                                      color: _AppColors.divider,
-                                    ),
-                                  ),
-                                ],
-                              ),
-
-                              const SizedBox(height: 12),
-
-                              // Only this area is scrollable.
-                              Expanded(
-                                child: LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    return SingleChildScrollView(
-                                      physics: const BouncingScrollPhysics(),
-                                      child: ConstrainedBox(
-                                        constraints: BoxConstraints(
-                                          minHeight: constraints.maxHeight,
-                                        ),
-                                        child: Container(
-                                          width: double.infinity,
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                            vertical: 14,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: _AppColors.surface,
-                                            borderRadius: BorderRadius.circular(
-                                              16,
+                                    child:
+                                        _shouldReplaceRabbiTextWithVideo()
+                                            ? _buildLatestVideoCard()
+                                            : Text(
+                                              rabbiQuote,
+                                              style: GoogleFonts.alef(
+                                                fontSize:
+                                                    MediaQuery.of(
+                                                      context,
+                                                    ).size.width *
+                                                    0.041,
+                                                height: 1.7,
+                                                color: _AppColors.textPrimary,
+                                                fontWeight: FontWeight.w400,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                              textDirection: TextDirection.rtl,
                                             ),
-                                            border: Border.all(
-                                              color: _AppColors.divider,
-                                            ),
-                                          ),
-                                          child:
-                                              _shouldReplaceRabbiTextWithVideo()
-                                                  ? _buildLatestVideoCard()
-                                                  : Text(
-                                                    rabbiQuote,
-                                                    style: GoogleFonts.alef(
-                                                      fontSize:
-                                                          MediaQuery.of(
-                                                            context,
-                                                          ).size.width *
-                                                          0.04,
-                                                      height: 1.8,
-                                                      color:
-                                                          _AppColors
-                                                              .textSecondary,
-                                                      fontWeight:
-                                                          FontWeight.w400,
-                                                    ),
-                                                    textAlign: TextAlign.center,
-                                                    textDirection:
-                                                        TextDirection.rtl,
-                                                  ),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-
-                              const SizedBox(height: 6),
-
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: _AppColors.goldLight,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: _AppColors.gold.withValues(
-                                      alpha: 0.3,
-                                    ),
                                   ),
                                 ),
-                                child: Text(
-                                  'מרכז רפואי שיבא',
-                                  style: GoogleFonts.alef(
-                                    fontSize:
-                                        MediaQuery.of(context).size.width *
-                                        0.033,
-                                    fontWeight: FontWeight.w500,
-                                    color: _AppColors.gold,
-                                  ),
-                                  textDirection: TextDirection.rtl,
-                                ),
-                              ),
-                            ],
+                              );
+                            },
                           ),
                         ),
-                      ),
-                    ],
+
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.32),
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.5),
+                            ),
+                          ),
+                          child: Text(
+                            'הרב יואב חנניה אוקנין',
+                            style: GoogleFonts.alef(
+                              fontSize:
+                                  MediaQuery.of(context).size.width * 0.04,
+                              fontWeight: FontWeight.w500,
+                              color: _AppColors.textPrimary,
+                            ),
+                            textDirection: TextDirection.rtl,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -1564,7 +1432,10 @@ class _EntranceScreenState extends State<EntranceScreen>
                             ),
                         transitionDuration: const Duration(milliseconds: 300),
                       ),
-                    );
+                    ).then((_) {
+                      if (!mounted) return;
+                      _refreshMainScreen();
+                    });
                   },
                 ),
               );

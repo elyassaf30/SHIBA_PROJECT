@@ -412,7 +412,10 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        shadowColor: Colors.transparent,
         centerTitle: true,
         title: Text(
           'בתי כנסת במרכז הרפואי',
@@ -423,15 +426,6 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
             shadows: [
               Shadow(blurRadius: 10, color: Colors.black, offset: Offset(2, 2)),
             ],
-          ),
-        ),
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Colors.deepPurple.withValues(alpha: 0.8), Colors.transparent],
-            ),
           ),
         ),
       ),
@@ -538,4 +532,3 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
     );
   }
 }
-

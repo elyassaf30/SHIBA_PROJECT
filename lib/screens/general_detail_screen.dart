@@ -217,7 +217,10 @@ class _GeneralDetailScreenState extends State<GeneralDetailScreen> {
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        shadowColor: Colors.transparent,
         centerTitle: true,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: Colors.white),
@@ -232,15 +235,6 @@ class _GeneralDetailScreenState extends State<GeneralDetailScreen> {
             shadows: [
               Shadow(blurRadius: 6, color: Colors.black, offset: Offset(2, 2)),
             ],
-          ),
-        ),
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Colors.black.withValues(alpha: 0.7), Colors.transparent],
-            ),
           ),
         ),
       ),

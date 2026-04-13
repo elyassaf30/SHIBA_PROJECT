@@ -93,7 +93,6 @@ class _ZmanimScreenState extends State<ZmanimScreen> {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        flexibleSpace: ThemeHelpers.buildDefaultBackground(),
         centerTitle: true,
         title: Text(
           'זמני היום',
@@ -175,12 +174,14 @@ class _ZmanimScreenState extends State<ZmanimScreen> {
   }
 
   Widget _buildContent() {
+    final topSpacing = MediaQuery.of(context).padding.top + kToolbarHeight + 12;
+
     return RefreshIndicator(
       onRefresh: _initializeZmanim,
       color: const Color.fromARGB(255, 15, 17, 18),
       child: ListView(
-        padding: const EdgeInsets.only(
-          top: 90,
+        padding: EdgeInsets.only(
+          top: topSpacing,
           bottom: 24,
           left: 16,
           right: 16,

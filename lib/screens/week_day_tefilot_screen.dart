@@ -348,7 +348,6 @@ class _WeekdayTefilotScreenState extends State<WeekdayTefilotScreen> {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        flexibleSpace: ThemeHelpers.buildDefaultBackground(),
         centerTitle: true,
         iconTheme: const IconThemeData(color: Color.fromARGB(255, 6, 6, 6)),
         title: Text(

@@ -85,7 +85,6 @@ class ShabatScreenState extends State<ShabatScreen>
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        flexibleSpace: ThemeHelpers.buildDefaultBackground(),
         centerTitle: true,
         iconTheme: const IconThemeData(color: Color.fromARGB(255, 8, 8, 8)),
         title: Text(
@@ -94,7 +93,7 @@ class ShabatScreenState extends State<ShabatScreen>
             fontSize: 20,
             fontWeight: FontWeight.w700,
             color: const Color.fromARGB(255, 17, 17, 17),
-          )
+          ),
         ),
       ),
       body: Stack(

@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
 import 'package:rabbi_shiba/screens/entrance_screen.dart';
+import 'package:rabbi_shiba/utils/theme_helpers.dart';
 
 class AdminTefilotScreen extends StatefulWidget {
   const AdminTefilotScreen({super.key});
@@ -441,7 +442,8 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF5F7FA),
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.transparent,
       drawer: Drawer(
         child: SafeArea(
           child: Column(
@@ -499,15 +501,10 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
       ),
       appBar: AppBar(
         elevation: 0,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF6C63FF), Color(0xFF5A52D5)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
+        scrolledUnderElevation: 0,
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.transparent,
         title: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
@@ -525,7 +522,9 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
         ),
         iconTheme: IconThemeData(color: Colors.white),
       ),
-      body:
+      body: Stack(
+        children: [
+          Positioned.fill(child: ThemeHelpers.buildDefaultBackground()),
           _isLoading
               ? Center(
                 child: Column(
@@ -612,7 +611,9 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Color(0xFF6C63FF).withValues(alpha: 0.3),
+                                    color: Color(
+                                      0xFF6C63FF,
+                                    ).withValues(alpha: 0.3),
                                     blurRadius: 15,
                                     offset: Offset(0, 5),
                                   ),
@@ -698,8 +699,8 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
                                           children: [
                                             Container(
                                               decoration: BoxDecoration(
-                                                color: Colors.red.withValues(alpha: 
-                                                  0.1,
+                                                color: Colors.red.withValues(
+                                                  alpha: 0.1,
                                                 ),
                                                 borderRadius:
                                                     BorderRadius.circular(12),
@@ -954,6 +955,8 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
                   ),
                 ),
               ),
+        ],
+      ),
     );
   }
 
@@ -969,7 +972,10 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
           end: Alignment.bottomLeft,
         ),
         borderRadius: BorderRadius.circular(25),
-        border: Border.all(color: Color(0xFF6C63FF).withValues(alpha: 0.3), width: 2),
+        border: Border.all(
+          color: Color(0xFF6C63FF).withValues(alpha: 0.3),
+          width: 2,
+        ),
         boxShadow: [
           BoxShadow(
             color: Color(0xFF6C63FF).withValues(alpha: 0.1),
@@ -1179,4 +1185,3 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen>
     );
   }
 }
-

@@ -8,10 +8,13 @@ import 'package:rabbi_shiba/screens/user_to_synagogue_map.dart';
 import 'package:rabbi_shiba/screens/zmanim_screen.dart';
 import 'package:rabbi_shiba/screens/torah_weekly_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:kosher_dart/kosher_dart.dart';
 import 'package:intl/intl.dart' as intl;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
+import 'dart:convert';
 import 'AdminLoginScreen.dart';
 import 'package:rabbi_shiba/utils/theme_helpers.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -36,6 +39,88 @@ class _AppColors {
   static const tealLight = Color(0xFFD4F0E8);
   static const amber = Color(0xFFB45309);
   static const amberLight = Color(0xFFFEF3C7);
+}
+
+// ─────────────────────────────────────────────
+// NoNetworkBanner — באנר חיפוש רשת
+// ─────────────────────────────────────────────
+class _NoNetworkBanner extends StatefulWidget {
+  const _NoNetworkBanner();
+
+  @override
+  State<_NoNetworkBanner> createState() => _NoNetworkBannerState();
+}
+
+class _NoNetworkBannerState extends State<_NoNetworkBanner>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _dotController;
+
+  @override
+  void initState() {
+    super.initState();
+    _dotController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _dotController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _dotController,
+      builder: (context, _) {
+        final t = _dotController.value;
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFFB45309), Color(0xFFD97706)],
+              begin: Alignment.centerRight,
+              end: Alignment.centerLeft,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // נקודות מחכות
+              ...List.generate(3, (i) {
+                final active = ((t * 3).floor() % 3) == i;
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                  width: active ? 7 : 5,
+                  height: active ? 7 : 5,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: active ? 1.0 : 0.45),
+                  ),
+                );
+              }),
+              const SizedBox(width: 10),
+              Text(
+                'מחפש רשת...',
+                textDirection: TextDirection.rtl,
+                style: GoogleFonts.alef(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Icon(Icons.wifi_off_rounded, size: 14, color: Colors.white),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -72,7 +157,6 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
       final fetchedHebrewDate = formatter.format(jewishDate);
       var fetchedParasha = formatter.formatWeeklyParsha(jewishCalendar);
 
-      // The chip already adds "פרשת" prefix in UI.
       if (fetchedParasha.startsWith('פרשת ')) {
         fetchedParasha = fetchedParasha.replaceFirst('פרשת ', '');
       }
@@ -113,7 +197,11 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
             const SizedBox(width: 8),
             Text(
               'טוען תאריך עברי...',
-              style: GoogleFonts.alef(fontSize: 13, color: _AppColors.blue),
+              style: GoogleFonts.alef(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: _AppColors.blue,
+              ),
             ),
           ],
         ),
@@ -138,8 +226,8 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
                 'פרשת $parasha',
                 textDirection: TextDirection.rtl,
                 style: GoogleFonts.alef(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
                   color: _AppColors.navy,
                 ),
               ),
@@ -151,8 +239,8 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
               hebrewDate,
               textDirection: TextDirection.rtl,
               style: GoogleFonts.alef(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
                 color: _AppColors.textPrimary,
               ),
               overflow: TextOverflow.ellipsis,
@@ -243,7 +331,6 @@ class _NextZmanBannerState extends State<NextZmanBanner> {
         );
         nextZman = candidates.first;
       } else {
-        // אחרי שכל הזמנים עברו - הצג את הזמן הראשון של מחר.
         final tomorrow = now.add(const Duration(days: 1));
         final tomorrowGeo = GeoLocation.setLocation(
           'ירושלים',
@@ -254,7 +341,6 @@ class _NextZmanBannerState extends State<NextZmanBanner> {
         final tomorrowCalendar = ComplexZmanimCalendar.intGeoLocation(
           tomorrowGeo,
         );
-
         final tomorrowAlos = tomorrowCalendar.getAlos72();
         final tomorrowSunrise = tomorrowCalendar.getSunrise();
 
@@ -305,7 +391,11 @@ class _NextZmanBannerState extends State<NextZmanBanner> {
       bgColor: _AppColors.amberLight,
       child: Text.rich(
         TextSpan(
-          style: GoogleFonts.alef(fontSize: 13, color: _AppColors.textPrimary),
+          style: GoogleFonts.alef(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: _AppColors.textPrimary,
+          ),
           children: [
             const TextSpan(text: 'הזמן הבא: '),
             TextSpan(
@@ -338,6 +428,10 @@ class NextPrayerBanner extends StatefulWidget {
 class _NextPrayerBannerState extends State<NextPrayerBanner> {
   Map<String, dynamic>? _nextPrayerTime;
   Timer? _prayerCheckTimer;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  bool _isSearchingNetwork = true;
+
+  static const String _cachedPrayerTimesKey = 'cached_prayer_times_list';
 
   @override
   void initState() {
@@ -348,54 +442,187 @@ class _NextPrayerBannerState extends State<NextPrayerBanner> {
   @override
   void dispose() {
     _prayerCheckTimer?.cancel();
+    _connectivitySubscription?.cancel();
     super.dispose();
   }
 
   void _startPrayerTimeCheck() {
-    _fetchAndDetermineNextPrayer();
+    _loadCachedPrayerTimes();
+    _watchConnectivity();
+    _refreshPrayerTime();
     _prayerCheckTimer = Timer.periodic(
-      const Duration(minutes: 1),
-      (timer) => _fetchAndDetermineNextPrayer(),
+      const Duration(seconds: 15),
+      (timer) => _refreshPrayerTime(),
     );
+  }
+
+  void _watchConnectivity() {
+    final connectivity = Connectivity();
+
+    connectivity.checkConnectivity().then((results) {
+      if (!mounted) return;
+      _handleConnectivityState(results);
+    });
+
+    _connectivitySubscription = connectivity.onConnectivityChanged.listen((
+      results,
+    ) {
+      if (!mounted) return;
+      _handleConnectivityState(results);
+    });
+  }
+
+  bool _hasNetwork(List<ConnectivityResult> results) {
+    return results.isNotEmpty && !results.contains(ConnectivityResult.none);
+  }
+
+  void _handleConnectivityState(List<ConnectivityResult> results) {
+    if (_hasNetwork(results)) {
+      if (_isSearchingNetwork && mounted) {
+        setState(() {
+          _isSearchingNetwork = false;
+        });
+      }
+      _fetchAndDetermineNextPrayer();
+    } else {
+      if (mounted && !_isSearchingNetwork) {
+        setState(() {
+          _isSearchingNetwork = true;
+        });
+      }
+    }
+  }
+
+  Future<void> _refreshPrayerTime() async {
+    final results = await Connectivity().checkConnectivity();
+    if (!_hasNetwork(results)) {
+      if (mounted && !_isSearchingNetwork) {
+        setState(() {
+          _isSearchingNetwork = true;
+        });
+      }
+      return;
+    }
+
+    if (mounted && _isSearchingNetwork) {
+      setState(() {
+        _isSearchingNetwork = false;
+      });
+    }
+
+    _fetchAndDetermineNextPrayer();
+  }
+
+  Future<void> _loadCachedPrayerTimes() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cachedJson = prefs.getString(_cachedPrayerTimesKey);
+      if (cachedJson == null || cachedJson.isEmpty) return;
+
+      final decoded = jsonDecode(cachedJson);
+      if (decoded is! List) return;
+
+      final cachedData =
+          decoded
+              .whereType<Map>()
+              .map((item) => Map<String, dynamic>.from(item))
+              .toList();
+
+      final cachedNextPrayer = _determineNextPrayerFromData(cachedData);
+      if (!mounted || cachedNextPrayer == null) return;
+
+      setState(() {
+        _nextPrayerTime = cachedNextPrayer;
+        _isSearchingNetwork = false;
+      });
+    } catch (e) {
+      debugPrint('שגיאה בטעינת מטמון זמני תפילה: $e');
+    }
+  }
+
+  Map<String, dynamic>? _determineNextPrayerFromData(
+    List<Map<String, dynamic>> data,
+  ) {
+    final now = DateTime.now();
+    final currentMinutes = now.hour * 60 + now.minute;
+    Map<String, dynamic>? nextPrayer;
+
+    final sortedData = List<Map<String, dynamic>>.from(data)
+      ..sort((a, b) => a['שעה'].toString().compareTo(b['שעה'].toString()));
+
+    for (var item in sortedData) {
+      final timeString = item['שעה']?.toString() ?? '';
+      final parts = timeString.split(':');
+      if (parts.length < 2) continue;
+      final prayerMinutes =
+          (int.tryParse(parts[0]) ?? 0) * 60 + (int.tryParse(parts[1]) ?? 0);
+      if (prayerMinutes > currentMinutes) {
+        nextPrayer = item;
+        break;
+      }
+    }
+
+    if (nextPrayer == null && sortedData.isNotEmpty) {
+      nextPrayer = sortedData.first;
+    }
+
+    return nextPrayer;
+  }
+
+  Future<void> _cachePrayerTimes(List<Map<String, dynamic>> data) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_cachedPrayerTimesKey, jsonEncode(data));
+    } catch (e) {
+      debugPrint('שגיאה בשמירת מטמון זמני תפילה: $e');
+    }
   }
 
   void _fetchAndDetermineNextPrayer() async {
     try {
-      final now = DateTime.now();
-      final currentMinutes = now.hour * 60 + now.minute;
       final response = await Supabase.instance.client
           .from('זמני תפילות ימי חול')
           .select('שעה, "סוג תפילה"');
       final data = List<Map<String, dynamic>>.from(response);
-      Map<String, dynamic>? nextPrayer;
-      data.sort((a, b) => a['שעה'].compareTo(b['שעה']));
+      final nextPrayer = _determineNextPrayerFromData(data);
 
-      for (var item in data) {
-        final timeString = item['שעה'];
-        final parts = timeString.split(':');
-        if (parts.length < 2) continue;
-        final prayerMinutes =
-            (int.tryParse(parts[0]) ?? 0) * 60 + (int.tryParse(parts[1]) ?? 0);
-        if (prayerMinutes > currentMinutes) {
-          nextPrayer = item;
-          break;
-        }
-      }
-
-      if (nextPrayer == null && data.isNotEmpty) nextPrayer = data.first;
+      await _cachePrayerTimes(data);
 
       if (mounted)
         setState(() {
           _nextPrayerTime = nextPrayer;
+          _isSearchingNetwork = false;
         });
     } catch (e) {
-      // מטפל בשגיאה בשקט
+      debugPrint('שגיאה בטעינת תפילה הבאה מהשרת: $e');
+      final results = await Connectivity().checkConnectivity();
+      if (!mounted) return;
+      setState(() {
+        _isSearchingNetwork = !_hasNetwork(results);
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_nextPrayerTime == null) return const SizedBox.shrink();
+    // אם מחפש רשת ויש נתון שמור — מציג את השמור בלי אינדיקציה
+    if (_isSearchingNetwork && _nextPrayerTime == null) {
+      return _InfoChip(
+        icon: Icons.schedule_outlined,
+        iconColor: _AppColors.teal,
+        bgColor: _AppColors.tealLight,
+        child: _LoadingDots(label: 'טוען תפילה הבאה', color: _AppColors.teal),
+      );
+    }
+
+    if (_nextPrayerTime == null) {
+      return _InfoChip(
+        icon: Icons.schedule_outlined,
+        iconColor: _AppColors.teal,
+        bgColor: _AppColors.tealLight,
+        child: _LoadingDots(label: 'טוען תפילה הבאה', color: _AppColors.teal),
+      );
+    }
 
     final time = _nextPrayerTime!['שעה'] as String;
     final type = _nextPrayerTime!['סוג תפילה'];
@@ -407,7 +634,11 @@ class _NextPrayerBannerState extends State<NextPrayerBanner> {
       bgColor: _AppColors.tealLight,
       child: Text.rich(
         TextSpan(
-          style: GoogleFonts.alef(fontSize: 13, color: _AppColors.textPrimary),
+          style: GoogleFonts.alef(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: _AppColors.textPrimary,
+          ),
           children: [
             const TextSpan(text: 'תפילה הבאה: '),
             TextSpan(
@@ -423,6 +654,78 @@ class _NextPrayerBannerState extends State<NextPrayerBanner> {
         textDirection: TextDirection.rtl,
         overflow: TextOverflow.ellipsis,
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// Helper: _LoadingDots — אנימציית טעינה עדינה
+// ─────────────────────────────────────────────
+class _LoadingDots extends StatefulWidget {
+  final String label;
+  final Color color;
+
+  const _LoadingDots({required this.label, required this.color});
+
+  @override
+  State<_LoadingDots> createState() => _LoadingDotsState();
+}
+
+class _LoadingDotsState extends State<_LoadingDots>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, _) {
+        final active = (_ctrl.value * 3).floor() % 3;
+        return Row(
+          textDirection: TextDirection.rtl,
+          children: [
+            Text(
+              widget.label,
+              textDirection: TextDirection.rtl,
+              style: GoogleFonts.frankRuhlLibre(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: _AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(width: 6),
+            ...List.generate(3, (i) {
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 100),
+                margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                width: active == i ? 6 : 4,
+                height: active == i ? 6 : 4,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: widget.color.withValues(
+                    alpha: active == i ? 0.9 : 0.35,
+                  ),
+                ),
+              );
+            }),
+          ],
+        );
+      },
     );
   }
 }
@@ -484,8 +787,9 @@ class EntranceScreen extends StatefulWidget {
 class _EntranceScreenState extends State<EntranceScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   final supabase = Supabase.instance.client;
-  String rabbiQuote = 'טוען ציטוט...';
-  bool isLoading = true;
+  String rabbiQuote =
+      'ברוכים הבאים לאפליקציית כשרות דת והלכה של מרכז רפואי שיבא. כאן תמצאו את כל המידע הדרוש לכם לשמירה על הלכות הכשרות והדת במרכז הרפואי.';
+  bool isLoading = false;
   int _adminTapCount = 0;
 
   Map<String, dynamic>? latestVideo;
@@ -494,6 +798,10 @@ class _EntranceScreenState extends State<EntranceScreen>
   bool _hideNewVideoBadge = false;
   String? _badgeVideoId;
   int _refreshTick = 0;
+
+  // מצב רשת — עוקב לאורך כל חיי המסך
+  bool _noNetwork = false;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
 
   late AnimationController _mainController;
   late AnimationController _quoteController;
@@ -580,18 +888,51 @@ class _EntranceScreenState extends State<EntranceScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _initializeAnimations();
+    _startEntranceAnimations();
+    _watchNetworkState();
     _refreshMainScreen();
+  }
+
+  void _startEntranceAnimations() {
+    _mainController.forward();
+    Future.delayed(const Duration(milliseconds: 120), () {
+      if (!mounted) return;
+      _quoteController.forward();
+    });
+    Future.delayed(const Duration(milliseconds: 240), () {
+      if (!mounted) return;
+      _panelController.forward();
+    });
+  }
+
+  // ── מעקב מצב רשת ──────────────────────────
+  void _watchNetworkState() {
+    Connectivity().checkConnectivity().then((results) {
+      if (!mounted) return;
+      setState(() {
+        _noNetwork =
+            results.isEmpty || results.contains(ConnectivityResult.none);
+      });
+    });
+
+    _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
+      if (!mounted) return;
+      final hasNet =
+          results.isNotEmpty && !results.contains(ConnectivityResult.none);
+      setState(() => _noNetwork = !hasNet);
+      // כשרשת חוזרת — רענן נתונים
+      if (hasNet) _refreshMainScreen();
+    });
   }
 
   Future<void> _refreshMainScreen() async {
     if (!mounted) return;
-
     setState(() {
       _refreshTick++;
       showVideoPlayer = false;
     });
-
-    await Future.wait([_fetchRabbiData(), _fetchLatestVideo()]);
+    _fetchRabbiData();
+    _fetchLatestVideo();
   }
 
   @override
@@ -604,47 +945,44 @@ class _EntranceScreenState extends State<EntranceScreen>
   void _initializeAnimations() {
     _mainController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1100),
     );
     _quoteController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 850),
     );
     _panelController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 700),
+      duration: const Duration(milliseconds: 900),
     );
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _mainController,
-        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+        curve: const Interval(0.0, 0.85, curve: Curves.easeOutCubic),
       ),
     );
-    _scaleAnimation = Tween<double>(begin: 0.92, end: 1.0).animate(
+    _scaleAnimation = Tween<double>(begin: 0.97, end: 1.0).animate(
       CurvedAnimation(
         parent: _mainController,
-        curve: const Interval(0.2, 0.8, curve: Curves.elasticOut),
+        curve: const Interval(0.0, 1.0, curve: Curves.easeOutCubic),
       ),
     );
-    _slideAnimation = Tween<double>(begin: 40.0, end: 0.0).animate(
+    _slideAnimation = Tween<double>(begin: 22.0, end: 0.0).animate(
       CurvedAnimation(
         parent: _mainController,
-        curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
+        curve: const Interval(0.0, 1.0, curve: Curves.easeOutCubic),
       ),
     );
-    _quoteOpacityAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _quoteController, curve: Curves.easeIn));
-    _panelSlideAnimation = Tween<double>(
-      begin: -20.0,
-      end: 0.0,
-    ).animate(CurvedAnimation(parent: _panelController, curve: Curves.easeOut));
-    _panelFadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _panelController, curve: Curves.easeIn));
+    _quoteOpacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _quoteController, curve: Curves.easeOutCubic),
+    );
+    _panelSlideAnimation = Tween<double>(begin: 18.0, end: 0.0).animate(
+      CurvedAnimation(parent: _panelController, curve: Curves.easeOutCubic),
+    );
+    _panelFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _panelController, curve: Curves.easeOutCubic),
+    );
   }
 
   Future<void> _fetchRabbiData() async {
@@ -663,23 +1001,8 @@ class _EntranceScreenState extends State<EntranceScreen>
                 ? 'ברוכים הבאים לאפליקציית כשרות דת והלכה של מרכז רפואי שיבא. כאן תמצאו את כל המידע הדרוש לכם לשמירה על הלכות הכשרות והדת במרכז הרפואי.'
                 : response['מידע']?.toString() ??
                     'ברוכים הבאים לאפליקציית כשרות דת והלכה של מרכז רפואי שיבא.';
-        isLoading = false;
-      });
-      _panelController.forward();
-      _mainController.forward();
-      Future.delayed(const Duration(milliseconds: 400), () {
-        if (mounted) _quoteController.forward();
       });
     } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        rabbiQuote =
-            'ברוכים הבאים לאפליקציית כשרות דת והלכה של מרכז רפואי שיבא. כאן תמצאו את כל המידע הדרוש לכם לשמירה על הלכות הכשרות והדת במרכז הרפואי.';
-        isLoading = false;
-      });
-      _panelController.forward();
-      _mainController.forward();
-      _quoteController.forward();
       debugPrint('Error fetching rabbi data: $e');
     }
   }
@@ -699,7 +1022,6 @@ class _EntranceScreenState extends State<EntranceScreen>
       final String? nextVideoId = nextVideo?['id']?.toString();
 
       setState(() {
-        // Show the badge again only when a different video arrives.
         if (nextVideoId != null && nextVideoId != _badgeVideoId) {
           _hideNewVideoBadge = false;
           _badgeVideoId = nextVideoId;
@@ -877,6 +1199,7 @@ class _EntranceScreenState extends State<EntranceScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _connectivitySub?.cancel();
     _mainController.dispose();
     _quoteController.dispose();
     _panelController.dispose();
@@ -908,50 +1231,60 @@ class _EntranceScreenState extends State<EntranceScreen>
       body: Stack(
         children: [
           Positioned.fill(child: ThemeHelpers.buildDefaultBackground()),
-          SafeArea(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                screenWidth * 0.048,
-                0,
-                screenWidth * 0.048,
-                0,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildScreenHeader(),
-                  SizedBox(height: safeAreaHeight * 0.008),
-                  SizedBox(
-                    height: safeAreaHeight * 0.47,
-                    child: AnimatedBuilder(
-                      animation: _quoteController,
-                      builder:
-                          (context, child) => FadeTransition(
-                            opacity: _quoteOpacityAnimation,
-                            child:
-                                isLoading
-                                    ? _buildLoadingWidget()
-                                    : _buildWelcomeCard(),
-                          ),
+          Column(
+            children: [
+              // ── באנר רשת — מופיע מיד מעל הכל, מתחת ל-status bar ──
+              if (_noNetwork)
+                SafeArea(bottom: false, child: const _NoNetworkBanner()),
+              Expanded(
+                child: SafeArea(
+                  top: !_noNetwork, // אם הבאנר כבר תפס את ה-SafeArea, לא כופלים
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      screenWidth * 0.048,
+                      0,
+                      screenWidth * 0.048,
+                      0,
                     ),
-                  ),
-                  SizedBox(height: safeAreaHeight * 0.012),
-                  AnimatedBuilder(
-                    animation: _panelController,
-                    builder:
-                        (context, child) => Transform.translate(
-                          offset: Offset(0, _panelSlideAnimation.value),
-                          child: FadeTransition(
-                            opacity: _panelFadeAnimation,
-                            child: child,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildScreenHeader(),
+                        SizedBox(height: safeAreaHeight * 0.008),
+                        SizedBox(
+                          height: safeAreaHeight * 0.47,
+                          child: AnimatedBuilder(
+                            animation: _quoteController,
+                            builder:
+                                (context, child) => FadeTransition(
+                                  opacity: _quoteOpacityAnimation,
+                                  child:
+                                      isLoading
+                                          ? _buildLoadingWidget()
+                                          : _buildWelcomeCard(),
+                                ),
                           ),
                         ),
-                    child: _buildQuickInfoPanel(),
+                        SizedBox(height: safeAreaHeight * 0.012),
+                        AnimatedBuilder(
+                          animation: _panelController,
+                          builder:
+                              (context, child) => Transform.translate(
+                                offset: Offset(0, _panelSlideAnimation.value),
+                                child: FadeTransition(
+                                  opacity: _panelFadeAnimation,
+                                  child: child,
+                                ),
+                              ),
+                          child: _buildQuickInfoPanel(),
+                        ),
+                        SizedBox(height: safeAreaHeight * 0.01),
+                      ],
+                    ),
                   ),
-                  SizedBox(height: safeAreaHeight * 0.01),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
         ],
       ),
@@ -1053,7 +1386,6 @@ class _EntranceScreenState extends State<EntranceScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // כותרת פאנל
           Padding(
             padding: const EdgeInsets.only(bottom: 8, right: 2),
             child: Row(
@@ -1212,8 +1544,6 @@ class _EntranceScreenState extends State<EntranceScreen>
                           color: _AppColors.blue.withValues(alpha: 0.7),
                         ),
                         const SizedBox(height: 3),
-
-                        // Only this area is scrollable.
                         Expanded(
                           child: LayoutBuilder(
                             builder: (context, constraints) {
@@ -1254,7 +1584,6 @@ class _EntranceScreenState extends State<EntranceScreen>
                             },
                           ),
                         ),
-
                         const SizedBox(height: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -1326,139 +1655,363 @@ class _EntranceScreenState extends State<EntranceScreen>
 
   Widget _buildDrawer() {
     return Drawer(
+      width: MediaQuery.of(context).size.width * 0.82,
       child: Container(
-        color: _AppColors.surface,
-        child: ListView(
-          padding: EdgeInsets.zero,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFF0FAFA),
+              Color(0xFFE8F5F2),
+              Color(0xFFEAF3F8),
+              Color(0xFFE4EFF8),
+            ],
+            stops: [0.0, 0.35, 0.68, 1.0],
+          ),
+        ),
+        child: Stack(
           children: [
-            DrawerHeader(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [_AppColors.navy, Color(0xFF1A5FB4)],
-                  begin: Alignment.topRight,
-                  end: Alignment.bottomLeft,
+            Positioned(
+              top: -60,
+              right: -60,
+              child: Container(
+                width: 220,
+                height: 220,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      const Color(0xFF5BBCB0).withValues(alpha: 0.18),
+                      const Color(0xFF5BBCB0).withValues(alpha: 0.0),
+                    ],
+                  ),
                 ),
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.25),
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.menu_book_rounded,
-                      size: 26,
-                      color: Colors.white,
-                    ),
+            ),
+            Positioned(
+              bottom: -80,
+              left: -50,
+              child: Container(
+                width: 260,
+                height: 260,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      const Color(0xFF5294B8).withValues(alpha: 0.15),
+                      const Color(0xFF5294B8).withValues(alpha: 0.0),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'תפריט ראשי',
-                    textDirection: TextDirection.rtl,
-                    style: GoogleFonts.alef(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
+                ),
+              ),
+            ),
+            Column(
+              children: [
+                _DrawerHeader(),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                    children: [
+                      ..._bubbles.asMap().entries.map((entry) {
+                        final i = entry.key;
+                        final bubble = entry.value;
+                        return _DrawerItem(
+                          bubble: bubble,
+                          index: i,
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              PageRouteBuilder(
+                                pageBuilder:
+                                    (_, animation, __) =>
+                                        bubble['screenBuilder'](),
+                                transitionsBuilder:
+                                    (_, animation, __, child) => FadeTransition(
+                                      opacity: animation,
+                                      child: child,
+                                    ),
+                                transitionDuration: const Duration(
+                                  milliseconds: 300,
+                                ),
+                              ),
+                            ).then((_) {
+                              if (!mounted) return;
+                              _refreshMainScreen();
+                            });
+                          },
+                        );
+                      }),
+                      const SizedBox(height: 16),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'כשרות דת והלכה',
-                    textDirection: TextDirection.rtl,
-                    style: GoogleFonts.alef(
-                      fontSize: 12,
-                      color: Colors.white.withValues(alpha: 0.65),
-                    ),
+                ),
+                _DrawerFooter(),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// DrawerHeader — באנר רוחב מלא
+// ─────────────────────────────────────────────
+class _DrawerHeader extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(
+        24,
+        MediaQuery.of(context).padding.top + 20,
+        24,
+        24,
+      ),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF2E8FA0), Color(0xFF3A7FC1)],
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+        ),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(28),
+          bottomRight: Radius.circular(28),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x443A7FC1),
+            blurRadius: 18,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.3),
+                    width: 1,
                   ),
+                ),
+                child: const Icon(
+                  Icons.menu_book_rounded,
+                  size: 22,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Text(
+                'תפריט ראשי',
+                textDirection: TextDirection.rtl,
+                style: GoogleFonts.alef(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  letterSpacing: 0.4,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.white.withValues(alpha: 0.0),
+                  Colors.white.withValues(alpha: 0.3),
+                  Colors.white.withValues(alpha: 0.0),
                 ],
               ),
             ),
-            const SizedBox(height: 6),
-            ..._bubbles.map((bubble) {
-              return Directionality(
-                textDirection: TextDirection.rtl,
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 3,
-                  ),
-                  leading: Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: (bubble['color'] as Color).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: (bubble['color'] as Color).withValues(
-                          alpha: 0.2,
-                        ),
-                        width: 0.8,
-                      ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.2),
+                width: 0.8,
+              ),
+            ),
+            child: Text(
+              'כשרות דת והלכה — מרכז רפואי שיבא',
+              textDirection: TextDirection.rtl,
+              style: GoogleFonts.alef(
+                fontSize: 11,
+                color: Colors.white.withValues(alpha: 0.88),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// DrawerItem — פריט תפריט מעוצב
+// ─────────────────────────────────────────────
+class _DrawerItem extends StatelessWidget {
+  final Map<String, dynamic> bubble;
+  final int index;
+  final VoidCallback onTap;
+
+  const _DrawerItem({
+    required this.bubble,
+    required this.index,
+    required this.onTap,
+  });
+
+  static const _accentColors = [
+    Color(0xFF3A9BAA),
+    Color(0xFF3A7FC1),
+    Color(0xFF2E9E7A),
+    Color(0xFF3A8FB5),
+    Color(0xFF4A8EC4),
+    Color(0xFF2AA889),
+    Color(0xFF4E7EBC),
+    Color(0xFF3AADAD),
+    Color(0xFF5080C0),
+    Color(0xFF2E8FA0),
+    Color(0xFF3A9BC0),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = _accentColors[index % _accentColors.length];
+
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 3),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.55),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: accent.withValues(alpha: 0.15),
+              width: 0.8,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: accent.withValues(alpha: 0.07),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        accent.withValues(alpha: 0.18),
+                        accent.withValues(alpha: 0.08),
+                      ],
+                      begin: Alignment.topRight,
+                      end: Alignment.bottomLeft,
                     ),
-                    child: Icon(
-                      bubble['icon'],
-                      color: bubble['color'],
-                      size: 19,
+                    borderRadius: BorderRadius.circular(11),
+                    border: Border.all(
+                      color: accent.withValues(alpha: 0.22),
+                      width: 0.8,
                     ),
                   ),
-                  title: Text(
+                  child: Icon(bubble['icon'], color: accent, size: 19),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
                     bubble['label'],
                     textDirection: TextDirection.rtl,
                     style: GoogleFonts.alef(
-                      fontSize: 15,
+                      fontSize: 14.5,
                       fontWeight: FontWeight.w500,
-                      color: _AppColors.textPrimary,
+                      color: const Color(0xFF0D1B33),
                     ),
                   ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      PageRouteBuilder(
-                        pageBuilder:
-                            (_, animation, __) => bubble['screenBuilder'](),
-                        transitionsBuilder:
-                            (_, animation, __, child) => FadeTransition(
-                              opacity: animation,
-                              child: child,
-                            ),
-                        transitionDuration: const Duration(milliseconds: 300),
-                      ),
-                    ).then((_) {
-                      if (!mounted) return;
-                      _refreshMainScreen();
-                    });
-                  },
                 ),
-              );
-            }),
-            const SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Container(height: 1, color: _AppColors.divider),
-            ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                'מרכז רפואי שיבא',
-                textAlign: TextAlign.right,
-                style: GoogleFonts.alef(
-                  fontSize: 11,
-                  color: _AppColors.textMuted,
+                Icon(
+                  Icons.chevron_left_rounded,
+                  size: 18,
+                  color: accent.withValues(alpha: 0.5),
                 ),
-              ),
+              ],
             ),
-            const SizedBox(height: 20),
-          ],
+          ),
         ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// DrawerFooter — תחתית
+// ─────────────────────────────────────────────
+class _DrawerFooter extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: const Color(0xFF5BBCB0).withValues(alpha: 0.2),
+          width: 0.8,
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Text(
+            'מרכז רפואי שיבא',
+            textDirection: TextDirection.rtl,
+            style: GoogleFonts.alef(
+              fontSize: 11.5,
+              color: const Color(0xFF4A5568),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: const Color(0xFF3A9BAA).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(7),
+            ),
+            child: const Icon(
+              Icons.local_hospital_outlined,
+              size: 13,
+              color: Color(0xFF3A9BAA),
+            ),
+          ),
+        ],
       ),
     );
   }

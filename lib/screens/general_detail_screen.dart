@@ -223,18 +223,18 @@ class _GeneralDetailScreenState extends State<GeneralDetailScreen> {
         shadowColor: Colors.transparent,
         centerTitle: true,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(
+            Icons.arrow_back,
+            color: const Color.fromARGB(255, 18, 16, 16),
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           widget.type ?? 'פרטים כלליים',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            fontSize: 24,
-            color: Colors.white,
-            shadows: [
-              Shadow(blurRadius: 6, color: Colors.black, offset: Offset(2, 2)),
-            ],
+            fontSize: 20,
+            color: const Color.fromARGB(255, 18, 16, 16),
           ),
         ),
       ),
@@ -255,7 +255,7 @@ class _GeneralDetailScreenState extends State<GeneralDetailScreen> {
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    Colors.white.withValues(alpha: 0.9),
+                    const Color.fromARGB(255, 0, 0, 0),
                   ],
                   stops: [0.3, 0.5], // התחלת מעבר צבע מהשליש העליון
                 ),

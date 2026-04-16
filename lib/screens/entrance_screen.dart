@@ -1246,40 +1246,54 @@ class _EntranceScreenState extends State<EntranceScreen>
                       screenWidth * 0.048,
                       0,
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _buildScreenHeader(),
-                        SizedBox(height: safeAreaHeight * 0.008),
-                        SizedBox(
-                          height: safeAreaHeight * 0.47,
-                          child: AnimatedBuilder(
-                            animation: _quoteController,
-                            builder:
-                                (context, child) => FadeTransition(
-                                  opacity: _quoteOpacityAnimation,
-                                  child:
-                                      isLoading
-                                          ? _buildLoadingWidget()
-                                          : _buildWelcomeCard(),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        return SingleChildScrollView(
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight: constraints.maxHeight,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _buildScreenHeader(),
+                                SizedBox(height: safeAreaHeight * 0.008),
+                                SizedBox(
+                                  height: safeAreaHeight * 0.47,
+                                  child: AnimatedBuilder(
+                                    animation: _quoteController,
+                                    builder:
+                                        (context, child) => FadeTransition(
+                                          opacity: _quoteOpacityAnimation,
+                                          child:
+                                              isLoading
+                                                  ? _buildLoadingWidget()
+                                                  : _buildWelcomeCard(),
+                                        ),
+                                  ),
                                 ),
+                                SizedBox(height: safeAreaHeight * 0.012),
+                                AnimatedBuilder(
+                                  animation: _panelController,
+                                  builder:
+                                      (context, child) => Transform.translate(
+                                        offset: Offset(
+                                          0,
+                                          _panelSlideAnimation.value,
+                                        ),
+                                        child: FadeTransition(
+                                          opacity: _panelFadeAnimation,
+                                          child: child,
+                                        ),
+                                      ),
+                                  child: _buildQuickInfoPanel(),
+                                ),
+                                SizedBox(height: safeAreaHeight * 0.01),
+                              ],
+                            ),
                           ),
-                        ),
-                        SizedBox(height: safeAreaHeight * 0.012),
-                        AnimatedBuilder(
-                          animation: _panelController,
-                          builder:
-                              (context, child) => Transform.translate(
-                                offset: Offset(0, _panelSlideAnimation.value),
-                                child: FadeTransition(
-                                  opacity: _panelFadeAnimation,
-                                  child: child,
-                                ),
-                              ),
-                          child: _buildQuickInfoPanel(),
-                        ),
-                        SizedBox(height: safeAreaHeight * 0.01),
-                      ],
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -1508,108 +1522,112 @@ class _EntranceScreenState extends State<EntranceScreen>
                       ),
                     ],
                   ),
-                  child: Padding(
-                    padding: EdgeInsets.all(
-                      MediaQuery.of(context).size.width * 0.045,
-                    ),
-                    child: Column(
-                      children: [
-                        Container(
-                          width: MediaQuery.of(context).size.width * 0.155,
-                          height: MediaQuery.of(context).size.width * 0.155,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(
-                              MediaQuery.of(context).size.width * 0.1,
-                            ),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.8),
-                              width: 2,
-                            ),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(
-                              MediaQuery.of(context).size.width * 0.1,
-                            ),
-                            child: Image.asset(
-                              'assets/hrav.png',
-                              fit: BoxFit.cover,
-                              alignment: Alignment.topCenter,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Icon(
-                          Icons.format_quote_rounded,
-                          size: 22,
-                          color: _AppColors.blue.withValues(alpha: 0.7),
-                        ),
-                        const SizedBox(height: 3),
-                        Expanded(
-                          child: LayoutBuilder(
-                            builder: (context, constraints) {
-                              return SingleChildScrollView(
-                                physics: const BouncingScrollPhysics(),
-                                child: ConstrainedBox(
-                                  constraints: BoxConstraints(
-                                    minHeight: constraints.maxHeight + 24,
-                                  ),
-                                  child: Container(
-                                    width: double.infinity,
-                                    alignment: Alignment.center,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 8,
-                                    ),
-                                    child:
-                                        _shouldReplaceRabbiTextWithVideo()
-                                            ? _buildLatestVideoCard()
-                                            : Text(
-                                              rabbiQuote,
-                                              style: GoogleFonts.alef(
-                                                fontSize:
-                                                    MediaQuery.of(
-                                                      context,
-                                                    ).size.width *
-                                                    0.041,
-                                                height: 1.7,
-                                                color: _AppColors.textPrimary,
-                                                fontWeight: FontWeight.w400,
-                                              ),
-                                              textAlign: TextAlign.center,
-                                              textDirection: TextDirection.rtl,
-                                            ),
-                                  ),
+                  child: LayoutBuilder(
+                    builder: (context, cardConstraints) {
+                      final cardWidth = cardConstraints.maxWidth;
+                      final cardPadding =
+                          (cardWidth * 0.045).clamp(12.0, 24.0).toDouble();
+                      final avatarSize =
+                          (cardWidth * 0.155).clamp(88.0, 132.0).toDouble();
+                      final quoteTextSize =
+                          (cardWidth * 0.041).clamp(15.0, 20.0).toDouble();
+                      final rabbiNameSize =
+                          (cardWidth * 0.04).clamp(13.0, 17.0).toDouble();
+
+                      return Padding(
+                        padding: EdgeInsets.all(cardPadding),
+                        child: Column(
+                          children: [
+                            Container(
+                              width: avatarSize,
+                              height: avatarSize,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                  width: 2,
                                 ),
-                              );
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 7,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.32),
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.5),
+                              ),
+                              child: ClipOval(
+                                child: Image.asset(
+                                  'assets/hrav.png',
+                                  fit: BoxFit.cover,
+                                  alignment: Alignment.topCenter,
+                                ),
+                              ),
                             ),
-                          ),
-                          child: Text(
-                            'הרב יואב חנניה אוקנין',
-                            style: GoogleFonts.alef(
-                              fontSize:
-                                  MediaQuery.of(context).size.width * 0.04,
-                              fontWeight: FontWeight.w500,
-                              color: _AppColors.textPrimary,
+                            const SizedBox(height: 6),
+                            Icon(
+                              Icons.format_quote_rounded,
+                              size: 22,
+                              color: _AppColors.blue.withValues(alpha: 0.7),
                             ),
-                            textDirection: TextDirection.rtl,
-                          ),
+                            const SizedBox(height: 3),
+                            Expanded(
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  return SingleChildScrollView(
+                                    physics: const BouncingScrollPhysics(),
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        minHeight: constraints.maxHeight,
+                                      ),
+                                      child: Container(
+                                        width: double.infinity,
+                                        alignment: Alignment.center,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 8,
+                                        ),
+                                        child:
+                                            _shouldReplaceRabbiTextWithVideo()
+                                                ? _buildLatestVideoCard()
+                                                : Text(
+                                                  rabbiQuote,
+                                                  style: GoogleFonts.alef(
+                                                    fontSize: quoteTextSize,
+                                                    height: 1.7,
+                                                    color:
+                                                        _AppColors.textPrimary,
+                                                    fontWeight: FontWeight.w400,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                  textDirection:
+                                                      TextDirection.rtl,
+                                                ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 18,
+                                vertical: 7,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.32),
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.5),
+                                ),
+                              ),
+                              child: Text(
+                                'הרב יואב חנניה אוקנין',
+                                style: GoogleFonts.alef(
+                                  fontSize: rabbiNameSize,
+                                  fontWeight: FontWeight.w500,
+                                  color: _AppColors.textPrimary,
+                                ),
+                                textDirection: TextDirection.rtl,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                 ),
               ),

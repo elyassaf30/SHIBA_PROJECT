@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:rabbi_shiba/utils/theme_helpers.dart';
-import 'dart:io';
 
 class GeneralDetailScreen extends StatefulWidget {
   final String? type;
@@ -10,7 +10,7 @@ class GeneralDetailScreen extends StatefulWidget {
   const GeneralDetailScreen({super.key, this.type});
 
   @override
-  _GeneralDetailScreenState createState() => _GeneralDetailScreenState();
+  State<GeneralDetailScreen> createState() => _GeneralDetailScreenState();
 }
 
 class _GeneralDetailScreenState extends State<GeneralDetailScreen> {
@@ -28,10 +28,11 @@ class _GeneralDetailScreenState extends State<GeneralDetailScreen> {
 
   Future<bool> _checkInternetConnection() async {
     try {
-      final result = await InternetAddress.lookup('google.com');
-      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
-    } on SocketException catch (_) {
-      return false;
+      final results = await Connectivity().checkConnectivity();
+      return results.any((r) => r != ConnectivityResult.none);
+    } catch (_) {
+      // If the connectivity plugin fails, let server request determine online state.
+      return true;
     }
   }
 

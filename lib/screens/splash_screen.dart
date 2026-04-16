@@ -506,7 +506,7 @@ class _SplashScreenState extends State<SplashScreen>
           child: SlideTransition(
             position: _titleSlide,
             child: Text(
-              'מרכז רפואי שיבא',
+              'שיבא - כשרות דת והלכה',
               style: GoogleFonts.alef(
                 fontSize: 28,
                 fontWeight: FontWeight.w700,

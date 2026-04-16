@@ -1,4 +1,11 @@
 import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'package:flutter/foundation.dart';
+
+bool get _isOneSignalSupportedPlatform {
+  if (kIsWeb) return false;
+  return defaultTargetPlatform == TargetPlatform.android ||
+      defaultTargetPlatform == TargetPlatform.iOS;
+}
 
 class NotificationService {
   // OneSignal is configured in main.dart
@@ -8,13 +15,15 @@ class NotificationService {
     try {
       // Log for now - notifications are sent server-side when video is added to database
       // To send real notifications, implement a Supabase Edge Function that calls OneSignal REST API
-      print('📹$title :סרטון פרשת שבוע חדש');
+      debugPrint('📹$title :סרטון פרשת שבוע חדש');
 
       // Optional: Send in-app notification using OneSignal inbox (if enabled in OneSignal dashboard)
       // This will appear in the notification center if user has OneSignal inbox enabled
-      OneSignal.Notifications.clearAll();
+      if (_isOneSignalSupportedPlatform) {
+        await OneSignal.Notifications.clearAll();
+      }
     } catch (e) {
-      print('Error with notification: $e');
+      debugPrint('Error with notification: $e');
     }
   }
 }

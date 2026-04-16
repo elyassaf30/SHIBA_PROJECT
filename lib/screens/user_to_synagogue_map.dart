@@ -6,13 +6,15 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert'; // חובה בשביל jsonDecode/jsonEncode
 import 'package:connectivity_plus/connectivity_plus.dart'; // עבור בדיקת חיבור אינטרנט
+import 'package:flutter/foundation.dart';
 import 'package:rabbi_shiba/utils/theme_helpers.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class UserToSynagogueMap extends StatefulWidget {
   const UserToSynagogueMap({super.key});
 
   @override
-  _UserToSynagogueMapState createState() => _UserToSynagogueMapState();
+  State<UserToSynagogueMap> createState() => _UserToSynagogueMapState();
 }
 
 class _UserToSynagogueMapState extends State<UserToSynagogueMap>
@@ -80,8 +82,13 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
   String _cachedApiKey = '';
 
   Future<bool> _checkInternetConnection() async {
-    var connectivityResult = await Connectivity().checkConnectivity();
-    return connectivityResult != ConnectivityResult.none;
+    try {
+      final results = await Connectivity().checkConnectivity();
+      return results.any((r) => r != ConnectivityResult.none);
+    } catch (_) {
+      // Fallback: continue and let API/location requests decide connectivity.
+      return true;
+    }
   }
 
   Future<void> _fetchSynagogueLocations() async {
@@ -159,23 +166,43 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
   Future<void> _determinePosition() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) return _showLocationServiceError();
+      if (!serviceEnabled && !kIsWeb) return _showLocationServiceError();
 
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          return _showLocationPermissionError();
+          if (!kIsWeb) {
+            return _showLocationPermissionError();
+          }
         }
       }
 
-      if (permission == LocationPermission.deniedForever) {
+      if (permission == LocationPermission.deniedForever && !kIsWeb) {
         return _showLocationPermissionError();
       }
 
-      Position position = await Geolocator.getCurrentPosition();
+      Position? position;
+
+      try {
+        position = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.low,
+            timeLimit: Duration(seconds: 10),
+          ),
+        );
+      } catch (_) {
+        position = await Geolocator.getLastKnownPosition();
+      }
+
+      // Sheba Medical Center fallback if location cannot be resolved on web.
+      final fallbackLocation = const LatLng(32.0464, 34.8411);
+
       setState(() {
-        _currentLocation = LatLng(position.latitude, position.longitude);
+        _currentLocation =
+            position != null
+                ? LatLng(position.latitude, position.longitude)
+                : fallbackLocation;
         _setMarkersAndRoute();
         _loading = false;
       });
@@ -226,7 +253,7 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
   }
 
   Future<void> _setMarkersAndRoute({String? selectedSynagogue}) async {
-    if (_currentLocation == null || _synagogueLocations.isEmpty) return;
+    if (_currentLocation == null) return;
 
     setState(() {
       if (selectedSynagogue != null) {
@@ -406,6 +433,75 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
     );
   }
 
+  Future<void> _openDirectionsInGoogleMaps() async {
+    if (_currentLocation == null) return;
+
+    final target =
+        (_selectedSynagogue != null &&
+                _synagogueLocations.containsKey(_selectedSynagogue))
+            ? _synagogueLocations[_selectedSynagogue!]!
+            : _currentLocation!;
+
+    final url = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1'
+      '&origin=${_currentLocation!.latitude},${_currentLocation!.longitude}'
+      '&destination=${target.latitude},${target.longitude}'
+      '&travelmode=walking',
+    );
+
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Widget _buildWebMapFallback() {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.map_outlined, size: 52, color: Colors.blueGrey),
+              const SizedBox(height: 14),
+              const Text(
+                'תצוגת מפה פנימית אינה זמינה כרגע בדפדפן זה',
+                textAlign: TextAlign.center,
+                textDirection: TextDirection.rtl,
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'אפשר לפתוח ניווט מלא ב-Google Maps בלחיצה אחת.',
+                textAlign: TextAlign.center,
+                textDirection: TextDirection.rtl,
+                style: TextStyle(fontSize: 15, color: Colors.black87),
+              ),
+              const SizedBox(height: 18),
+              ElevatedButton.icon(
+                onPressed: _openDirectionsInGoogleMaps,
+                icon: const Icon(Icons.directions_walk),
+                label: const Text('פתח ניווט ב-Google Maps'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -421,11 +517,8 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
           'בתי כנסת במרכז הרפואי',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            fontSize: 24,
-            color: Colors.white,
-            shadows: [
-              Shadow(blurRadius: 10, color: Colors.black, offset: Offset(2, 2)),
-            ],
+            fontSize: 20,
+            color: const Color.fromARGB(255, 4, 4, 4),
           ),
         ),
       ),
@@ -478,51 +571,52 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
                   ),
                 // Google Map Widget with overlay for route loading
                 Expanded(
-                  child: Stack(
-                    children: [
-                      GoogleMap(
-                        initialCameraPosition: CameraPosition(
-                          target:
-                              _currentLocation ?? LatLng(31.768319, 35.213711),
-                          zoom: 15,
-                        ),
-                        markers: _markers,
-                        polylines: _polylines,
-                        mapType: MapType.normal,
-                        myLocationButtonEnabled: true,
-                        zoomControlsEnabled: false,
-                        onMapCreated: (controller) {
-                          _mapController = controller;
-                          // try to reset any custom style in case of dark/black tiles
-                          try {
-                            controller.setMapStyle(null);
-                          } catch (_) {}
-                        },
-                      ),
-                      if (_routeLoading)
-                        Positioned(
-                          top: 12,
-                          right: 12,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.black45,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            padding: EdgeInsets.all(6),
-                            child: SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
+                  child:
+                      kIsWeb
+                          ? _buildWebMapFallback()
+                          : Stack(
+                            children: [
+                              GoogleMap(
+                                initialCameraPosition: CameraPosition(
+                                  target:
+                                      _currentLocation ??
+                                      LatLng(31.768319, 35.213711),
+                                  zoom: 15,
                                 ),
+                                markers: _markers,
+                                polylines: _polylines,
+                                mapType: MapType.normal,
+                                myLocationButtonEnabled: true,
+                                zoomControlsEnabled: false,
+                                onMapCreated: (controller) {
+                                  _mapController = controller;
+                                },
                               ),
-                            ),
+                              if (_routeLoading)
+                                Positioned(
+                                  top: 12,
+                                  right: 12,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.black45,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    padding: EdgeInsets.all(6),
+                                    child: SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.5,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.white,
+                                            ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
-                        ),
-                    ],
-                  ),
                 ),
               ],
             ),

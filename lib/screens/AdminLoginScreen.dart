@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rabbi_shiba/screens/admin_tfilot_screen.dart';
 import 'package:rabbi_shiba/utils/theme_helpers.dart';
+import 'dart:async';
 
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key});
@@ -16,9 +17,41 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
+  StreamSubscription<AuthState>? _authStateSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+
+    final currentSession = Supabase.instance.client.auth.currentSession;
+    if (currentSession != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => AdminTefilotScreen()),
+          );
+        }
+      });
+      return;
+    }
+
+    _authStateSubscription = Supabase.instance.client.auth.onAuthStateChange
+        .listen((data) {
+          if (!mounted) return;
+
+          if (data.session != null && data.event == AuthChangeEvent.signedIn) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => AdminTefilotScreen()),
+            );
+          }
+        });
+  }
 
   @override
   void dispose() {
+    _authStateSubscription?.cancel();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();

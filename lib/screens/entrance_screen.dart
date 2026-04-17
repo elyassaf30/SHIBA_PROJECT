@@ -15,6 +15,8 @@ import 'package:intl/intl.dart' as intl;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'AdminLoginScreen.dart';
 import 'package:rabbi_shiba/utils/theme_helpers.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -1047,14 +1049,13 @@ class _EntranceScreenState extends State<EntranceScreen>
     final thumbnailUrl = latestVideo!['תמונה_thumbnail'];
     final googleDriveUrl = latestVideo!['קישור_גוגל_דרייב'] ?? '';
 
-    if (showVideoPlayer) return _buildVideoPlayer(title, googleDriveUrl);
-
     return GestureDetector(
-      onTap:
-          () => setState(() {
-            showVideoPlayer = true;
-            _hideNewVideoBadge = true;
-          }),
+      onTap: () async {
+        setState(() {
+          _hideNewVideoBadge = true;
+        });
+        await _openVideoFromCard(googleDriveUrl);
+      },
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
@@ -1196,6 +1197,32 @@ class _EntranceScreenState extends State<EntranceScreen>
     );
   }
 
+  Future<void> _openVideoFromCard(String googleDriveUrl) async {
+    final watchUrl = _convertGoogleDriveUrlToWatch(googleDriveUrl);
+    if (watchUrl.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('קישור הסרטון לא תקין')));
+      return;
+    }
+
+    final uri = Uri.parse(watchUrl);
+
+    // Keep playback in a browser context and avoid launching Google Drive app,
+    // which can fail on devices without a configured Google account.
+    final openedInBrowser = await launchUrl(
+      uri,
+      mode: LaunchMode.inAppBrowserView,
+    );
+
+    if (!openedInBrowser && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('לא ניתן לפתוח את הסרטון בדפדפן כרגע')),
+      );
+    }
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
@@ -1307,6 +1334,105 @@ class _EntranceScreenState extends State<EntranceScreen>
 
   Widget _buildVideoPlayer(String title, String googleDriveUrl) {
     final embedUrl = _convertGoogleDriveUrlToEmbed(googleDriveUrl);
+    final watchUrl = _convertGoogleDriveUrlToWatch(googleDriveUrl);
+
+    if (kIsWeb) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              GestureDetector(
+                onTap: () => setState(() => showVideoPlayer = false),
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: _AppColors.lightBlue,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.close_rounded,
+                    size: 18,
+                    color: _AppColors.blue,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  title,
+                  textAlign: TextAlign.right,
+                  textDirection: TextDirection.rtl,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.alef(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: _AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Container(
+            height: 250,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: Colors.white,
+              border: Border.all(color: _AppColors.divider),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.ondemand_video_rounded,
+                  size: 44,
+                  color: _AppColors.blue,
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'לצפייה בסרטון בווב, לחץ לפתיחה בדפדפן',
+                  textAlign: TextAlign.center,
+                  textDirection: TextDirection.rtl,
+                  style: GoogleFonts.alef(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: _AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                ElevatedButton.icon(
+                  onPressed:
+                      watchUrl.isEmpty
+                          ? null
+                          : () async {
+                            final uri = Uri.parse(watchUrl);
+                            final launched = await launchUrl(
+                              uri,
+                              mode: LaunchMode.platformDefault,
+                            );
+                            if (!launched && mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('לא ניתן לפתוח את הסרטון כרגע'),
+                                ),
+                              );
+                            }
+                          },
+                  icon: const Icon(Icons.open_in_new_rounded),
+                  label: const Text('פתח סרטון'),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -1367,6 +1493,18 @@ class _EntranceScreenState extends State<EntranceScreen>
   }
 
   String _convertGoogleDriveUrlToEmbed(String url) {
+    final fileId = _extractGoogleDriveFileId(url);
+    if (fileId.isEmpty) return '';
+    return 'https://drive.google.com/file/d/$fileId/preview';
+  }
+
+  String _convertGoogleDriveUrlToWatch(String url) {
+    final fileId = _extractGoogleDriveFileId(url);
+    if (fileId.isEmpty) return '';
+    return 'https://drive.google.com/file/d/$fileId/view';
+  }
+
+  String _extractGoogleDriveFileId(String url) {
     String fileId = '';
     if (url.contains('/d/')) {
       final parts = url.split('/d/');
@@ -1375,7 +1513,7 @@ class _EntranceScreenState extends State<EntranceScreen>
       final parts = url.split('id=');
       if (parts.length > 1) fileId = parts[1].split('&')[0];
     }
-    return 'https://drive.google.com/file/d/$fileId/preview';
+    return fileId;
   }
 
   bool _shouldReplaceRabbiTextWithVideo() {

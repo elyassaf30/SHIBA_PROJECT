@@ -29,14 +29,180 @@
   <link rel="apple-touch-icon" href="icons/icon-192.jpeg">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/jpeg" href="icons/icon-192.jpeg"/>
+  <link rel="icon" type="image/jpeg" href="icons/icon.jpeg"/>
 
   <title>שיבא - כשרות דת והלכה</title>
   <link rel="manifest" href="manifest.json">
     <!-- Required for google_maps_flutter on web -->
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCnSxJ2tY3gEzotimAUACpW1qFE7h4_6EM"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(180deg, #e7f2fb 0%, #f7fbff 100%);
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
+
+    #pwa-install-banner {
+      position: fixed;
+      left: 16px;
+      right: 16px;
+      bottom: 16px;
+      z-index: 9999;
+      display: none;
+      direction: rtl;
+      border-radius: 18px;
+      padding: 14px 14px 14px 16px;
+      color: #0c2d5e;
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid rgba(26, 95, 180, 0.14);
+      box-shadow: 0 16px 40px rgba(12, 45, 94, 0.18);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    #pwa-install-banner .row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    #pwa-install-banner .icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #1a5fb4 0%, #0c2d5e 100%);
+      display: grid;
+      place-items: center;
+      color: white;
+      flex: 0 0 auto;
+      font-size: 22px;
+    }
+
+    #pwa-install-banner .content {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    #pwa-install-banner .title {
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.3;
+      margin: 0 0 2px 0;
+    }
+
+    #pwa-install-banner .subtitle {
+      font-size: 12.5px;
+      color: #4a5568;
+      margin: 0;
+      line-height: 1.4;
+    }
+
+    #pwa-install-banner .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      justify-content: flex-start;
+      flex-wrap: wrap;
+    }
+
+    #pwa-install-banner button {
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    #pwa-install-banner .primary {
+      color: white;
+      background: linear-gradient(135deg, #1a5fb4 0%, #0c2d5e 100%);
+    }
+
+    #pwa-install-banner .secondary {
+      color: #0c2d5e;
+      background: rgba(12, 45, 94, 0.08);
+    }
+
+    @media (max-width: 480px) {
+      #pwa-install-banner {
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        border-radius: 16px;
+      }
+
+      #pwa-install-banner .row {
+        align-items: flex-start;
+      }
+
+      #pwa-install-banner .actions {
+        margin-top: 10px;
+      }
+    }
+  </style>
 </head>
 <body>
+  <div id="pwa-install-banner" role="dialog" aria-live="polite" aria-label="התקנת האפליקציה">
+    <div class="row">
+      <div class="icon">⬇</div>
+      <div class="content">
+        <p class="title">התקינו את האפליקציה על המסך הראשי</p>
+        <p class="subtitle">פתיחה מהירה, עבודה נוחה יותר וקיצור דרך כמו אפליקציה רגילה.</p>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="primary" id="pwa-install-button" type="button">התקן עכשיו</button>
+      <button class="secondary" id="pwa-dismiss-button" type="button">לא עכשיו</button>
+    </div>
+  </div>
   <script src="flutter_bootstrap.js" async></script>
+  <script>
+    (function () {
+      const banner = document.getElementById('pwa-install-banner');
+      const installButton = document.getElementById('pwa-install-button');
+      const dismissButton = document.getElementById('pwa-dismiss-button');
+      let deferredPrompt = null;
+
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+      if (isStandalone) {
+        banner.style.display = 'none';
+        return;
+      }
+
+      function hideBanner() {
+        banner.style.display = 'none';
+      }
+
+      dismissButton.addEventListener('click', hideBanner);
+
+      window.addEventListener('beforeinstallprompt', function (event) {
+        event.preventDefault();
+        deferredPrompt = event;
+        banner.style.display = 'block';
+      });
+
+      window.addEventListener('appinstalled', function () {
+        deferredPrompt = null;
+        hideBanner();
+      });
+
+      installButton.addEventListener('click', async function () {
+        if (!deferredPrompt) {
+          banner.style.display = 'none';
+          return;
+        }
+
+        deferredPrompt.prompt();
+        await deferredPrompt.userChoice;
+        deferredPrompt = null;
+        hideBanner();
+      });
+    })();
+  </script>
 </body>
 </html>

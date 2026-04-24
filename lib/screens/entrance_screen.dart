@@ -6,7 +6,6 @@ import 'package:rabbi_shiba/screens/general_detail_screen.dart';
 import 'package:rabbi_shiba/screens/week_day_tefilot_screen.dart';
 import 'package:rabbi_shiba/screens/user_to_synagogue_map.dart';
 import 'package:rabbi_shiba/screens/zmanim_screen.dart';
-import 'package:rabbi_shiba/screens/torah_weekly_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,10 +15,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'AdminLoginScreen.dart';
 import 'package:rabbi_shiba/utils/theme_helpers.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+import 'package:video_player/video_player.dart';
+import 'package:chewie/chewie.dart';
+// conditional import — dart:ui_web קיים רק בווב
+// ignore: uri_does_not_exist
+import 'stub_ui_web.dart' if (dart.library.ui_web) 'dart:ui_web' as ui_web;
+// conditional import — dart:html קיים רק בווב
+// ignore: uri_does_not_exist
+import 'stub_ui_html.dart' if (dart.library.html) 'dart:html' as html;
 
 // ─────────────────────────────────────────────
 // Design Tokens
@@ -44,7 +49,7 @@ class _AppColors {
 }
 
 // ─────────────────────────────────────────────
-// NoNetworkBanner — באנר חיפוש רשת
+// NoNetworkBanner
 // ─────────────────────────────────────────────
 class _NoNetworkBanner extends StatefulWidget {
   const _NoNetworkBanner();
@@ -91,7 +96,6 @@ class _NoNetworkBannerState extends State<_NoNetworkBanner>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // נקודות מחכות
               ...List.generate(3, (i) {
                 final active = ((t * 3).floor() % 3) == i;
                 return AnimatedContainer(
@@ -607,7 +611,6 @@ class _NextPrayerBannerState extends State<NextPrayerBanner> {
 
   @override
   Widget build(BuildContext context) {
-    // אם מחפש רשת ויש נתון שמור — מציג את השמור בלי אינדיקציה
     if (_isSearchingNetwork && _nextPrayerTime == null) {
       return _InfoChip(
         icon: Icons.schedule_outlined,
@@ -661,7 +664,7 @@ class _NextPrayerBannerState extends State<NextPrayerBanner> {
 }
 
 // ─────────────────────────────────────────────
-// Helper: _LoadingDots — אנימציית טעינה עדינה
+// Helper: _LoadingDots
 // ─────────────────────────────────────────────
 class _LoadingDots extends StatefulWidget {
   final String label;
@@ -733,7 +736,7 @@ class _LoadingDotsState extends State<_LoadingDots>
 }
 
 // ─────────────────────────────────────────────
-// Helper: _InfoChip — שורת מידע משודרגת
+// Helper: _InfoChip
 // ─────────────────────────────────────────────
 class _InfoChip extends StatelessWidget {
   final IconData icon;
@@ -796,12 +799,22 @@ class _EntranceScreenState extends State<EntranceScreen>
 
   Map<String, dynamic>? latestVideo;
   bool videoLoading = true;
-  bool showVideoPlayer = false;
   bool _hideNewVideoBadge = false;
   String? _badgeVideoId;
   int _refreshTick = 0;
 
-  // מצב רשת — עוקב לאורך כל חיי המסך
+  // ── Video player state ──────────────────────
+  VideoPlayerController? _videoController;
+  ChewieController? _chewieController;
+  bool _videoPlayerLoading = false;
+  bool _videoPlayerError = false;
+  bool _videoPlayerVisible = false;
+
+  // ווב בלבד — מזהה ייחודי לכל סרטון שנטען
+  String? _webVideoViewId;
+  bool _webVideoRegistered = false;
+
+  // ── Network state ───────────────────────────
   bool _noNetwork = false;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
 
@@ -907,7 +920,6 @@ class _EntranceScreenState extends State<EntranceScreen>
     });
   }
 
-  // ── מעקב מצב רשת ──────────────────────────
   void _watchNetworkState() {
     Connectivity().checkConnectivity().then((results) {
       if (!mounted) return;
@@ -922,7 +934,6 @@ class _EntranceScreenState extends State<EntranceScreen>
       final hasNet =
           results.isNotEmpty && !results.contains(ConnectivityResult.none);
       setState(() => _noNetwork = !hasNet);
-      // כשרשת חוזרת — רענן נתונים
       if (hasNet) _refreshMainScreen();
     });
   }
@@ -931,8 +942,9 @@ class _EntranceScreenState extends State<EntranceScreen>
     if (!mounted) return;
     setState(() {
       _refreshTick++;
-      showVideoPlayer = false;
+      _videoPlayerVisible = false;
     });
+    await _disposeVideoPlayer();
     _fetchRabbiData();
     _fetchLatestVideo();
   }
@@ -986,6 +998,144 @@ class _EntranceScreenState extends State<EntranceScreen>
       CurvedAnimation(parent: _panelController, curve: Curves.easeOutCubic),
     );
   }
+
+  // ── Video Player Logic ──────────────────────
+
+  /// מאתחל את נגן הוידאו — ווב: <video> HTML נייטיב, מובייל: Chewie
+  Future<void> _initVideoPlayer(String videoUrl) async {
+    if (!mounted) return;
+
+    setState(() {
+      _videoPlayerLoading = true;
+      _videoPlayerError = false;
+      _videoPlayerVisible = true;
+    });
+
+    await _disposeVideoPlayer();
+
+    // ── ווב: רשום אלמנט <video> HTML נייטיב ──────────────
+    if (kIsWeb) {
+      try {
+        final viewId = 'rabbi-video-${DateTime.now().millisecondsSinceEpoch}';
+
+        if (!_webVideoRegistered) {
+          // רושמים factory אחת — בפעמים הבאות viewId חדש יספיק
+          ui_web.platformViewRegistry.registerViewFactory(viewId, (int id) {
+            // מחזירים אלמנט video HTML עם כל ה-attributes
+            final video = html.VideoElement();
+            video.src = videoUrl;
+            video.controls = true;
+            video.autoplay = true;
+            video.style.width = '100%';
+            video.style.height = '100%';
+            video.style.objectFit = 'contain';
+            video.style.background = '#000';
+            video.style.borderRadius = '16px';
+            // CORS — חובה כשה-URL הוא Supabase Storage
+            video.crossOrigin = 'anonymous';
+            return video;
+          });
+          _webVideoRegistered = true;
+        } else {
+          // factory חדשה לכל viewId ייחודי
+          ui_web.platformViewRegistry.registerViewFactory(viewId, (int id) {
+            final video = html.VideoElement();
+            video.src = videoUrl;
+            video.controls = true;
+            video.autoplay = true;
+            video.style.width = '100%';
+            video.style.height = '100%';
+            video.style.objectFit = 'contain';
+            video.style.background = '#000';
+            video.style.borderRadius = '16px';
+            video.crossOrigin = 'anonymous';
+            return video;
+          });
+        }
+
+        if (mounted) {
+          setState(() {
+            _webVideoViewId = viewId;
+            _videoPlayerLoading = false;
+          });
+        }
+      } catch (e) {
+        debugPrint('שגיאת ווב בטעינת וידאו: $e');
+        if (mounted) {
+          setState(() {
+            _videoPlayerLoading = false;
+            _videoPlayerError = true;
+          });
+        }
+      }
+      return; // ← עצור כאן בווב, אל תמשיך לקוד המובייל
+    }
+
+    // ── מובייל: video_player + Chewie ────────────────────
+    try {
+      _videoController = VideoPlayerController.networkUrl(Uri.parse(videoUrl));
+      await _videoController!.initialize();
+
+      _chewieController = ChewieController(
+        videoPlayerController: _videoController!,
+        autoPlay: true,
+        looping: false,
+        allowFullScreen: true,
+        allowMuting: true,
+        showControls: true,
+        allowedScreenSleep: false,
+        placeholder: Container(
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        materialProgressColors: ChewieProgressColors(
+          playedColor: _AppColors.blue,
+          handleColor: _AppColors.navy,
+          backgroundColor: Colors.white24,
+          bufferedColor: Colors.white38,
+        ),
+      );
+
+      if (mounted) {
+        setState(() {
+          _videoPlayerLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('שגיאה בטעינת וידאו: $e');
+      if (mounted) {
+        setState(() {
+          _videoPlayerLoading = false;
+          _videoPlayerError = true;
+        });
+      }
+    }
+  }
+
+  Future<void> _disposeVideoPlayer() async {
+    // מובייל
+    _chewieController?.dispose();
+    _chewieController = null;
+    await _videoController?.dispose();
+    _videoController = null;
+    // ווב
+    _webVideoViewId = null;
+  }
+
+  Future<void> _closeVideoPlayer() async {
+    await _disposeVideoPlayer();
+    if (mounted) {
+      setState(() {
+        _videoPlayerVisible = false;
+        _videoPlayerError = false;
+        _videoPlayerLoading = false;
+      });
+    }
+  }
+
+  // ── Data Fetching ───────────────────────────
 
   Future<void> _fetchRabbiData() async {
     try {
@@ -1041,20 +1191,26 @@ class _EntranceScreenState extends State<EntranceScreen>
     }
   }
 
+  // ── Build: Video Thumbnail Card ─────────────
+
   Widget _buildLatestVideoCard() {
     if (latestVideo == null) return const SizedBox.shrink();
 
     final title = latestVideo!['כותרת'] ?? 'סרטון חדש';
     final description = latestVideo!['תיאור'] ?? '';
     final thumbnailUrl = latestVideo!['תמונה_thumbnail'];
-    final googleDriveUrl = latestVideo!['קישור_גוגל_דרייב'] ?? '';
+
+    // שם העמודה שמכיל את ה-URL הישיר מ-Supabase Storage
+    // (לשנות בהתאם לשם העמודה בטבלה שלך)
+    final videoUrl =
+        latestVideo!['קישור_וידאו'] ?? latestVideo!['קישור_גוגל_דרייב'] ?? '';
 
     return GestureDetector(
-      onTap: () async {
-        setState(() {
-          _hideNewVideoBadge = true;
-        });
-        await _openVideoFromCard(googleDriveUrl);
+      onTap: () {
+        setState(() => _hideNewVideoBadge = true);
+        if (videoUrl.isNotEmpty) {
+          _initVideoPlayer(videoUrl);
+        }
       },
       child: Container(
         decoration: BoxDecoration(
@@ -1070,6 +1226,7 @@ class _EntranceScreenState extends State<EntranceScreen>
         ),
         child: Stack(
           children: [
+            // רקע / תמונה ממוזערת
             Container(
               height: 150,
               decoration: BoxDecoration(
@@ -1095,6 +1252,7 @@ class _EntranceScreenState extends State<EntranceScreen>
                         : null,
               ),
             ),
+            // שכבת תוכן
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
@@ -1112,6 +1270,7 @@ class _EntranceScreenState extends State<EntranceScreen>
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // כפתור פליי
                     Container(
                       margin: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
@@ -1132,6 +1291,7 @@ class _EntranceScreenState extends State<EntranceScreen>
                         color: _AppColors.navy,
                       ),
                     ),
+                    // כותרת ותיאור
                     Padding(
                       padding: const EdgeInsets.all(14),
                       child: Column(
@@ -1168,7 +1328,8 @@ class _EntranceScreenState extends State<EntranceScreen>
                 ),
               ),
             ),
-            if (!showVideoPlayer && !_hideNewVideoBadge)
+            // תג "סרטון חדש"
+            if (!_videoPlayerVisible && !_hideNewVideoBadge)
               Positioned(
                 top: 10,
                 right: 10,
@@ -1197,41 +1358,158 @@ class _EntranceScreenState extends State<EntranceScreen>
     );
   }
 
-  Future<void> _openVideoFromCard(String googleDriveUrl) async {
-    final watchUrl = _convertGoogleDriveUrlToWatch(googleDriveUrl);
-    if (watchUrl.isEmpty) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('קישור הסרטון לא תקין')));
-      return;
-    }
+  // ── Build: Inline Video Player ──────────────
 
-    final uri = Uri.parse(watchUrl);
+  Widget _buildInlineVideoPlayer() {
+    final title = latestVideo?['כותרת'] ?? 'סרטון';
 
-    // Keep playback in a browser context and avoid launching Google Drive app,
-    // which can fail on devices without a configured Google account.
-    final openedInBrowser = await launchUrl(
-      uri,
-      mode: LaunchMode.inAppBrowserView,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // שורת כותרת + סגירה
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            GestureDetector(
+              onTap: _closeVideoPlayer,
+              child: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: _AppColors.lightBlue,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.close_rounded,
+                  size: 18,
+                  color: _AppColors.blue,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                title,
+                textAlign: TextAlign.right,
+                textDirection: TextDirection.rtl,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.alef(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: _AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        // מיכל הנגן
+        Container(
+          height: 220,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Colors.black,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: _buildVideoContent(),
+          ),
+        ),
+      ],
     );
+  }
 
-    if (!openedInBrowser && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('לא ניתן לפתוח את הסרטון בדפדפן כרגע')),
+  Widget _buildVideoContent() {
+    // מצב טעינה
+    if (_videoPlayerLoading) {
+      return Container(
+        color: Colors.black,
+        child: const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+              SizedBox(height: 12),
+              Text(
+                'טוען סרטון...',
+                style: TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+            ],
+          ),
+        ),
       );
     }
+
+    // מצב שגיאה
+    if (_videoPlayerError) {
+      return Container(
+        color: Colors.black,
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.error_outline_rounded,
+                color: Colors.white54,
+                size: 36,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'לא ניתן לטעון את הסרטון',
+                style: GoogleFonts.alef(color: Colors.white54, fontSize: 13),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'בדוק שה-URL תקין ונגיש',
+                style: GoogleFonts.alef(color: Colors.white38, fontSize: 11),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // ── ווב: <video> HTML נייטיב דרך HtmlElementView ──
+    if (kIsWeb && _webVideoViewId != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: HtmlElementView(viewType: _webVideoViewId!),
+      );
+    }
+
+    // ── מובייל: Chewie ──────────────────────────────
+    if (_chewieController != null) {
+      return Chewie(controller: _chewieController!);
+    }
+
+    return const SizedBox.shrink();
+  }
+
+  // ── Helpers ─────────────────────────────────
+
+  bool _shouldReplaceRabbiTextWithVideo() {
+    return DateTime.now().weekday == DateTime.friday && latestVideo != null;
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _connectivitySub?.cancel();
+    _disposeVideoPlayer();
     _mainController.dispose();
     _quoteController.dispose();
     _panelController.dispose();
     super.dispose();
   }
+
+  // ── Build ────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -1260,12 +1538,11 @@ class _EntranceScreenState extends State<EntranceScreen>
           Positioned.fill(child: ThemeHelpers.buildDefaultBackground()),
           Column(
             children: [
-              // ── באנר רשת — מופיע מיד מעל הכל, מתחת ל-status bar ──
               if (_noNetwork)
                 SafeArea(bottom: false, child: const _NoNetworkBanner()),
               Expanded(
                 child: SafeArea(
-                  top: !_noNetwork, // אם הבאנר כבר תפס את ה-SafeArea, לא כופלים
+                  top: !_noNetwork,
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(
                       screenWidth * 0.048,
@@ -1330,194 +1607,6 @@ class _EntranceScreenState extends State<EntranceScreen>
         ],
       ),
     );
-  }
-
-  Widget _buildVideoPlayer(String title, String googleDriveUrl) {
-    final embedUrl = _convertGoogleDriveUrlToEmbed(googleDriveUrl);
-    final watchUrl = _convertGoogleDriveUrlToWatch(googleDriveUrl);
-
-    if (kIsWeb) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              GestureDetector(
-                onTap: () => setState(() => showVideoPlayer = false),
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: _AppColors.lightBlue,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.close_rounded,
-                    size: 18,
-                    color: _AppColors.blue,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Text(
-                  title,
-                  textAlign: TextAlign.right,
-                  textDirection: TextDirection.rtl,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.alef(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: _AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Container(
-            height: 250,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              color: Colors.white,
-              border: Border.all(color: _AppColors.divider),
-            ),
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.ondemand_video_rounded,
-                  size: 44,
-                  color: _AppColors.blue,
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'לצפייה בסרטון בווב, לחץ לפתיחה בדפדפן',
-                  textAlign: TextAlign.center,
-                  textDirection: TextDirection.rtl,
-                  style: GoogleFonts.alef(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: _AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                ElevatedButton.icon(
-                  onPressed:
-                      watchUrl.isEmpty
-                          ? null
-                          : () async {
-                            final uri = Uri.parse(watchUrl);
-                            final launched = await launchUrl(
-                              uri,
-                              mode: LaunchMode.platformDefault,
-                            );
-                            if (!launched && mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('לא ניתן לפתוח את הסרטון כרגע'),
-                                ),
-                              );
-                            }
-                          },
-                  icon: const Icon(Icons.open_in_new_rounded),
-                  label: const Text('פתח סרטון'),
-                ),
-              ],
-            ),
-          ),
-        ],
-      );
-    }
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            GestureDetector(
-              onTap: () => setState(() => showVideoPlayer = false),
-              child: Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: _AppColors.lightBlue,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.close_rounded,
-                  size: 18,
-                  color: _AppColors.blue,
-                ),
-              ),
-            ),
-            Expanded(
-              child: Text(
-                title,
-                textAlign: TextAlign.right,
-                textDirection: TextDirection.rtl,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.alef(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: _AppColors.textPrimary,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Container(
-          height: 250,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            color: Colors.black,
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: WebViewWidget(
-              controller:
-                  WebViewController()
-                    ..setJavaScriptMode(JavaScriptMode.unrestricted)
-                    ..loadRequest(Uri.parse(embedUrl)),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  String _convertGoogleDriveUrlToEmbed(String url) {
-    final fileId = _extractGoogleDriveFileId(url);
-    if (fileId.isEmpty) return '';
-    return 'https://drive.google.com/file/d/$fileId/preview';
-  }
-
-  String _convertGoogleDriveUrlToWatch(String url) {
-    final fileId = _extractGoogleDriveFileId(url);
-    if (fileId.isEmpty) return '';
-    return 'https://drive.google.com/file/d/$fileId/view';
-  }
-
-  String _extractGoogleDriveFileId(String url) {
-    String fileId = '';
-    if (url.contains('/d/')) {
-      final parts = url.split('/d/');
-      if (parts.length > 1) fileId = parts[1].split('/')[0];
-    } else if (url.contains('id=')) {
-      final parts = url.split('id=');
-      if (parts.length > 1) fileId = parts[1].split('&')[0];
-    }
-    return fileId;
-  }
-
-  bool _shouldReplaceRabbiTextWithVideo() {
-    return DateTime.now().weekday == DateTime.friday && latestVideo != null;
   }
 
   Widget _buildQuickInfoPanel() {
@@ -1719,7 +1808,9 @@ class _EntranceScreenState extends State<EntranceScreen>
                                         ),
                                         child:
                                             _shouldReplaceRabbiTextWithVideo()
-                                                ? _buildLatestVideoCard()
+                                                ? (_videoPlayerVisible
+                                                    ? _buildInlineVideoPlayer()
+                                                    : _buildLatestVideoCard())
                                                 : Text(
                                                   rabbiQuote,
                                                   style: GoogleFonts.alef(
@@ -1914,7 +2005,7 @@ class _EntranceScreenState extends State<EntranceScreen>
 }
 
 // ─────────────────────────────────────────────
-// DrawerHeader — באנר רוחב מלא
+// DrawerHeader
 // ─────────────────────────────────────────────
 class _DrawerHeader extends StatelessWidget {
   @override
@@ -2022,7 +2113,7 @@ class _DrawerHeader extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────
-// DrawerItem — פריט תפריט מעוצב
+// DrawerItem
 // ─────────────────────────────────────────────
 class _DrawerItem extends StatelessWidget {
   final Map<String, dynamic> bubble;
@@ -2125,7 +2216,7 @@ class _DrawerItem extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────
-// DrawerFooter — תחתית
+// DrawerFooter
 // ─────────────────────────────────────────────
 class _DrawerFooter extends StatelessWidget {
   @override

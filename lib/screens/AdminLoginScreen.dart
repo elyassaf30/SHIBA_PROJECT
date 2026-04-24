@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rabbi_shiba/screens/admin_tfilot_screen.dart';
 import 'package:rabbi_shiba/utils/theme_helpers.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 
 class AdminLoginScreen extends StatefulWidget {
@@ -13,15 +14,18 @@ class AdminLoginScreen extends StatefulWidget {
 }
 
 class _AdminLoginScreenState extends State<AdminLoginScreen> {
+  static const String _rememberedEmailKey = 'admin_remembered_email';
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
+  bool _rememberEmail = false;
   StreamSubscription<AuthState>? _authStateSubscription;
 
   @override
   void initState() {
     super.initState();
+    _loadRememberedEmail();
 
     final currentSession = Supabase.instance.client.auth.currentSession;
     if (currentSession != null) {
@@ -49,6 +53,20 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         });
   }
 
+  Future<void> _loadRememberedEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    final rememberedEmail = prefs.getString(_rememberedEmailKey);
+
+    if (!mounted || rememberedEmail == null || rememberedEmail.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _rememberEmail = true;
+      _emailController.text = rememberedEmail;
+    });
+  }
+
   @override
   void dispose() {
     _authStateSubscription?.cancel();
@@ -73,6 +91,13 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
           .signInWithPassword(email: email, password: password);
 
       if (response.user != null) {
+        final prefs = await SharedPreferences.getInstance();
+        if (_rememberEmail) {
+          await prefs.setString(_rememberedEmailKey, email);
+        } else {
+          await prefs.remove(_rememberedEmailKey);
+        }
+
         // לאחר התחברות מוצלחת, נווט למסך הניהול
         Navigator.pushReplacement(
           context,
@@ -161,6 +186,18 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                         }
                         return null;
                       },
+                    ),
+                    const SizedBox(height: 8),
+                    CheckboxListTile(
+                      value: _rememberEmail,
+                      onChanged: (value) {
+                        setState(() {
+                          _rememberEmail = value ?? false;
+                        });
+                      },
+                      title: const Text('זכור אימייל במכשיר זה'),
+                      controlAffinity: ListTileControlAffinity.leading,
+                      contentPadding: EdgeInsets.zero,
                     ),
                     SizedBox(height: 30),
                     _isLoading

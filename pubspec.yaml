@@ -49,6 +49,8 @@ dependencies:
   intl: ^0.20.2
   kosher_dart: ^2.0.18
   in_app_update: ^4.2.3
+  cached_network_image: ^3.3.1
+  video_thumbnail: ^0.5.3
 
 dev_dependencies:
   flutter_test:

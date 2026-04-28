@@ -23,10 +23,10 @@ import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 // conditional import — dart:ui_web קיים רק בווב
 // ignore: uri_does_not_exist
-import 'stub_ui_web.dart' if (dart.library.ui_web) 'dart:ui_web' as ui_web;
-// conditional import — dart:html קיים רק בווב
-// ignore: uri_does_not_exist
-import 'stub_ui_html.dart' if (dart.library.html) 'dart:html' as html;
+import '../stubs/stub_ui_web.dart'
+    if (dart.library.ui_web) 'dart:ui_web'
+    as ui_web;
+import '../stubs/stub_ui_html.dart' if (dart.library.html) 'dart:html' as html;
 
 // ─────────────────────────────────────────────
 // Design Tokens
@@ -276,6 +276,11 @@ class _NextZmanBannerState extends State<NextZmanBanner> {
   bool _isLoading = true;
   Timer? _zmanCheckTimer;
 
+  DateTime? _getTzais20MinutesAfterSunset(DateTime? sunset) {
+    if (sunset == null) return null;
+    return sunset.add(const Duration(minutes: 20));
+  }
+
   @override
   void initState() {
     super.initState();
@@ -308,6 +313,7 @@ class _NextZmanBannerState extends State<NextZmanBanner> {
       );
       final zmanimCalendar = ComplexZmanimCalendar.intGeoLocation(geoLocation);
       final dateFormat = intl.DateFormat('HH:mm');
+      final tzais20 = _getTzais20MinutesAfterSunset(zmanimCalendar.getSunset());
       final candidates = <Map<String, dynamic>>[];
 
       void addCandidate(String label, DateTime? time) {
@@ -327,10 +333,7 @@ class _NextZmanBannerState extends State<NextZmanBanner> {
       addCandidate('מנחה קטנה', zmanimCalendar.getMinchaKetana());
       addCandidate('פלג המנחה', zmanimCalendar.getPlagHamincha());
       addCandidate('שקיעה', zmanimCalendar.getSunset());
-      addCandidate(
-        'צאת הכוכבים',
-        zmanimCalendar.getTzaisGeonim7Point083Degrees(),
-      );
+      addCandidate('צאת הכוכבים', tzais20);
 
       Map<String, dynamic>? nextZman;
       if (candidates.isNotEmpty) {

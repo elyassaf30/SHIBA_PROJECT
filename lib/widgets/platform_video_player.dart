@@ -5,9 +5,9 @@ import 'package:chewie/chewie.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:rabbi_shiba/utils/app_colors.dart';
 // ignore: uri_does_not_exist
-import '../stub_ui_web.dart' if (dart.library.ui_web) 'dart:ui_web' as ui_web;
+import '../stubs/stub_ui_web.dart' if (dart.library.ui_web) 'dart:ui_web' as ui_web;
 // ignore: uri_does_not_exist
-import '../stub_ui_html.dart' if (dart.library.html) 'dart:html' as html;
+import '../stubs/stub_ui_html.dart' if (dart.library.html) 'dart:html' as html;
 
 /// נגן וידאו חוצה-פלטפורמות: web → HtmlElementView, mobile → Chewie.
 class PlatformVideoPlayer extends StatefulWidget {

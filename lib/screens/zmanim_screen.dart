@@ -83,6 +83,12 @@ class _ZmanimScreenState extends State<ZmanimScreen> {
     return DateFormat('HH:mm').format(time);
   }
 
+  DateTime? _getTzais20MinutesAfterSunset() {
+    final sunset = _zmanimCalendar?.getSunset();
+    if (sunset == null) return null;
+    return sunset.add(const Duration(minutes: 20));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -265,11 +271,10 @@ class _ZmanimScreenState extends State<ZmanimScreen> {
             icon: Icons.wb_twilight_rounded,
             accentColor: const Color(0xFF993C1D),
           ),
-          // צאת הכוכבים הרגיל — getTzais() = 8.5 מעלות (לא צאת שבת/חג)
           _ZmanTile(
             title: 'צאת הכוכבים',
-            subtitle: '8.5 מעלות',
-            time: _formatTime(_zmanimCalendar?.getTzais()),
+            subtitle: '20 דקות אחרי שקיעה',
+            time: _formatTime(_getTzais20MinutesAfterSunset()),
             icon: Icons.nights_stay_rounded,
             accentColor: const Color(0xFF3C3489),
           ),

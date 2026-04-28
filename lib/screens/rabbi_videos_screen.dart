@@ -1,7 +1,15 @@
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rabbi_shiba/widgets/platform_video_player.dart';
+import 'package:rabbi_shiba/utils/theme_helpers.dart';
+// On web: use the stub (no native thumbnail support).
+// On mobile/desktop: use the real video_thumbnail package.
+// ignore: uri_does_not_exist
+import '../stubs/stub_video_thumbnail.dart'
+    if (dart.library.io) 'package:video_thumbnail/video_thumbnail.dart';
 
 class RabbiVideosScreen extends StatefulWidget {
   const RabbiVideosScreen({super.key});
@@ -39,10 +47,11 @@ class _RabbiVideosScreenState extends State<RabbiVideosScreen> {
               })
           .toList();
 
+      // Sort oldest-first so index 0 = video #1
       videos.sort((a, b) {
         final aDate = a['created_at']?.toString() ?? '';
         final bDate = b['created_at']?.toString() ?? '';
-        return bDate.compareTo(aDate);
+        return aDate.compareTo(bDate);
       });
 
       if (mounted) setState(() { _videos = videos; _loading = false; });
@@ -61,54 +70,47 @@ class _RabbiVideosScreenState extends State<RabbiVideosScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: const Color(0xFF0D1B2A),
+        extendBodyBehindAppBar: true,
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
-          backgroundColor: Colors.transparent,
           elevation: 0,
-          flexibleSpace: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF0D1B2A), Color(0xFF1A2F45)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
+          scrolledUnderElevation: 0,
+          backgroundColor: Colors.transparent,
+          surfaceTintColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          iconTheme: IconThemeData(
+            color: const Color(0xFF0C2D5E).withValues(alpha: 0.85),
           ),
-          foregroundColor: Colors.white,
           title: Text(
             'סרטוני הרב',
             style: GoogleFonts.alef(
               fontSize: 22,
               fontWeight: FontWeight.w700,
-              color: Colors.white,
+              color: const Color(0xFF0C2D5E),
               letterSpacing: 0.5,
             ),
           ),
           centerTitle: true,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+            icon: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 20,
+              color: const Color(0xFF0C2D5E).withValues(alpha: 0.85),
+            ),
             onPressed: () => Navigator.of(context).pop(),
           ),
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(1),
-            child: Container(
-              height: 1,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.transparent,
-                    Color(0x44FFFFFF),
-                    Colors.transparent,
-                  ],
-                ),
+        ),
+        body: Stack(
+          children: [
+            Positioned.fill(child: ThemeHelpers.buildDefaultBackground()),
+            SafeArea(
+              child: Column(
+                children: [
+                  if (_selectedVideoUrl != null) _buildPlayerSection(),
+                  Expanded(child: _buildBody()),
+                ],
               ),
             ),
-          ),
-        ),
-        body: Column(
-          children: [
-            if (_selectedVideoUrl != null) _buildPlayerSection(),
-            Expanded(child: _buildBody()),
           ],
         ),
       ),
@@ -151,10 +153,7 @@ class _RabbiVideosScreenState extends State<RabbiVideosScreen> {
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: const Color(0xFF4A9EFF).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
@@ -190,7 +189,10 @@ class _RabbiVideosScreenState extends State<RabbiVideosScreen> {
           ),
           SizedBox(
             height: 240,
-            child: PlatformVideoPlayer(key: ValueKey(_selectedVideoUrl), url: _selectedVideoUrl!),
+            child: PlatformVideoPlayer(
+              key: ValueKey(_selectedVideoUrl),
+              url: _selectedVideoUrl!,
+            ),
           ),
         ],
       ),
@@ -203,18 +205,38 @@ class _RabbiVideosScreenState extends State<RabbiVideosScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(
-              width: 36,
-              height: 36,
-              child: CircularProgressIndicator(
-                color: Color(0xFF4A9EFF),
-                strokeWidth: 2.5,
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF0C2D5E).withValues(alpha: 0.08),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Center(
+                child: SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(
+                    color: Color(0xFF1A5FB4),
+                    strokeWidth: 2.5,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 16),
             Text(
               'טוען סרטונים...',
-              style: GoogleFonts.alef(fontSize: 14, color: Colors.white38),
+              style: GoogleFonts.alef(
+                fontSize: 14,
+                color: const Color(0xFF0C2D5E).withValues(alpha: 0.75),
+              ),
             ),
           ],
         ),
@@ -232,13 +254,20 @@ class _RabbiVideosScreenState extends State<RabbiVideosScreen> {
                 width: 64,
                 height: 64,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.05),
+                  color: Colors.white.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF0C2D5E).withValues(alpha: 0.08),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: const Icon(
                   Icons.error_outline_rounded,
                   size: 32,
-                  color: Color(0xFFFFB347),
+                  color: Color(0xFFB45309),
                 ),
               ),
               const SizedBox(height: 16),
@@ -247,16 +276,15 @@ class _RabbiVideosScreenState extends State<RabbiVideosScreen> {
                 style: GoogleFonts.alef(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white70,
+                  color: const Color(0xFF0D1B33),
                 ),
               ),
               const SizedBox(height: 20),
               TextButton.icon(
                 onPressed: _loadVideos,
                 style: TextButton.styleFrom(
-                  backgroundColor:
-                      const Color(0xFF4A9EFF).withValues(alpha: 0.15),
-                  foregroundColor: const Color(0xFF4A9EFF),
+                  backgroundColor: Colors.white.withValues(alpha: 0.45),
+                  foregroundColor: const Color(0xFF1A5FB4),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -283,19 +311,29 @@ class _RabbiVideosScreenState extends State<RabbiVideosScreen> {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.06),
+                color: Colors.white.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF0C2D5E).withValues(alpha: 0.08),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: const Icon(
                 Icons.video_library_outlined,
                 size: 40,
-                color: Color(0xFF4A9EFF),
+                color: Color(0xFF1A5FB4),
               ),
             ),
             const SizedBox(height: 18),
             Text(
               'לא נמצאו סרטונים',
-              style: GoogleFonts.alef(fontSize: 16, color: Colors.white38),
+              style: GoogleFonts.alef(
+                fontSize: 16,
+                color: const Color(0xFF0D1B33).withValues(alpha: 0.7),
+              ),
             ),
           ],
         ),
@@ -304,8 +342,8 @@ class _RabbiVideosScreenState extends State<RabbiVideosScreen> {
 
     return RefreshIndicator(
       onRefresh: _loadVideos,
-      color: const Color(0xFF4A9EFF),
-      backgroundColor: const Color(0xFF1A2F45),
+      color: const Color(0xFF1A5FB4),
+      backgroundColor: Colors.white,
       child: GridView.builder(
         padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -318,144 +356,281 @@ class _RabbiVideosScreenState extends State<RabbiVideosScreen> {
         itemBuilder: (context, index) {
           final video = _videos[index];
           final isSelected = video['url'] == _selectedVideoUrl;
-          return _buildVideoCard(video, isSelected, index);
+          // index 0 = oldest = #1, last index = newest = #N
+          final displayNumber = index + 1;
+          return VideoItemWidget(
+            url: video['url'] as String,
+            name: video['name'] as String,
+            isSelected: isSelected,
+            displayNumber: displayNumber,
+            onTap: () => setState(() => _selectedVideoUrl = video['url'] as String),
+          );
         },
       ),
     );
   }
+}
 
-  Widget _buildVideoCard(
-    Map<String, dynamic> video,
-    bool isSelected,
-    int index,
-  ) {
-    final url = video['url'] as String;
+// ─────────────────────────────────────────────
+// VideoItemWidget
+// ─────────────────────────────────────────────
+class VideoItemWidget extends StatefulWidget {
+  final String url;
+  final String name;
+  final bool isSelected;
+  final int displayNumber;
+  final VoidCallback onTap;
 
-    final gradients = [
-      [const Color(0xFF1A3A5C), const Color(0xFF0D2035)],
-      [const Color(0xFF1E3A5F), const Color(0xFF0A1929)],
-      [const Color(0xFF1B2F4A), const Color(0xFF0E1E30)],
-      [const Color(0xFF1F3550), const Color(0xFF0C1E30)],
-    ];
-    final grad = gradients[index % gradients.length];
+  const VideoItemWidget({
+    super.key,
+    required this.url,
+    required this.name,
+    required this.isSelected,
+    required this.displayNumber,
+    required this.onTap,
+  });
+
+  @override
+  State<VideoItemWidget> createState() => _VideoItemWidgetState();
+}
+
+class _VideoItemWidgetState extends State<VideoItemWidget> {
+  // Shared across all instances for the session — avoids re-generating on rebuild
+  static final Map<String, Uint8List?> _cache = {};
+
+  Uint8List? _thumbnail;
+  bool _thumbnailLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadThumbnail();
+  }
+
+  Future<void> _loadThumbnail() async {
+    // Return cached result immediately
+    if (_cache.containsKey(widget.url)) {
+      if (mounted) {
+        setState(() {
+          _thumbnail = _cache[widget.url];
+          _thumbnailLoading = false;
+        });
+      }
+      return;
+    }
+
+    // Web: no native video decoding available
+    if (kIsWeb) {
+      _cache[widget.url] = null;
+      if (mounted) setState(() => _thumbnailLoading = false);
+      return;
+    }
+
+    try {
+      final bytes = await VideoThumbnail.thumbnailData(
+        video: widget.url,
+        imageFormat: ImageFormat.JPEG,
+        maxWidth: 320,
+        quality: 75,
+        timeMs: 0, // first frame
+      );
+      _cache[widget.url] = bytes;
+      if (mounted) {
+        setState(() {
+          _thumbnail = bytes;
+          _thumbnailLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Thumbnail error for ${widget.url}: $e');
+      _cache[widget.url] = null;
+      if (mounted) setState(() => _thumbnailLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
 
     return GestureDetector(
-      onTap: () => setState(() => _selectedVideoUrl = url),
+      onTap: widget.onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: isSelected
-                ? [const Color(0xFF1C4A7A), const Color(0xFF0D2A48)]
-                : grad,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(18),
+          color: widget.isSelected
+              ? Colors.white.withValues(alpha: 0.62)
+              : Colors.white.withValues(alpha: 0.48),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected
-                ? const Color(0xFF4A9EFF).withValues(alpha: 0.6)
-                : Colors.white.withValues(alpha: 0.06),
-            width: isSelected ? 1.5 : 1,
+            color: widget.isSelected
+                ? primary.withValues(alpha: 0.55)
+                : Colors.white.withValues(alpha: 0.65),
+            width: widget.isSelected ? 1.5 : 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: isSelected
-                  ? const Color(0xFF4A9EFF).withValues(alpha: 0.25)
-                  : Colors.black.withValues(alpha: 0.35),
-              blurRadius: isSelected ? 18 : 10,
+              color: widget.isSelected
+                  ? primary.withValues(alpha: 0.22)
+                  : const Color(0xFF0C2D5E).withValues(alpha: 0.10),
+              blurRadius: widget.isSelected ? 18 : 10,
               offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            if (isSelected)
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  gradient: RadialGradient(
-                    colors: [
-                      const Color(0xFF4A9EFF).withValues(alpha: 0.15),
-                      Colors.transparent,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // ── Thumbnail / placeholder ──────────────────────
+              if (_thumbnailLoading)
+                _ThumbnailPlaceholder(primary: primary, showSpinner: true)
+              else if (_thumbnail != null)
+                Image.memory(_thumbnail!, fit: BoxFit.cover)
+              else
+                _ThumbnailPlaceholder(primary: primary, showSpinner: false),
+
+              // ── Bottom gradient for text readability ─────────
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  height: 72,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.62),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // ── Centered play / pause button ─────────────────
+              Center(
+                child: Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: widget.isSelected
+                        ? primary
+                        : Colors.white.withValues(alpha: 0.9),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 12,
+                        offset: const Offset(0, 3),
+                      ),
                     ],
-                    radius: 0.85,
+                  ),
+                  child: Icon(
+                    widget.isSelected
+                        ? Icons.pause_rounded
+                        : Icons.play_arrow_rounded,
+                    color: widget.isSelected ? Colors.white : primary,
+                    size: 30,
                   ),
                 ),
               ),
-            Positioned(
-              top: 12,
-              right: 12,
-              child: Text(
-                '${index + 1}',
-                style: GoogleFonts.alef(
-                  fontSize: 12,
-                  color: Colors.white.withValues(alpha: 0.2),
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            Container(
-              width: 58,
-              height: 58,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: isSelected
-                      ? [const Color(0xFF4A9EFF), const Color(0xFF1A6EDB)]
-                      : [
-                          Colors.white.withValues(alpha: 0.18),
-                          Colors.white.withValues(alpha: 0.08),
-                        ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: isSelected
-                        ? const Color(0xFF4A9EFF).withValues(alpha: 0.45)
-                        : Colors.black.withValues(alpha: 0.3),
-                    blurRadius: isSelected ? 20 : 10,
-                    offset: const Offset(0, 4),
+
+              // ── Number badge (top-right) ──────────────────────
+              Positioned(
+                top: 10,
+                right: 10,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.32),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                ],
-              ),
-              child: Icon(
-                isSelected ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                color: Colors.white,
-                size: 30,
-              ),
-            ),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                height: 3,
-                decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.vertical(
-                    bottom: Radius.circular(18),
-                  ),
-                  gradient: LinearGradient(
-                    colors: isSelected
-                        ? [
-                            Colors.transparent,
-                            const Color(0xFF4A9EFF).withValues(alpha: 0.8),
-                            Colors.transparent,
-                          ]
-                        : [
-                            Colors.transparent,
-                            Colors.white.withValues(alpha: 0.08),
-                            Colors.transparent,
-                          ],
+                  child: Text(
+                    '${widget.displayNumber}',
+                    style: GoogleFonts.alef(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white.withValues(alpha: 0.9),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+
+              // ── Video name at bottom ──────────────────────────
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                  child: Text(
+                    widget.name.replaceAll(RegExp(r'\.[^.]+$'), ''),
+                    textAlign: TextAlign.center,
+                    textDirection: TextDirection.rtl,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.alef(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withValues(alpha: 0.55),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// _ThumbnailPlaceholder
+// ─────────────────────────────────────────────
+class _ThumbnailPlaceholder extends StatelessWidget {
+  final Color primary;
+  final bool showSpinner;
+
+  const _ThumbnailPlaceholder({
+    required this.primary,
+    required this.showSpinner,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            primary.withValues(alpha: 0.30),
+            primary.withValues(alpha: 0.12),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: showSpinner
+          ? Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: primary.withValues(alpha: 0.6),
+                ),
+              ),
+            )
+          : null,
     );
   }
 }

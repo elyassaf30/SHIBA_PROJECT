@@ -1,3 +1,4 @@
+import 'dart:math' show pi;
 import 'package:flutter/material.dart';
 
 class ThemeHelpers {
@@ -193,8 +194,8 @@ class _FloatingOrb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progress = ((animValue + phase) % 1.0) * 2 * 3.14159;
-    final dy = (progress - 3.14159).abs() / 3.14159 * 22 - 11;
+    final progress = ((animValue + phase) % 1.0) * 2 * pi;
+    final dy = (progress - pi).abs() / pi * 22 - 11;
     final dx = dy * 0.45;
 
     return Transform.translate(

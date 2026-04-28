@@ -17,6 +17,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'AdminLoginScreen.dart';
 import 'package:rabbi_shiba/utils/theme_helpers.dart';
+import 'package:rabbi_shiba/services/update_service.dart';
+import 'package:rabbi_shiba/screens/rabbi_videos_screen.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 // conditional import — dart:ui_web קיים רק בווב
@@ -896,6 +898,12 @@ class _EntranceScreenState extends State<EntranceScreen>
       'color': Colors.redAccent,
       'screenBuilder': () => GeneralDetailScreen(type: 'אנשי קשר'),
     },
+    {
+      'label': 'סרטוני הרב',
+      'icon': Icons.video_library_rounded,
+      'color': Colors.deepPurple,
+      'screenBuilder': () => const RabbiVideosScreen(),
+    },
   ];
 
   @override
@@ -906,6 +914,10 @@ class _EntranceScreenState extends State<EntranceScreen>
     _startEntranceAnimations();
     _watchNetworkState();
     _refreshMainScreen();
+    // Check for Play Store updates once per app session.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) UpdateService.checkAndPrompt(context);
+    });
   }
 
   void _startEntranceAnimations() {

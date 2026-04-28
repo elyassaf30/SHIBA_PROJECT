@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rabbi_shiba/services/notification_service.dart';
@@ -34,7 +35,7 @@ class VideoCheckService {
         await prefs.setInt('lastVideoCheck', now);
       }
     } catch (e) {
-      print('שגיאה בבדיקת סרטונים חדשים: $e');
+      debugPrint('שגיאה בבדיקת סרטונים חדשים: $e');
     }
   }
 }

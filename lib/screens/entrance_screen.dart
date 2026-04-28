@@ -833,6 +833,13 @@ class _EntranceScreenState extends State<EntranceScreen>
 
   static final List<Map<String, dynamic>> _bubbles = [
     {
+      'label': 'סרטוני הרב',
+      'icon': Icons.video_library_rounded,
+      'color': Colors.deepPurple,
+      'badge': 'חדש',
+      'screenBuilder': () => const RabbiVideosScreen(),
+    },
+    {
       'label': 'זמני היום',
       'icon': Icons.sunny,
       'color': Colors.amber,
@@ -897,12 +904,6 @@ class _EntranceScreenState extends State<EntranceScreen>
       'icon': Icons.contacts,
       'color': Colors.redAccent,
       'screenBuilder': () => GeneralDetailScreen(type: 'אנשי קשר'),
-    },
-    {
-      'label': 'סרטוני הרב',
-      'icon': Icons.video_library_rounded,
-      'color': Colors.deepPurple,
-      'screenBuilder': () => const RabbiVideosScreen(),
     },
   ];
 
@@ -2155,6 +2156,7 @@ class _DrawerItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = _accentColors[index % _accentColors.length];
+    final badgeText = bubble['badge'] as String?;
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -2203,14 +2205,41 @@ class _DrawerItem extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    bubble['label'],
-                    textDirection: TextDirection.rtl,
-                    style: GoogleFonts.alef(
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFF0D1B33),
-                    ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        bubble['label'],
+                        textDirection: TextDirection.rtl,
+                        style: GoogleFonts.alef(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF0D1B33),
+                        ),
+                      ),
+                      if (badgeText != null) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.redAccent,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            badgeText,
+                            style: GoogleFonts.alef(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 Icon(

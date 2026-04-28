@@ -391,7 +391,7 @@ class _SplashScreenState extends State<SplashScreen>
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(
-              color: const Color(0xFF8CC4D9).withOpacity(0.32),
+              color: const Color(0xFF8CC4D9).withValues(alpha: 0.32),
               width: 1.5,
             ),
           ),
@@ -460,14 +460,14 @@ class _SplashScreenState extends State<SplashScreen>
                       BoxShadow(
                         color: const Color(
                           0xFF8CC4D9,
-                        ).withOpacity(_glowAnimation.value * 0.35),
+                        ).withValues(alpha: _glowAnimation.value * 0.35),
                         blurRadius: 34,
                         spreadRadius: 6,
                       ),
                       BoxShadow(
                         color: const Color(
                           0xFF8CC4D9,
-                        ).withOpacity(_glowAnimation.value * 0.14),
+                        ).withValues(alpha: _glowAnimation.value * 0.14),
                         blurRadius: 60,
                         spreadRadius: 14,
                       ),
@@ -513,7 +513,7 @@ class _SplashScreenState extends State<SplashScreen>
                 color: const Color(0xFF1E293B),
                 shadows: [
                   Shadow(
-                    color: const Color(0xFF8CC4D9).withOpacity(0.22),
+                    color: const Color(0xFF8CC4D9).withValues(alpha: 0.22),
                     blurRadius: 14,
                   ),
                 ],
@@ -576,8 +576,8 @@ class _SplashScreenState extends State<SplashScreen>
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF8CC4D9).withOpacity(0.34)),
-        color: const Color(0xFF8CC4D9).withOpacity(0.1),
+        border: Border.all(color: const Color(0xFF8CC4D9).withValues(alpha: 0.34)),
+        color: const Color(0xFF8CC4D9).withValues(alpha: 0.1),
       ),
       child: Text(
         label,
@@ -602,7 +602,7 @@ class _SplashScreenState extends State<SplashScreen>
               child: LinearProgressIndicator(
                 value: _progressValue.value,
                 minHeight: 3,
-                backgroundColor: const Color(0xFF8CC4D9).withOpacity(0.2),
+                backgroundColor: const Color(0xFF8CC4D9).withValues(alpha: 0.2),
                 valueColor: const AlwaysStoppedAnimation<Color>(
                   Color(0xFF7FBFD6),
                 ),

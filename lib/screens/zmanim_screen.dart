@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:kosher_dart/kosher_dart.dart';
+import 'package:kosher_dart/kosher_dart.dart' hide TextDirection;
 import 'package:geolocator/geolocator.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 import 'package:rabbi_shiba/utils/theme_helpers.dart';
-import 'package:flutter/material.dart' as ui;
 
 class ZmanimScreen extends StatefulWidget {
   const ZmanimScreen({super.key});
@@ -305,7 +304,7 @@ class _ZmanimScreenState extends State<ZmanimScreen> {
                 Expanded(
                   child: Text(
                     'הזמנים מחושבים לפי המיקום שלך',
-                    textDirection: ui.TextDirection.rtl,
+                    textDirection: TextDirection.rtl,
                     style: GoogleFonts.alef(
                       fontSize: 13,
                       color: const Color(0xFF854F0B),
@@ -347,7 +346,7 @@ class _DateCard extends StatelessWidget {
           Text(
             hebrewDate,
             textAlign: TextAlign.center,
-            textDirection: ui.TextDirection.rtl,
+            textDirection: TextDirection.rtl,
             style: GoogleFonts.alef(
               fontSize: 20,
               fontWeight: FontWeight.w700,
@@ -403,7 +402,7 @@ class _SectionHeader extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             title,
-            textDirection: ui.TextDirection.rtl,
+            textDirection: TextDirection.rtl,
             style: GoogleFonts.alef(
               fontSize: 13,
               fontWeight: FontWeight.w600,
@@ -475,7 +474,7 @@ class _ZmanTile extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  textDirection: ui.TextDirection.rtl,
+                  textDirection: TextDirection.rtl,
                   style: GoogleFonts.alef(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
@@ -485,7 +484,7 @@ class _ZmanTile extends StatelessWidget {
                 if (subtitle != null)
                   Text(
                     subtitle!,
-                    textDirection: ui.TextDirection.rtl,
+                    textDirection: TextDirection.rtl,
                     style: GoogleFonts.alef(
                       fontSize: 12,
                       color: const Color(0xFF94A3B8),

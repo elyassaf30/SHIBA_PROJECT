@@ -1177,22 +1177,67 @@ class _EntranceScreenState extends State<EntranceScreen>
 
   Future<void> _fetchLatestVideo() async {
     try {
-      final response = await supabase
-          .from('סרטוני_רב')
-          .select()
-          .eq('פעיל', true)
-          .order('תאריך_הוספה', ascending: false)
-          .limit(1);
+      // Fetch all video files from Supabase Storage bucket 'videos'
+      final files = await supabase.storage.from('videos').list();
       if (!mounted) return;
 
-      final Map<String, dynamic>? nextVideo =
-          response.isNotEmpty ? response[0] : null;
-      final String? nextVideoId = nextVideo?['id']?.toString();
+      if (files.isEmpty) {
+        setState(() {
+          latestVideo = null;
+          videoLoading = false;
+        });
+        return;
+      }
+
+      // Sort files by createdAt descending to get the latest
+      files.sort((a, b) {
+        final aTime = a.createdAt ?? '';
+        final bTime = b.createdAt ?? '';
+        return bTime.compareTo(aTime);
+      });
+      final latestFile = files.first;
+      final videoFileName = latestFile.name;
+      final videoId = videoFileName; // Use filename as ID
+
+      // Generate public URL for the video
+      final videoUrl = supabase.storage
+          .from('videos')
+          .getPublicUrl(videoFileName);
+
+      // Get the weekly parsha title
+      String parashaTitle = 'פרשת השבוע';
+      try {
+        final formatter =
+            HebrewDateFormatter()
+              ..hebrewFormat = true
+              ..useGershGershayim = true;
+        final jewishCalendar = JewishCalendar()..inIsrael = true;
+        final fetchedParasha =
+            formatter.formatWeeklyParsha(jewishCalendar).trim();
+
+        if (fetchedParasha.isNotEmpty) {
+          parashaTitle =
+              fetchedParasha
+                  .replaceFirst('פרשת ', '')
+                  .replaceFirst('פרשה ', '')
+                  .replaceFirst('שבת ', '')
+                  .trim();
+        }
+      } catch (e) {
+        debugPrint('Error fetching parasha: $e');
+      }
+
+      final nextVideo = {
+        'id': videoId,
+        'כותרת': 'פרשת - $parashaTitle',
+        'תיאור': 'סרטון פרשת השבוע',
+        'קישור_וידאו': videoUrl,
+      };
 
       setState(() {
-        if (nextVideoId != null && nextVideoId != _badgeVideoId) {
+        if (videoId != _badgeVideoId) {
           _hideNewVideoBadge = false;
-          _badgeVideoId = nextVideoId;
+          _badgeVideoId = videoId;
         }
         latestVideo = nextVideo;
         videoLoading = false;
@@ -1203,7 +1248,7 @@ class _EntranceScreenState extends State<EntranceScreen>
         latestVideo = null;
         videoLoading = false;
       });
-      debugPrint('Error fetching latest video: $e');
+      debugPrint('Error fetching latest video from Storage: $e');
     }
   }
 

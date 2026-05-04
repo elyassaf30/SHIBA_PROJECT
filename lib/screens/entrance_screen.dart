@@ -1622,39 +1622,53 @@ class _EntranceScreenState extends State<EntranceScreen>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                _buildScreenHeader(),
-                                SizedBox(height: safeAreaHeight * 0.008),
-                                SizedBox(
-                                  height: safeAreaHeight * 0.47,
-                                  child: AnimatedBuilder(
-                                    animation: _quoteController,
-                                    builder:
-                                        (context, child) => FadeTransition(
-                                          opacity: _quoteOpacityAnimation,
-                                          child:
-                                              isLoading
-                                                  ? _buildLoadingWidget()
-                                                  : _buildWelcomeCard(),
-                                        ),
-                                  ),
-                                ),
-                                SizedBox(height: safeAreaHeight * 0.012),
-                                AnimatedBuilder(
-                                  animation: _panelController,
-                                  builder:
-                                      (context, child) => Transform.translate(
-                                        offset: Offset(
-                                          0,
-                                          _panelSlideAnimation.value,
-                                        ),
-                                        child: FadeTransition(
-                                          opacity: _panelFadeAnimation,
-                                          child: child,
+                                Transform.translate(
+                                  offset: const Offset(0, -36),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      _buildScreenHeader(),
+                                      SizedBox(height: safeAreaHeight * 0.008),
+                                      SizedBox(
+                                        height: safeAreaHeight * 0.47,
+                                        child: AnimatedBuilder(
+                                          animation: _quoteController,
+                                          builder:
+                                              (
+                                                context,
+                                                child,
+                                              ) => FadeTransition(
+                                                opacity: _quoteOpacityAnimation,
+                                                child:
+                                                    isLoading
+                                                        ? _buildLoadingWidget()
+                                                        : _buildWelcomeCard(),
+                                              ),
                                         ),
                                       ),
-                                  child: _buildQuickInfoPanel(),
+                                      SizedBox(height: safeAreaHeight * 0.012),
+                                      AnimatedBuilder(
+                                        animation: _panelController,
+                                        builder:
+                                            (context, child) =>
+                                                Transform.translate(
+                                                  offset: Offset(
+                                                    0,
+                                                    _panelSlideAnimation.value,
+                                                  ),
+                                                  child: FadeTransition(
+                                                    opacity:
+                                                        _panelFadeAnimation,
+                                                    child: child,
+                                                  ),
+                                                ),
+                                        child: _buildQuickInfoPanel(),
+                                      ),
+                                      SizedBox(height: safeAreaHeight * 0.01),
+                                    ],
+                                  ),
                                 ),
-                                SizedBox(height: safeAreaHeight * 0.01),
                               ],
                             ),
                           ),
@@ -1667,7 +1681,7 @@ class _EntranceScreenState extends State<EntranceScreen>
             ],
           ),
           // כפתור רובוט AI — ממוקם בפינה הימנית התחתונה
-          Positioned(bottom: 24, right: 16, child: const _AiRobotFab()),
+          Positioned(bottom: 34, right: 16, child: const _AiRobotFab()),
         ],
       ),
     );
@@ -2367,34 +2381,97 @@ class _AiRobotFabState extends State<_AiRobotFab>
       scale: _pulseAnimation,
       child: GestureDetector(
         onTap: () => _openChat(context),
-        child: Hero(
-          tag: 'ai_robot_fab',
-          child: Container(
-            width: 58,
-            height: 58,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF4A90D9), Color(0xFF0D7C60)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF4A90D9).withValues(alpha: 0.45),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
+        child: SizedBox(
+          width: 132,
+          height: 108,
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.bottomRight,
+            children: [
+              Hero(
+                tag: 'ai_robot_fab',
+                child: Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        _AppColors.skyBlue.withValues(alpha: 0.96),
+                        const Color.fromARGB(
+                          255,
+                          16,
+                          73,
+                          57,
+                        ).withValues(alpha: 0.96),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.34),
+                      width: 1.1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _AppColors.skyBlue.withValues(alpha: 0.34),
+                        blurRadius: 18,
+                        offset: const Offset(0, 5),
+                      ),
+                      BoxShadow(
+                        color: _AppColors.teal.withValues(alpha: 0.18),
+                        blurRadius: 26,
+                        offset: const Offset(0, 9),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.smart_toy_outlined,
+                    color: Colors.white,
+                    size: 28,
+                  ),
                 ),
-              ],
-            ),
-            child: const Icon(
-              Icons.smart_toy_outlined,
-              color: Colors.white,
-              size: 28,
-            ),
+              ),
+              Positioned(left: -14, bottom: 44, child: _buildSpeechBubble()),
+            ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSpeechBubble() {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: _AppColors.skyBlue.withValues(alpha: 0.28),
+              width: 1.1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: _AppColors.navy.withValues(alpha: 0.12),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Text(
+            'שאל את ה - AI',
+            textDirection: TextDirection.rtl,
+            style: GoogleFonts.alef(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: _AppColors.navy,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -19,6 +19,7 @@ import 'AdminLoginScreen.dart';
 import 'package:rabbi_shiba/utils/theme_helpers.dart';
 import 'package:rabbi_shiba/services/update_service.dart';
 import 'package:rabbi_shiba/screens/rabbi_videos_screen.dart';
+import 'package:rabbi_shiba/screens/ai_chat_screen.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 // conditional import — dart:ui_web קיים רק בווב
@@ -1665,6 +1666,8 @@ class _EntranceScreenState extends State<EntranceScreen>
               ),
             ],
           ),
+          // כפתור רובוט AI — ממוקם בפינה הימנית התחתונה
+          Positioned(bottom: 24, right: 16, child: const _AiRobotFab()),
         ],
       ),
     );
@@ -2296,6 +2299,98 @@ class _DrawerItem extends StatelessWidget {
                   color: accent.withValues(alpha: 0.5),
                 ),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// AI Robot FAB
+// ─────────────────────────────────────────────
+
+class _AiRobotFab extends StatefulWidget {
+  const _AiRobotFab();
+
+  @override
+  State<_AiRobotFab> createState() => _AiRobotFabState();
+}
+
+class _AiRobotFabState extends State<_AiRobotFab>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat(reverse: true);
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.08).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  void _openChat(BuildContext context) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (_, animation, __) => const AiChatScreen(),
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(
+            opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 0.85, end: 1.0).animate(
+                CurvedAnimation(parent: animation, curve: Curves.easeOut),
+              ),
+              child: child,
+            ),
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 320),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _pulseAnimation,
+      child: GestureDetector(
+        onTap: () => _openChat(context),
+        child: Hero(
+          tag: 'ai_robot_fab',
+          child: Container(
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF4A90D9), Color(0xFF0D7C60)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF4A90D9).withValues(alpha: 0.45),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.smart_toy_outlined,
+              color: Colors.white,
+              size: 28,
             ),
           ),
         ),

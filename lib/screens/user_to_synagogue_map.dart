@@ -326,20 +326,21 @@ class _UserToSynagogueMapState extends State<UserToSynagogueMap>
       if (polylineCoordinates.isEmpty) {
         setState(() => _routeLoading = true);
         try {
-          PolylinePoints polylinePoints = PolylinePoints();
           final apiKey = _cachedApiKey.isNotEmpty ? _cachedApiKey : '';
+          PolylinePoints polylinePoints = PolylinePoints(apiKey: apiKey);
 
           final fetchFuture = polylinePoints.getRouteBetweenCoordinates(
-            apiKey,
-            PointLatLng(
-              _currentLocation!.latitude,
-              _currentLocation!.longitude,
+            request: PolylineRequest(
+              origin: PointLatLng(
+                _currentLocation!.latitude,
+                _currentLocation!.longitude,
+              ),
+              destination: PointLatLng(
+                synagogueLocation.latitude,
+                synagogueLocation.longitude,
+              ),
+              mode: TravelMode.walking,
             ),
-            PointLatLng(
-              synagogueLocation.latitude,
-              synagogueLocation.longitude,
-            ),
-            travelMode: TravelMode.walking,
           );
 
           // wrap with timeout to avoid long waits

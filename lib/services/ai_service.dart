@@ -333,7 +333,11 @@ class AiService {
   static Future<String> _generate(String prompt) async {
     final apiKey = _readApiKey();
     if (apiKey.isEmpty || apiKey == 'YOUR_GROQ_API_KEY_HERE') {
-      throw Exception('GROQ_API_KEY חסר — הוסף ל-.env');
+      throw Exception(
+        'GROQ_API_KEY חסר.\n'
+        'במובייל: הוסף ל-.env\n'
+        'בווב: בנה עם: flutter build web --dart-define=GROQ_API_KEY=your_key',
+      );
     }
 
     final response = await http

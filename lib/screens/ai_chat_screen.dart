@@ -2,8 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:rabbi_shiba/screens/general_detail_screen.dart';
 import 'package:rabbi_shiba/screens/moadi_israel_screen.dart';
+import 'package:rabbi_shiba/screens/rabbi_videos_screen.dart';
 import 'package:rabbi_shiba/screens/shabat_screen.dart';
-import 'package:rabbi_shiba/screens/week_day_tefilot_screen.dart' show WeekdayTefilotScreen;
+import 'package:rabbi_shiba/screens/user_to_synagogue_map.dart';
+import 'package:rabbi_shiba/screens/week_day_tefilot_screen.dart'
+    show WeekdayTefilotScreen;
+import 'package:rabbi_shiba/screens/chet_screen.dart';
+import 'package:rabbi_shiba/screens/zmanim_screen.dart';
 import 'package:rabbi_shiba/services/ai_service.dart';
 import 'package:rabbi_shiba/utils/app_colors.dart';
 import 'package:rabbi_shiba/utils/theme_helpers.dart';
@@ -45,9 +50,17 @@ class _AiChatScreenState extends State<AiChatScreen>
   // Suggested questions to show on empty state
   static const _suggestions = [
     'מה הכשרות של הבשר כאן?',
-    'מתי מתפללים מנחה?',
+    'מתי שחרית?',
+    'מתי מנחה?',
+    'מתי ערבית?',
     'מה מותר לעשות בשבת?',
     'מהם זמני הדלקת נרות?',
+    'מה זמני היום?',
+    'יש סרטונים של הרב?',
+    'רוצה לדבר עם הרב',
+    'מה הדין לכהן במחלקה?',
+    'מה הדין לגבי מקווה?',
+    'אנשי קשר',
   ];
 
   @override
@@ -72,11 +85,13 @@ class _AiChatScreenState extends State<AiChatScreen>
       final response = await AiService.ask(text);
       if (!mounted) return;
       setState(() {
-        _messages.add(_ChatMessage(
-          text: response.answer,
-          isUser: false,
-          sources: response.sources,
-        ));
+        _messages.add(
+          _ChatMessage(
+            text: response.answer,
+            isUser: false,
+            sources: response.sources,
+          ),
+        );
       });
     } catch (e) {
       debugPrint('❌ AiChatScreen error: $e');
@@ -93,10 +108,13 @@ class _AiChatScreenState extends State<AiChatScreen>
 
   String _friendlyError(Object e) {
     final msg = e.toString();
-    if (msg.contains('GROQ_API_KEY') || msg.contains('חסר') || msg.contains('לא תקין')) {
+    if (msg.contains('GROQ_API_KEY') ||
+        msg.contains('חסר') ||
+        msg.contains('לא תקין')) {
       return msg;
     }
-    if (msg.toLowerCase().contains('socket') || msg.toLowerCase().contains('connection')) {
+    if (msg.toLowerCase().contains('socket') ||
+        msg.toLowerCase().contains('connection')) {
       return 'אין חיבור לאינטרנט. אנא בדוק את החיבור ונסה שוב.';
     }
     if (msg.contains('בקשות') || msg.contains('שניות')) return msg;
@@ -252,9 +270,15 @@ class _AiChatScreenState extends State<AiChatScreen>
             spacing: 8,
             runSpacing: 8,
             alignment: WrapAlignment.center,
-            children: _suggestions
-                .map((q) => _SuggestionChip(label: q, onTap: () => _sendMessage(q)))
-                .toList(),
+            children:
+                _suggestions
+                    .map(
+                      (q) => _SuggestionChip(
+                        label: q,
+                        onTap: () => _sendMessage(q),
+                      ),
+                    )
+                    .toList(),
           ),
         ],
       ),
@@ -277,12 +301,14 @@ class _AiChatScreenState extends State<AiChatScreen>
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(18),
                 topRight: const Radius.circular(18),
-                bottomLeft: isUser
-                    ? const Radius.circular(18)
-                    : const Radius.circular(4),
-                bottomRight: isUser
-                    ? const Radius.circular(4)
-                    : const Radius.circular(18),
+                bottomLeft:
+                    isUser
+                        ? const Radius.circular(18)
+                        : const Radius.circular(4),
+                bottomRight:
+                    isUser
+                        ? const Radius.circular(4)
+                        : const Radius.circular(18),
               ),
               boxShadow: [
                 BoxShadow(
@@ -307,7 +333,7 @@ class _AiChatScreenState extends State<AiChatScreen>
                 ),
                 if (message.sources.isNotEmpty) ...[
                   const SizedBox(height: 7),
-                  _buildSourceTag(message.sources),
+                  _buildSourcesSection(message.sources),
                 ],
               ],
             ),
@@ -317,77 +343,95 @@ class _AiChatScreenState extends State<AiChatScreen>
     );
   }
 
-  Widget _buildSourceTag(List<KnowledgeDoc> sources) {
-    final uniqueCategories = sources.map((s) => s.category).toSet().toList();
-    final categoriesText = uniqueCategories.join(' • ');
-
-    // מוצא את המסך הראשון שניתן לנווט אליו מבין הקטגוריות
-    _NavEntry? navEntry;
-    for (final c in uniqueCategories) {
-      navEntry = _categoryNavEntry(c);
-      if (navEntry != null) break;
-    }
+  Widget _buildSourcesSection(List<KnowledgeDoc> sources) {
+    // One nav button per unique category
+    final seen = <String>{};
+    final unique = sources.where((s) => seen.add(s.category)).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        // תג מקור
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: AppColors.tealLight,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.verified_outlined, size: 11, color: AppColors.teal),
-              const SizedBox(width: 4),
-              Text(
-                'מקור: $categoriesText',
-                style: GoogleFonts.alef(
-                  fontSize: 11,
-                  color: AppColors.teal,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-        // כפתור ניווט למסך הרלוונטי
-        if (navEntry != null) ...[
-          const SizedBox(height: 6),
-          GestureDetector(
-            onTap: () => _navigate(navEntry!.screen),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: AppColors.blue.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: AppColors.blue.withValues(alpha: 0.3),
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
+      children:
+          unique.map((source) {
+            final navEntry = _navEntryForSource(source);
+            final sourceLabel = _sourceLabelFor(source);
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  const Icon(Icons.arrow_back_ios_rounded, size: 11, color: AppColors.blue),
-                  const SizedBox(width: 4),
-                  Text(
-                    'עבור ל${navEntry.label}',
-                    style: GoogleFonts.alef(
-                      fontSize: 12,
-                      color: AppColors.blue,
-                      fontWeight: FontWeight.w600,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.tealLight,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.verified_outlined,
+                          size: 11,
+                          color: AppColors.teal,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'מקור: $sourceLabel',
+                          style: GoogleFonts.alef(
+                            fontSize: 11,
+                            color: AppColors.teal,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                  if (navEntry != null) ...[
+                    const SizedBox(height: 6),
+                    GestureDetector(
+                      onTap: () => _navigate(navEntry.screen),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.blue.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: AppColors.blue.withValues(alpha: 0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.arrow_back_ios_rounded,
+                              size: 11,
+                              color: AppColors.blue,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'עבור ל${navEntry.label}',
+                              style: GoogleFonts.alef(
+                                fontSize: 12,
+                                color: AppColors.blue,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
-            ),
-          ),
-        ],
-      ],
+            );
+          }).toList(),
     );
   }
 
@@ -395,10 +439,14 @@ class _AiChatScreenState extends State<AiChatScreen>
     Navigator.of(context).push(
       PageRouteBuilder(
         pageBuilder: (_, animation, __) => screen,
-        transitionsBuilder: (_, animation, __, child) => FadeTransition(
-          opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
-          child: child,
-        ),
+        transitionsBuilder:
+            (_, animation, __, child) => FadeTransition(
+              opacity: CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOut,
+              ),
+              child: child,
+            ),
         transitionDuration: const Duration(milliseconds: 280),
       ),
     );
@@ -406,6 +454,10 @@ class _AiChatScreenState extends State<AiChatScreen>
 
   _NavEntry? _categoryNavEntry(String category) {
     switch (category) {
+      case 'סרטוני הרב':
+        return _NavEntry('סרטוני הרב', const RabbiVideosScreen());
+      case 'זמני היום':
+        return _NavEntry('זמני היום', ZmanimScreen());
       case 'כשרות':
         return _NavEntry('מסך כשרות', GeneralDetailScreen(type: 'כשרות'));
       case 'שבת':
@@ -414,11 +466,81 @@ class _AiChatScreenState extends State<AiChatScreen>
         return _NavEntry('מסך מועדי ישראל', const MoadiIsraelScreen());
       case 'תפילה':
         return _NavEntry('זמני תפילה', const WeekdayTefilotScreen());
+      case 'מקווה':
+        return _NavEntry('מסך מקווה', GeneralDetailScreen(type: 'מקווה'));
+      case 'נפטרים':
+        return _NavEntry('מסך נפטרים', GeneralDetailScreen(type: 'נפטרים'));
       case 'הלכה':
-        return _NavEntry('מסך הלכה', GeneralDetailScreen(type: 'טומאת כהנים'));
+        return _NavEntry('טומאת כהנים', GeneralDetailScreen(type: 'טומאת כהנים'));
+      case 'אנשי קשר':
+        return _NavEntry('אנשי קשר', GeneralDetailScreen(type: 'אנשי קשר'));
+      case 'בתי כנסת':
+      case 'בית כנסת':
+      case 'בתי כנסת במרכז הרפואי':
+        return _NavEntry('בתי כנסת במרכז הרפואי', UserToSynagogueMap());
+      case 'ייעוץ הלכתי רפואי':
+      case 'ייעוץ':
+        return _NavEntry('ייעוץ הלכתי רפואי', ChatScreen());
       default:
         return null;
     }
+  }
+
+  _NavEntry? _navEntryForSource(KnowledgeDoc source) {
+    final metadata = source.metadata;
+    final metadataScreen =
+        metadata['screen'] ?? metadata['screenType'] ?? metadata['route'];
+    if (metadataScreen is String && metadataScreen.isNotEmpty) {
+      final entry = _navEntryFromKey(metadataScreen);
+      if (entry != null) return entry;
+    }
+
+    final metadataCategory = metadata['category'];
+    if (metadataCategory is String && metadataCategory.isNotEmpty) {
+      final entry = _navEntryFromKey(metadataCategory);
+      if (entry != null) return entry;
+    }
+
+    return _categoryNavEntry(source.category);
+  }
+
+  _NavEntry? _navEntryFromKey(String key) {
+    switch (key.trim()) {
+      case 'סרטוני הרב':
+        return _NavEntry('סרטוני הרב', const RabbiVideosScreen());
+      case 'זמני היום':
+        return _NavEntry('זמני היום', ZmanimScreen());
+      case 'שבת':
+        return _NavEntry('מסך שבת', const ShabatScreen());
+      case 'כשרות':
+        return _NavEntry('מסך כשרות', GeneralDetailScreen(type: 'כשרות'));
+      case 'בתי כנסת במרכז הרפואי':
+        return _NavEntry('בתי כנסת במרכז הרפואי', UserToSynagogueMap());
+      case 'זמני תפילות ימי חול':
+      case 'תפילה':
+        return _NavEntry('זמני תפילה', const WeekdayTefilotScreen());
+      case 'טומאת כהנים':
+        return _NavEntry('טומאת כהנים', GeneralDetailScreen(type: 'טומאת כהנים'));
+      case 'נפטרים':
+        return _NavEntry('נפטרים', GeneralDetailScreen(type: 'נפטרים'));
+      case 'מקווה':
+        return _NavEntry('מקווה', GeneralDetailScreen(type: 'מקווה'));
+      case 'מועדי ישראל':
+        return _NavEntry('מסך מועדי ישראל', const MoadiIsraelScreen());
+      case 'ייעוץ הלכתי רפואי':
+        return _NavEntry('ייעוץ הלכתי רפואי', ChatScreen());
+      case 'אנשי קשר':
+        return _NavEntry('אנשי קשר', GeneralDetailScreen(type: 'אנשי קשר'));
+      default:
+        return _categoryNavEntry(key);
+    }
+  }
+
+  String _sourceLabelFor(KnowledgeDoc source) {
+    final metadata = source.metadata;
+    final label = metadata['label'] ?? metadata['title'] ?? metadata['screen'];
+    if (label is String && label.trim().isNotEmpty) return label.trim();
+    return source.category;
   }
 
   Widget _buildTypingIndicator() {
@@ -469,9 +591,7 @@ class _AiChatScreenState extends State<AiChatScreen>
       padding: const EdgeInsets.fromLTRB(8, 8, 8, 16),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.96),
-        border: Border(
-          top: BorderSide(color: AppColors.divider, width: 0.8),
-        ),
+        border: Border(top: BorderSide(color: AppColors.divider, width: 0.8)),
       ),
       child: Row(
         children: [

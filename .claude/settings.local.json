@@ -5,7 +5,8 @@
       "Bash(flutter analyze *)",
       "Bash(timeout 50 bash -c \"tail -f C:/Users/elyas/AppData/Local/Temp/claude/c--Users-elyas-MyProjects-rabbi-shiba-rabbi-shiba/2bffb746-74c4-406b-81ab-11eb4c36ef23/tasks/bg3nhz2rt.output\")",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\elyas\\\\MyProjects\\\\rabbi_shiba\\\\rabbi_shiba\" -Directory)",
-      "Bash(Select-Object -ExpandProperty Name)"
+      "Bash(Select-Object -ExpandProperty Name)",
+      "Bash(timeout 30 cmd /c \"type C:\\\\Users\\\\elyas\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-elyas-MyProjects-rabbi-shiba-rabbi-shiba\\\\eaa753f6-5bf9-46e3-93da-ac02f50758d8\\\\tasks\\\\btqa6hdeo.output\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\elyas\\MyProjects\\rabbi_shiba\\rabbi_shiba\\supabase"

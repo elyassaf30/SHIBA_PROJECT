@@ -240,31 +240,15 @@ class _SplashScreenState extends State<SplashScreen>
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 1400),
-        reverseTransitionDuration: const Duration(milliseconds: 500),
+        transitionDuration: const Duration(milliseconds: 500),
+        reverseTransitionDuration: const Duration(milliseconds: 300),
         pageBuilder: (_, __, ___) => const EntranceScreen(),
         transitionsBuilder: (_, animation, __, child) {
           final fadeAnimation = CurvedAnimation(
             parent: animation,
-            curve: const Interval(0.0, 0.9, curve: Curves.easeOutCubic),
+            curve: Curves.easeOut,
           );
-          final slideAnimation = Tween<Offset>(
-            begin: const Offset(0.0, 0.12),
-            end: Offset.zero,
-          ).animate(
-            CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
-          );
-          final scaleAnimation = Tween<double>(begin: 0.985, end: 1.0).animate(
-            CurvedAnimation(parent: animation, curve: Curves.easeOutQuart),
-          );
-
-          return FadeTransition(
-            opacity: fadeAnimation,
-            child: SlideTransition(
-              position: slideAnimation,
-              child: ScaleTransition(scale: scaleAnimation, child: child),
-            ),
-          );
+          return FadeTransition(opacity: fadeAnimation, child: child);
         },
       ),
     );

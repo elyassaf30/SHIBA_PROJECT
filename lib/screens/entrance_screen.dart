@@ -824,6 +824,10 @@ class _EntranceScreenState extends State<EntranceScreen>
   bool _noNetwork = false;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
 
+  // ── AI Robot FAB position (draggable) ────────
+  double _fabOffsetX = 16;
+  double _fabOffsetY = 0;
+
   late AnimationController _mainController;
   late AnimationController _quoteController;
   late AnimationController _panelController;
@@ -927,11 +931,11 @@ class _EntranceScreenState extends State<EntranceScreen>
 
   void _startEntranceAnimations() {
     _mainController.forward();
-    Future.delayed(const Duration(milliseconds: 120), () {
+    Future.delayed(const Duration(milliseconds: 60), () {
       if (!mounted) return;
       _quoteController.forward();
     });
-    Future.delayed(const Duration(milliseconds: 240), () {
+    Future.delayed(const Duration(milliseconds: 120), () {
       if (!mounted) return;
       _panelController.forward();
     });
@@ -976,15 +980,15 @@ class _EntranceScreenState extends State<EntranceScreen>
   void _initializeAnimations() {
     _mainController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1100),
+      duration: const Duration(milliseconds: 500),
     );
     _quoteController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 850),
+      duration: const Duration(milliseconds: 400),
     );
     _panelController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: const Duration(milliseconds: 400),
     );
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -999,7 +1003,7 @@ class _EntranceScreenState extends State<EntranceScreen>
         curve: const Interval(0.0, 1.0, curve: Curves.easeOutCubic),
       ),
     );
-    _slideAnimation = Tween<double>(begin: 22.0, end: 0.0).animate(
+    _slideAnimation = Tween<double>(begin: 10.0, end: 0.0).animate(
       CurvedAnimation(
         parent: _mainController,
         curve: const Interval(0.0, 1.0, curve: Curves.easeOutCubic),
@@ -1008,7 +1012,7 @@ class _EntranceScreenState extends State<EntranceScreen>
     _quoteOpacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _quoteController, curve: Curves.easeOutCubic),
     );
-    _panelSlideAnimation = Tween<double>(begin: 18.0, end: 0.0).animate(
+    _panelSlideAnimation = Tween<double>(begin: 8.0, end: 0.0).animate(
       CurvedAnimation(parent: _panelController, curve: Curves.easeOutCubic),
     );
     _panelFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -1681,7 +1685,18 @@ class _EntranceScreenState extends State<EntranceScreen>
             ],
           ),
           // כפתור רובוט AI — ממוקם בפינה הימנית התחתונה
-          Positioned(bottom: 34, right: 16, child: const _AiRobotFab()),
+          Positioned(
+            bottom: 34 - _fabOffsetY,
+            right: _fabOffsetX,
+            child: _AiRobotFab(
+              onDragUpdate: (dx, dy) {
+                setState(() {
+                  _fabOffsetX += dx;
+                  _fabOffsetY += dy;
+                });
+              },
+            ),
+          ),
         ],
       ),
     );
@@ -2326,7 +2341,9 @@ class _DrawerItem extends StatelessWidget {
 // ─────────────────────────────────────────────
 
 class _AiRobotFab extends StatefulWidget {
-  const _AiRobotFab();
+  final Function(double dx, double dy)? onDragUpdate;
+
+  const _AiRobotFab({this.onDragUpdate});
 
   @override
   State<_AiRobotFab> createState() => _AiRobotFabState();
@@ -2381,6 +2398,9 @@ class _AiRobotFabState extends State<_AiRobotFab>
       scale: _pulseAnimation,
       child: GestureDetector(
         onTap: () => _openChat(context),
+        onPanUpdate: (details) {
+          widget.onDragUpdate?.call(details.delta.dx, -details.delta.dy);
+        },
         child: SizedBox(
           width: 132,
           height: 108,

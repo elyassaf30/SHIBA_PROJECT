@@ -52,7 +52,9 @@ void main() async {
   // Load .env file only on mobile/desktop. Web should use dart-define values.
   if (!kIsWeb) {
     try {
-      await dotenv.load(fileName: ".env");
+      const isProduction =
+          String.fromEnvironment('FLUTTER_APP_MODE') == 'production';
+      await dotenv.load(fileName: isProduction ? ".env.production" : ".env");
       debugPrint('✅ .env loaded successfully.');
     } catch (e) {
       debugPrint('❌ Failed to load .env file: $e');

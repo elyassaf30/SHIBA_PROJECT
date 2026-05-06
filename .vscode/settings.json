@@ -1,4 +1,9 @@
 {
     "java.configuration.updateBuildConfiguration": "interactive",
-    "cmake.sourceDirectory": "C:/Users/elyas/rabbi_shiba/rabbi_shiba/linux"
+    "cmake.sourceDirectory": "C:/Users/elyas/rabbi_shiba/rabbi_shiba/linux",
+    "chat.tools.terminal.autoApprove": {
+        ".env": true,
+        "git stash": true,
+        "flutter": true
+    }
 }

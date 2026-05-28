@@ -49,3 +49,4 @@ appshiba-daebb-firebase-adminsdk-fbsvc-b9a1e75860.json
 # Environment files with secrets
 .env
 .env.production
+dart_defines.json

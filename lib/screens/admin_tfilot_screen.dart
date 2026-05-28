@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rabbi_shiba/screens/entrance_screen.dart';
+import 'package:rabbi_shiba/screens/admin_notification_screen.dart';
 import 'package:rabbi_shiba/utils/theme_helpers.dart';
 
 class AdminTefilotScreen extends StatefulWidget {
@@ -748,6 +749,21 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen> {
               onTap: () {
                 Navigator.pop(context);
                 _changeRabbiQuote();
+              },
+            ),
+            Divider(),
+            ListTile(
+              leading: const Icon(Icons.campaign_rounded, color: Color(0xFF1A5FB4)),
+              title: const Text(
+                'שליחת הודעה לכולם',
+                style: TextStyle(color: Color(0xFF1A5FB4), fontWeight: FontWeight.w600),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AdminNotificationScreen()),
+                );
               },
             ),
             Divider(),

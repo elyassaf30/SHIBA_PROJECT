@@ -4,6 +4,8 @@
     "chat.tools.terminal.autoApprove": {
         ".env": true,
         "git stash": true,
-        "flutter": true
+        "flutter": true,
+        "Get-Process": true,
+        "Get-CimInstance": true
     }
 }

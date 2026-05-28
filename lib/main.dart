@@ -7,6 +7,17 @@ import 'package:rabbi_shiba/screens/splash_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:rabbi_shiba/services/video_check_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:rabbi_shiba/screens/announcements_screen.dart';
+
+// Top-level FCM background handler — must live outside any class
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Ensure Firebase is initialized before doing any work in background isolate
+  await Firebase.initializeApp();
+  debugPrint('📩 FCM background message: ${message.messageId}');
+}
 
 const _supabaseUrl = 'https://srdwmyerieeeyrkgxsgi.supabase.co';
 // Supabase anon key is public by design. Keep server secrets out of the client.
@@ -48,6 +59,37 @@ String _readConfigValue(String key) {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   var supabaseInitialized = false;
+
+  // ── Firebase / FCM Init (mobile only) ───────────────────────────────────
+  // Requires google-services.json (Android) and GoogleService-Info.plist (iOS)
+  // in the platform project folders before this will work.
+  if (!kIsWeb) {
+    try {
+      await Firebase.initializeApp();
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+      // Request notification permission from the OS
+      final settings = await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      debugPrint('🔔 FCM permission: ${settings.authorizationStatus}');
+
+      // Subscribe every device to the global broadcast topic
+      await FirebaseMessaging.instance.subscribeToTopic('all_updates');
+      debugPrint('✅ Subscribed to FCM topic: all_updates');
+
+      // When the app is opened from a terminated state via a notification,
+      // navigate directly to the AnnouncementsScreen.
+      final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+      if (initialMessage != null) {
+        _handleFcmNavigation(initialMessage);
+      }
+    } catch (e) {
+      debugPrint('⚠️ Firebase init skipped (no google-services config?): $e');
+    }
+  }
 
   // Load .env file only on mobile/desktop. Web should use dart-define values.
   if (!kIsWeb) {
@@ -187,6 +229,16 @@ void main() async {
   runApp(MyApp());
 }
 
+// Global navigator key so we can navigate from FCM callbacks outside widget tree
+final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
+
+// Navigate to AnnouncementsScreen when a notification carries screen=announcements
+void _handleFcmNavigation(RemoteMessage message) {
+  if (message.data['screen'] == 'announcements') {
+    appNavigatorKey.currentState?.pushNamed('/announcements');
+  }
+}
+
 // Function to send Push notifications via OneSignal API
 Future<void> _sendPushNotificationViaAPI(String message) async {
   final onesignalAppId = _readConfigValue('ONESIGNAL_APP_ID');
@@ -213,12 +265,25 @@ Future<void> _sendPushNotificationViaAPI(String message) async {
   }
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Handle taps on notifications while the app is in the foreground or background
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleFcmNavigation);
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: appNavigatorKey,
       title: 'מרכז רפואי שיבא',
       theme: ThemeData(
         primarySwatch: Colors.blue,
@@ -235,6 +300,10 @@ class MyApp extends StatelessWidget {
         ),
       ),
       home: SplashScreen(),
+      // Named route so FCM navigation can reach AnnouncementsScreen from anywhere
+      routes: {
+        '/announcements': (_) => const AnnouncementsScreen(),
+      },
       debugShowCheckedModeBanner: false,
     );
   }

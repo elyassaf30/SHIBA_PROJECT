@@ -17,6 +17,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'AdminLoginScreen.dart';
 import 'package:rabbi_shiba/utils/theme_helpers.dart';
+import 'package:rabbi_shiba/widgets/announcement_bell_icon.dart';
 import 'package:rabbi_shiba/services/update_service.dart';
 import 'package:rabbi_shiba/screens/rabbi_videos_screen.dart';
 import 'package:rabbi_shiba/screens/ai_chat_screen.dart';
@@ -1510,6 +1511,8 @@ class _EntranceScreenState extends State<EntranceScreen>
         surfaceTintColor: Colors.transparent,
         shadowColor: Colors.transparent,
         iconTheme: IconThemeData(color: _AppColors.navy.withValues(alpha: 0.85)),
+        // Bell icon in the top-right corner; shows red dot when there are unread announcements
+        actions: const [AnnouncementBellIcon()],
       ),
       body: Stack(
         children: [
@@ -1586,7 +1589,7 @@ class _EntranceScreenState extends State<EntranceScreen>
             child: _AiRobotFab(
               onDragUpdate: (dx, dy) {
                 setState(() {
-                  _fabOffsetX += dx;
+                  _fabOffsetX -= dx;
                   _fabOffsetY += dy;
                 });
               },
@@ -2218,7 +2221,7 @@ class _AiRobotFabState extends State<_AiRobotFab> with SingleTickerProviderState
       child: GestureDetector(
         onTap: () => _openChat(context),
         onPanUpdate: (details) {
-          widget.onDragUpdate?.call(details.delta.dx, -details.delta.dy);
+          widget.onDragUpdate?.call(details.delta.dx, details.delta.dy);
         },
         child: SizedBox(
           width: 132,

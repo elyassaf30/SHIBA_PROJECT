@@ -108,18 +108,17 @@ class _AiChatScreenState extends State<AiChatScreen>
 
   String _friendlyError(Object e) {
     final msg = e.toString();
-    if (msg.contains('GROQ_API_KEY') ||
-        msg.contains('חסר') ||
-        msg.contains('לא תקין')) {
-      return msg;
+    debugPrint('❌ AI error (${e.runtimeType}): $e');
+    if (msg.contains('יותר מדי בקשות') || msg.contains('429')) {
+      return 'יותר מדי בקשות. אנא המתן מספר שניות ונסה שוב.';
     }
-    if (msg.toLowerCase().contains('socket') ||
-        msg.toLowerCase().contains('connection')) {
-      return 'אין חיבור לאינטרנט. אנא בדוק את החיבור ונסה שוב.';
+    if (msg.toLowerCase().contains('failed to fetch') ||
+        msg.toLowerCase().contains('xmlhttprequest') ||
+        msg.toLowerCase().contains('socket') ||
+        msg.toLowerCase().contains('network')) {
+      return 'לא הצלחנו להתחבר לשרת. אנא נסה שוב.';
     }
-    if (msg.contains('בקשות') || msg.contains('שניות')) return msg;
-    debugPrint('❌ AI error: $e');
-    return 'אירעה שגיאה. נסה שוב.';
+    return 'שגיאה בשרת AI. נסה שוב מאוחר יותר.';
   }
 
   void _scrollToBottom() {
@@ -148,6 +147,7 @@ class _AiChatScreenState extends State<AiChatScreen>
             SafeArea(
               child: Column(
                 children: [
+                  _buildAiBanner(),
                   Expanded(child: _buildMessageList()),
                   if (_isLoading) _buildTypingIndicator(),
                   _buildInputBar(),
@@ -219,6 +219,36 @@ class _AiChatScreenState extends State<AiChatScreen>
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAiBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.lightBlue.withValues(alpha: 0.6),
+        border: Border(
+          bottom: BorderSide(color: AppColors.divider, width: 0.8),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline_rounded, size: 13, color: AppColors.blue),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'התשובות נוצרות על ידי AI ועשויות לאו דווקא להיות מדויקות — לתשובה המדויקת עברו למסך המופנה',
+              textDirection: TextDirection.rtl,
+              style: GoogleFonts.alef(
+                fontSize: 11.5,
+                color: AppColors.blue,
+                height: 1.4,
+              ),
+            ),
           ),
         ],
       ),

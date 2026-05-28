@@ -1,7 +1,4 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // ─────────────────────────────────────────────
@@ -32,36 +29,148 @@ class AiResponse {
 // ─────────────────────────────────────────────
 
 enum _Category {
-  kashrus, shabbat, holidays, prayer, zmanim,
-  mikveh, niftarim, halacha, contacts, consultation, videos, unknown,
+  kashrus,
+  shabbat,
+  holidays,
+  prayer,
+  zmanim,
+  mikveh,
+  niftarim,
+  halacha,
+  contacts,
+  consultation,
+  videos,
+  unknown,
 }
 
 _Category _detectCategory(String question) {
   final q = question.toLowerCase();
 
-  const kashrusWords      = ['כשר', 'כשרות', 'בשר', 'חלב', 'בשרי', 'חלבי', 'טרף', 'טריף', 'תולעים', 'מאכל'];
-  const shabbatWords      = ['שבת', 'שבתון', 'מלאכה', 'הדלקת נרות', 'הבדלה', 'קידוש', 'ליל שבת', 'שבת שלום'];
-  const holidayWords      = ['פסח', 'סוכות', 'חנוכה', 'פורים', 'ראש השנה', 'יום כיפור', 'שמחת תורה', 'שבועות', 'חג', 'מועד', 'יום טוב', 'ל"ג בעומר', 'לג בעומר'];
-  const prayerWords       = ['תפילה', 'שחרית', 'מנחה', 'ערבית', 'מוסף', 'מתפלל', 'סידור', 'זמן תפילה', 'זמני תפילה', 'להתפלל', 'תפילות'];
-  const zmanimWords       = ['הנץ', 'שקיעה', 'חצות', 'עלות השחר', 'צאת הכוכבים', 'זמני היום', 'פלג המנחה', 'זמנים הלכתיים', 'זמן ק"ש'];
-  const mikvehWords       = ['מקווה', 'טבילה', 'טהרה', 'טהור', 'טמא', 'נידה'];
-  const niftarimWords     = ['נפטר', 'פטירה', 'אבל', 'שבעה', 'קבורה', 'גסיסה', 'נפטרים', 'הלוויה', 'גוסס'];
-  const halachaWords      = ['כהן', 'טומאה', 'תפילין', 'הלכה', 'איסור', 'מותר', 'אסור', 'טומאת כהנים'];
-  const contactsWords     = ['טלפון', 'אנשי קשר', 'להתקשר', 'כתובת', 'יצירת קשר', 'לפנות', 'ווטסאפ של'];
-  const consultationWords = ['ייעוץ', 'שאלה לרב', 'לשאול רב', 'ייעוץ הלכתי', 'פנה לרב', 'עם הרב', 'לדבר עם', 'לשוחח עם', 'שיחה עם'];
-  const videosWords       = ['סרטון', 'סרטונים', 'וידאו', 'שיעור', 'שיעורים', 'לצפות', 'צפייה', 'סרטי הרב'];
+  const kashrusWords = [
+    'כשר',
+    'כשרות',
+    'בשר',
+    'חלב',
+    'בשרי',
+    'חלבי',
+    'טרף',
+    'טריף',
+    'תולעים',
+    'מאכל',
+  ];
+  const shabbatWords = [
+    'שבת',
+    'שבתון',
+    'מלאכה',
+    'הדלקת נרות',
+    'הבדלה',
+    'קידוש',
+    'ליל שבת',
+    'שבת שלום',
+  ];
+  const holidayWords = [
+    'פסח',
+    'סוכות',
+    'חנוכה',
+    'פורים',
+    'ראש השנה',
+    'יום כיפור',
+    'שמחת תורה',
+    'שבועות',
+    'חג',
+    'מועד',
+    'יום טוב',
+    'ל"ג בעומר',
+    'לג בעומר',
+  ];
+  const prayerWords = [
+    'תפילה',
+    'שחרית',
+    'מנחה',
+    'ערבית',
+    'מוסף',
+    'מתפלל',
+    'סידור',
+    'זמן תפילה',
+    'זמני תפילה',
+    'להתפלל',
+    'תפילות',
+  ];
+  const zmanimWords = [
+    'הנץ',
+    'שקיעה',
+    'חצות',
+    'עלות השחר',
+    'צאת הכוכבים',
+    'זמני היום',
+    'פלג המנחה',
+    'זמנים הלכתיים',
+    'זמן ק"ש',
+  ];
+  const mikvehWords = ['מקווה', 'טבילה', 'טהרה', 'טהור', 'טמא', 'נידה'];
+  const niftarimWords = [
+    'נפטר',
+    'פטירה',
+    'אבל',
+    'שבעה',
+    'קבורה',
+    'גסיסה',
+    'נפטרים',
+    'הלוויה',
+    'גוסס',
+  ];
+  const halachaWords = [
+    'כהן',
+    'טומאה',
+    'תפילין',
+    'הלכה',
+    'איסור',
+    'מותר',
+    'אסור',
+    'טומאת כהנים',
+  ];
+  const contactsWords = [
+    'טלפון',
+    'אנשי קשר',
+    'להתקשר',
+    'כתובת',
+    'יצירת קשר',
+    'לפנות',
+    'ווטסאפ של',
+  ];
+  const consultationWords = [
+    'ייעוץ',
+    'שאלה לרב',
+    'לשאול רב',
+    'ייעוץ הלכתי',
+    'פנה לרב',
+    'עם הרב',
+    'לדבר עם',
+    'לשוחח עם',
+    'שיחה עם',
+  ];
+  const videosWords = [
+    'סרטון',
+    'סרטונים',
+    'וידאו',
+    'שיעור',
+    'שיעורים',
+    'לצפות',
+    'צפייה',
+    'סרטי הרב',
+  ];
 
-  if (kashrusWords.any(q.contains))       return _Category.kashrus;
-  if (shabbatWords.any(q.contains))       return _Category.shabbat;
-  if (holidayWords.any(q.contains))       return _Category.holidays;
-  if (prayerWords.any(q.contains))        return _Category.prayer;
-  if (zmanimWords.any(q.contains))        return _Category.zmanim;
-  if (mikvehWords.any(q.contains))        return _Category.mikveh;
-  if (niftarimWords.any(q.contains))      return _Category.niftarim;
-  if (halachaWords.any(q.contains))       return _Category.halacha;
-  if (contactsWords.any(q.contains))      return _Category.contacts;
-  if (consultationWords.any(q.contains))  return _Category.consultation;
-  if (videosWords.any(q.contains))        return _Category.videos;
+  if (kashrusWords.any(q.contains)) return _Category.kashrus;
+  if (shabbatWords.any(q.contains)) return _Category.shabbat;
+  if (holidayWords.any(q.contains)) return _Category.holidays;
+  if (prayerWords.any(q.contains)) return _Category.prayer;
+  if (zmanimWords.any(q.contains)) return _Category.zmanim;
+  if (mikvehWords.any(q.contains)) return _Category.mikveh;
+  if (niftarimWords.any(q.contains)) return _Category.niftarim;
+  if (halachaWords.any(q.contains)) return _Category.halacha;
+  if (contactsWords.any(q.contains)) return _Category.contacts;
+  if (consultationWords.any(q.contains)) return _Category.consultation;
+  if (videosWords.any(q.contains)) return _Category.videos;
   return _Category.unknown;
 }
 
@@ -71,9 +180,7 @@ _Category _detectCategory(String question) {
 
 class AiService {
   static final _supabase = Supabase.instance.client;
-
-  static const _groqUrl = 'https://api.groq.com/openai/v1/chat/completions';
-  static const _model = 'llama-3.3-70b-versatile';
+  static const String _logTag = 'AiService';
 
   static const _systemPrompt =
       'אתה עוזר AI של מרכז רפואי שיבא, המתמחה בנושאי כשרות, שבת, חגים, הלכות ומידע תורני. '
@@ -82,16 +189,6 @@ class AiService {
       'כשיש מסך רלוונטי באפליקציה, ציין בקצרה שניתן לעבור אליו. '
       'אם המידע אינו כולל תשובה ישירה לשאלה, ציין זאת ואמור שכדאי לפנות ישירות לצוות. '
       'הצג תשובות קצרות וברורות.';
-
-  static String _readApiKey() {
-    const defined = String.fromEnvironment('GROQ_API_KEY');
-    if (defined.isNotEmpty) return defined;
-    try {
-      return dotenv.env['GROQ_API_KEY'] ?? '';
-    } catch (_) {
-      return '';
-    }
-  }
 
   // ── Static context docs for screens with no Supabase text ────
 
@@ -169,19 +266,25 @@ class AiService {
     switch (category) {
       case _Category.prayer:
         if (lacks('תפילה')) {
-          docs.add(const KnowledgeDoc(
-            content: 'מסך "זמני תפילות" מציג את שעות שחרית, מנחה וערבית במרכז הרפואי שיבא.',
-            category: 'תפילה',
-            metadata: {'source': 'זמני תפילות ימי חול'},
-          ));
+          docs.add(
+            const KnowledgeDoc(
+              content:
+                  'מסך "זמני תפילות" מציג את שעות שחרית, מנחה וערבית במרכז הרפואי שיבא.',
+              category: 'תפילה',
+              metadata: {'source': 'זמני תפילות ימי חול'},
+            ),
+          );
         }
       case _Category.holidays:
         if (lacks('חגים')) {
-          docs.add(const KnowledgeDoc(
-            content: 'מסך "מועדי ישראל" מכיל מידע על פסח, סוכות, חנוכה, פורים, ראש השנה, יום כיפור, שבועות ועוד.',
-            category: 'חגים',
-            metadata: {'source': 'מועדי ישראל'},
-          ));
+          docs.add(
+            const KnowledgeDoc(
+              content:
+                  'מסך "מועדי ישראל" מכיל מידע על פסח, סוכות, חנוכה, פורים, ראש השנה, יום כיפור, שבועות ועוד.',
+              category: 'חגים',
+              metadata: {'source': 'מועדי ישראל'},
+            ),
+          );
         }
       case _Category.zmanim:
         docs.add(_zmanimDoc);
@@ -191,51 +294,65 @@ class AiService {
         docs.add(_consultationDoc);
       case _Category.kashrus:
         if (lacks('כשרות')) {
-          docs.add(const KnowledgeDoc(
-            content: 'מסך "כשרות" מכיל מידע על כשרות המזון במרכז הרפואי שיבא.',
-            category: 'כשרות',
-            metadata: {'source': 'כשרות'},
-          ));
+          docs.add(
+            const KnowledgeDoc(
+              content:
+                  'מסך "כשרות" מכיל מידע על כשרות המזון במרכז הרפואי שיבא.',
+              category: 'כשרות',
+              metadata: {'source': 'כשרות'},
+            ),
+          );
         }
       case _Category.shabbat:
         if (lacks('שבת')) {
-          docs.add(const KnowledgeDoc(
-            content: 'מסך "שבת" מכיל מידע על שמירת שבת במרכז הרפואי שיבא.',
-            category: 'שבת',
-            metadata: {'source': 'שבת'},
-          ));
+          docs.add(
+            const KnowledgeDoc(
+              content: 'מסך "שבת" מכיל מידע על שמירת שבת במרכז הרפואי שיבא.',
+              category: 'שבת',
+              metadata: {'source': 'שבת'},
+            ),
+          );
         }
       case _Category.mikveh:
         if (lacks('מקווה')) {
-          docs.add(const KnowledgeDoc(
-            content: 'מסך "מקווה" מכיל מידע על הלכות מקווה.',
-            category: 'מקווה',
-            metadata: {'source': 'מקווה'},
-          ));
+          docs.add(
+            const KnowledgeDoc(
+              content: 'מסך "מקווה" מכיל מידע על הלכות מקווה.',
+              category: 'מקווה',
+              metadata: {'source': 'מקווה'},
+            ),
+          );
         }
       case _Category.niftarim:
         if (lacks('נפטרים')) {
-          docs.add(const KnowledgeDoc(
-            content: 'מסך "נפטרים" מכיל מידע על הלכות נפטרים.',
-            category: 'נפטרים',
-            metadata: {'source': 'נפטרים'},
-          ));
+          docs.add(
+            const KnowledgeDoc(
+              content: 'מסך "נפטרים" מכיל מידע על הלכות נפטרים.',
+              category: 'נפטרים',
+              metadata: {'source': 'נפטרים'},
+            ),
+          );
         }
       case _Category.halacha:
         if (lacks('הלכה')) {
-          docs.add(const KnowledgeDoc(
-            content: 'מסך "טומאת כהנים" מכיל הלכות הנוגעות לכהנים בבית החולים.',
-            category: 'הלכה',
-            metadata: {'source': 'הלכה'},
-          ));
+          docs.add(
+            const KnowledgeDoc(
+              content:
+                  'מסך "טומאת כהנים" מכיל הלכות הנוגעות לכהנים בבית החולים.',
+              category: 'הלכה',
+              metadata: {'source': 'הלכה'},
+            ),
+          );
         }
       case _Category.contacts:
         if (lacks('אנשי קשר')) {
-          docs.add(const KnowledgeDoc(
-            content: 'מסך "אנשי קשר" מכיל פרטי יצירת קשר.',
-            category: 'אנשי קשר',
-            metadata: {'source': 'אנשי קשר'},
-          ));
+          docs.add(
+            const KnowledgeDoc(
+              content: 'מסך "אנשי קשר" מכיל פרטי יצירת קשר.',
+              category: 'אנשי קשר',
+              metadata: {'source': 'אנשי קשר'},
+            ),
+          );
         }
       default:
         break;
@@ -282,29 +399,30 @@ class AiService {
 
   // שולף מטבלת "מועדי ישראל"
   static Future<List<KnowledgeDoc>> _fetchHolidays(String question) async {
-    final rows =
-        await _supabase.from('מועדי ישראל').select('מידע, סוג המועד');
+    final rows = await _supabase.from('מועדי ישראל').select('מידע, סוג המועד');
 
-    final all = (rows as List<dynamic>)
-        .map(
-          (r) => KnowledgeDoc(
-            content: r['מידע']?.toString() ?? '',
-            category: 'חגים',
-            metadata: {
-              'source': 'מועדי ישראל',
-              'holiday': r['סוג המועד']?.toString() ?? '',
-            },
-          ),
-        )
-        .where((d) => d.content.isNotEmpty)
-        .toList();
+    final all =
+        (rows as List<dynamic>)
+            .map(
+              (r) => KnowledgeDoc(
+                content: r['מידע']?.toString() ?? '',
+                category: 'חגים',
+                metadata: {
+                  'source': 'מועדי ישראל',
+                  'holiday': r['סוג המועד']?.toString() ?? '',
+                },
+              ),
+            )
+            .where((d) => d.content.isNotEmpty)
+            .toList();
 
     // מסנן לחג ספציפי אם מוזכר בשאלה, אחרת מחזיר הכל
     final q = question.toLowerCase();
-    final specific = all.where((d) {
-      final holiday = d.metadata['holiday']?.toString() ?? '';
-      return holiday.isNotEmpty && q.contains(holiday.toLowerCase());
-    }).toList();
+    final specific =
+        all.where((d) {
+          final holiday = d.metadata['holiday']?.toString() ?? '';
+          return holiday.isNotEmpty && q.contains(holiday.toLowerCase());
+        }).toList();
 
     return specific.isNotEmpty ? specific : all;
   }
@@ -315,80 +433,71 @@ class AiService {
         .from('זמני תפילות ימי חול')
         .select('סוג תפילה, שעה, הערות');
 
-    return (rows as List<dynamic>).map((r) {
-      final type  = r['סוג תפילה']?.toString() ?? '';
-      final time  = r['שעה']?.toString() ?? '';
-      final notes = r['הערות']?.toString() ?? '';
-      final content = '$type — $time${notes.isNotEmpty ? ' ($notes)' : ''}';
-      return KnowledgeDoc(
-        content: content,
-        category: 'תפילה',
-        metadata: {'source': 'זמני תפילות ימי חול', 'type': type},
-      );
-    }).where((d) => d.content.trim() != '—').toList();
+    return (rows as List<dynamic>)
+        .map((r) {
+          final type = r['סוג תפילה']?.toString() ?? '';
+          final time = r['שעה']?.toString() ?? '';
+          final notes = r['הערות']?.toString() ?? '';
+          final content = '$type — $time${notes.isNotEmpty ? ' ($notes)' : ''}';
+          return KnowledgeDoc(
+            content: content,
+            category: 'תפילה',
+            metadata: {'source': 'זמני תפילות ימי חול', 'type': type},
+          );
+        })
+        .where((d) => d.content.trim() != '—')
+        .toList();
   }
 
-  // ── קריאה ל-Groq ─────────────────────────────────────────
+  // ── קריאה ל-Groq דרך Supabase RPC (PostgreSQL http extension) ──
+  // Uses /rest/v1/rpc which works on all platforms including mobile browsers,
+  // avoiding the Deno Deploy infrastructure used by Edge Functions.
 
   static Future<String> _generate(String prompt) async {
-    final apiKey = _readApiKey();
-    if (apiKey.isEmpty || apiKey == 'YOUR_GROQ_API_KEY_HERE') {
-      throw Exception(
-        'GROQ_API_KEY חסר.\n'
-        'במובייל: הוסף ל-.env\n'
-        'בווב: בנה עם: flutter build web --dart-define=GROQ_API_KEY=your_key',
-      );
-    }
+    debugPrint('[$_logTag] Sending prompt via RPC call_groq.');
+    debugPrint('[$_logTag] Prompt length: ${prompt.length}');
 
-    final response = await http
-        .post(
-          Uri.parse(_groqUrl),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $apiKey',
-          },
-          body: jsonEncode({
-            'model': _model,
-            'messages': [
-              {'role': 'system', 'content': _systemPrompt},
-              {'role': 'user', 'content': prompt},
-            ],
-            'temperature': 0.3,
-            'max_tokens': 1024,
-          }),
-        )
-        .timeout(const Duration(seconds: 30));
+    final data = await _supabase
+        .rpc('call_groq', params: {
+          'messages': [
+            {'role': 'system', 'content': _systemPrompt},
+            {'role': 'user', 'content': prompt},
+          ],
+          'temperature': 0.3,
+          'max_tokens': 1024,
+        })
+        .timeout(const Duration(seconds: 45));
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      return (data['choices'] as List?)
-              ?.firstOrNull?['message']?['content'] as String? ??
-          'לא התקבלה תשובה.';
-    }
+    debugPrint('[$_logTag] RPC call_groq succeeded.');
 
-    if (response.statusCode == 429) {
-      throw Exception('יותר מדי בקשות. נסה שוב בעוד מספר שניות.');
-    }
-    if (response.statusCode == 401) {
-      throw Exception('GROQ_API_KEY לא תקין. בדוק את המפתח ב-.env');
-    }
+    final answer =
+        (data['choices'] as List?)?.firstOrNull?['message']?['content']
+            as String? ??
+        'לא התקבלה תשובה.';
 
-    debugPrint('❌ Groq error ${response.statusCode}: ${response.body}');
-    throw Exception('שגיאה בשרת AI. נסה שוב.');
+    debugPrint('[$_logTag] Answer length: ${answer.length}');
+    return answer;
   }
 
   // ── ask — הממשק הראשי ─────────────────────────────────────
 
   static Future<AiResponse> ask(String question) async {
+    debugPrint('[$_logTag] ask() received question: $question');
     final docs = await searchKnowledge(question);
+    debugPrint('[$_logTag] searchKnowledge returned ${docs.length} docs.');
 
-    final context = docs.isEmpty
-        ? 'לא נמצא מידע ספציפי במאגר המרכז לשאלה זו.'
-        : docs.map((d) => '【${d.category}】 ${d.content}').join('\n\n');
+    final context =
+        docs.isEmpty
+            ? 'לא נמצא מידע ספציפי במאגר המרכז לשאלה זו.'
+            : docs.map((d) => '【${d.category}】 ${d.content}').join('\n\n');
+
+    debugPrint('[$_logTag] Context length: ${context.length}');
 
     final prompt = 'מידע רשמי מהמאגר:\n$context\n\nשאלה: $question';
 
     final answer = await _generate(prompt);
+
+    debugPrint('[$_logTag] ask() completed successfully.');
 
     return AiResponse(answer: answer, sources: docs);
   }

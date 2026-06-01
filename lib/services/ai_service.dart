@@ -43,135 +43,81 @@ enum _Category {
   unknown,
 }
 
-_Category _detectCategory(String question) {
+// מחזיר קבוצה של כל הקטגוריות שזוהו בשאלה (תומך בריבוי קטגוריות)
+Set<_Category> _detectCategories(String question) {
   final q = question.toLowerCase();
+  final found = <_Category>{};
 
   const kashrusWords = [
-    'כשר',
-    'כשרות',
-    'בשר',
-    'חלב',
-    'בשרי',
-    'חלבי',
-    'טרף',
-    'טריף',
-    'תולעים',
-    'מאכל',
+    'כשר', 'כשרות', 'בשר', 'חלב', 'בשרי', 'חלבי', 'טרף', 'טריף',
+    'תולעים', 'מאכל', 'אוכל', 'מזון', 'בישול', 'פירות', 'ירקות',
+    'חלק', 'גלאט', 'שחיטה', 'סכין',
   ];
   const shabbatWords = [
-    'שבת',
-    'שבתון',
-    'מלאכה',
-    'הדלקת נרות',
-    'הבדלה',
-    'קידוש',
-    'ליל שבת',
-    'שבת שלום',
+    'שבת', 'שבתון', 'מלאכה', 'הדלקת נרות', 'הבדלה', 'קידוש',
+    'ליל שבת', 'שבת שלום', 'שמירת שבת', 'שבת קודש', 'לאחר שבת',
+    'כניסת שבת', 'יציאת שבת', 'חילול שבת', 'לפני שבת',
   ];
   const holidayWords = [
-    'פסח',
-    'סוכות',
-    'חנוכה',
-    'פורים',
-    'ראש השנה',
-    'יום כיפור',
-    'שמחת תורה',
-    'שבועות',
-    'חג',
-    'מועד',
-    'יום טוב',
-    'ל"ג בעומר',
-    'לג בעומר',
+    'פסח', 'סוכות', 'חנוכה', 'פורים', 'ראש השנה', 'יום כיפור',
+    'שמחת תורה', 'שבועות', 'חג', 'מועד', 'יום טוב', 'ל"ג בעומר',
+    'לג בעומר', 'ראש חודש', 'תשעה באב', 'צום', 'ספירת העומר',
+    'שמיני עצרת', 'הושענא רבה', 'לג', 'עומר', 'שמיטה', 'יובל',
   ];
   const prayerWords = [
-    'תפילה',
-    'שחרית',
-    'מנחה',
-    'ערבית',
-    'מוסף',
-    'מתפלל',
-    'סידור',
-    'זמן תפילה',
-    'זמני תפילה',
-    'להתפלל',
-    'תפילות',
+    'תפילה', 'שחרית', 'מנחה', 'ערבית', 'מוסף', 'מתפלל', 'סידור',
+    'זמן תפילה', 'זמני תפילה', 'להתפלל', 'תפילות', 'בית כנסת',
+    'כנסת', 'בית הכנסת', 'מניין', 'חזן', 'קריאת שמע', 'עמידה',
+    'שמונה עשרה', 'קדיש', 'הלל', 'מוסף', 'נעילה',
   ];
   const zmanimWords = [
-    'הנץ',
-    'שקיעה',
-    'חצות',
-    'עלות השחר',
-    'צאת הכוכבים',
-    'זמני היום',
-    'פלג המנחה',
-    'זמנים הלכתיים',
-    'זמן ק"ש',
+    'הנץ', 'שקיעה', 'חצות', 'עלות השחר', 'צאת הכוכבים', 'זמני היום',
+    'פלג המנחה', 'זמנים הלכתיים', 'זמן ק"ש', 'זמן', 'זמני',
+    'שעה', 'כמה בשעה', 'מתי', 'שקיעת החמה', 'נץ החמה',
   ];
-  const mikvehWords = ['מקווה', 'טבילה', 'טהרה', 'טהור', 'טמא', 'נידה'];
+  const mikvehWords = [
+    'מקווה', 'טבילה', 'טהרה', 'טהור', 'טמא', 'נידה',
+    'טבול', 'לטבול', 'מי מקווה', 'חציצה', 'ספירה',
+  ];
   const niftarimWords = [
-    'נפטר',
-    'פטירה',
-    'אבל',
-    'שבעה',
-    'קבורה',
-    'גסיסה',
-    'נפטרים',
-    'הלוויה',
-    'גוסס',
+    'נפטר', 'פטירה', 'אבל', 'שבעה', 'קבורה', 'גסיסה',
+    'נפטרים', 'הלוויה', 'גוסס', 'מת', 'מוות', 'מיתה',
+    'אנינות', 'מקום קבורה', 'קבר', 'אשכבה', 'לוויה',
   ];
   const halachaWords = [
-    'כהן',
-    'טומאה',
-    'תפילין',
-    'הלכה',
-    'איסור',
-    'מותר',
-    'אסור',
-    'טומאת כהנים',
+    'כהן', 'טומאה', 'תפילין', 'הלכה', 'איסור', 'מותר', 'אסור',
+    'טומאת כהנים', 'כהנים', 'מצווה', 'דין', 'פסק', 'פסיקה',
+    'שאלה הלכתית', 'מנהג', 'רבנות', 'שאלה',
   ];
   const contactsWords = [
-    'טלפון',
-    'אנשי קשר',
-    'להתקשר',
-    'כתובת',
-    'יצירת קשר',
-    'לפנות',
-    'ווטסאפ של',
+    'טלפון', 'אנשי קשר', 'להתקשר', 'כתובת', 'יצירת קשר',
+    'לפנות', 'ווטסאפ של', 'מספר', 'שלוחה', 'פקס', 'דוא"ל',
+    'איפה', 'היכן', 'מיקום', 'קומה',
   ];
   const consultationWords = [
-    'ייעוץ',
-    'שאלה לרב',
-    'לשאול רב',
-    'ייעוץ הלכתי',
-    'פנה לרב',
-    'עם הרב',
-    'לדבר עם',
-    'לשוחח עם',
-    'שיחה עם',
+    'ייעוץ', 'שאלה לרב', 'לשאול רב', 'ייעוץ הלכתי', 'פנה לרב',
+    'עם הרב', 'לדבר עם', 'לשוחח עם', 'שיחה עם', 'הרב',
+    'רב', 'פניה לרב', 'להתייעץ', 'ייעוץ דתי', 'רב בית החולים',
   ];
   const videosWords = [
-    'סרטון',
-    'סרטונים',
-    'וידאו',
-    'שיעור',
-    'שיעורים',
-    'לצפות',
-    'צפייה',
-    'סרטי הרב',
+    'סרטון', 'סרטונים', 'וידאו', 'שיעור', 'שיעורים', 'לצפות',
+    'צפייה', 'סרטי הרב', 'יוטיוב', 'הרצאה', 'הרצאות',
+    'לצפות', 'כלים', 'שידור',
   ];
 
-  if (kashrusWords.any(q.contains)) return _Category.kashrus;
-  if (shabbatWords.any(q.contains)) return _Category.shabbat;
-  if (holidayWords.any(q.contains)) return _Category.holidays;
-  if (prayerWords.any(q.contains)) return _Category.prayer;
-  if (zmanimWords.any(q.contains)) return _Category.zmanim;
-  if (mikvehWords.any(q.contains)) return _Category.mikveh;
-  if (niftarimWords.any(q.contains)) return _Category.niftarim;
-  if (halachaWords.any(q.contains)) return _Category.halacha;
-  if (contactsWords.any(q.contains)) return _Category.contacts;
-  if (consultationWords.any(q.contains)) return _Category.consultation;
-  if (videosWords.any(q.contains)) return _Category.videos;
-  return _Category.unknown;
+  if (kashrusWords.any(q.contains)) found.add(_Category.kashrus);
+  if (shabbatWords.any(q.contains)) found.add(_Category.shabbat);
+  if (holidayWords.any(q.contains)) found.add(_Category.holidays);
+  if (prayerWords.any(q.contains)) found.add(_Category.prayer);
+  if (zmanimWords.any(q.contains)) found.add(_Category.zmanim);
+  if (mikvehWords.any(q.contains)) found.add(_Category.mikveh);
+  if (niftarimWords.any(q.contains)) found.add(_Category.niftarim);
+  if (halachaWords.any(q.contains)) found.add(_Category.halacha);
+  if (contactsWords.any(q.contains)) found.add(_Category.contacts);
+  if (consultationWords.any(q.contains)) found.add(_Category.consultation);
+  if (videosWords.any(q.contains)) found.add(_Category.videos);
+
+  return found.isEmpty ? {_Category.unknown} : found;
 }
 
 // ─────────────────────────────────────────────
@@ -185,10 +131,12 @@ class AiService {
   static const _systemPrompt =
       'אתה עוזר AI של מרכז רפואי שיבא, המתמחה בנושאי כשרות, שבת, חגים, הלכות ומידע תורני. '
       'ענה תמיד בעברית רהוטה ומנומסת. '
-      'הסתמך אך ורק על המידע שסופק בהקשר — זה המידע הרשמי של המרכז. '
-      'כשיש מסך רלוונטי באפליקציה, ציין בקצרה שניתן לעבור אליו. '
-      'אם המידע אינו כולל תשובה ישירה לשאלה, ציין זאת ואמור שכדאי לפנות ישירות לצוות. '
-      'הצג תשובות קצרות וברורות.';
+      'כלל חשוב: הסתמך אך ורק על המידע שסופק בהקשר הבא — זהו המידע הרשמי והעדכני של המרכז. '
+      'אם בהקשר מופיעים זמני תפילות, שעות, הלכות, או מידע ספציפי — ציטט אותם ישירות בתשובתך. '
+      'אם בהקשר יש כמה פריטי מידע רלוונטיים — שלב אותם לתשובה אחת מסודרת. '
+      'כשיש מסך רלוונטי באפליקציה (כגון: זמני תפילות, כשרות, שבת, מועדי ישראל) — הזכר בקצרה שניתן לעבור אליו לפרטים מלאים. '
+      'אם ההקשר אינו מכיל תשובה ישירה לשאלה — ציין זאת בכנות ואמור שכדאי לפנות לצוות הרב. '
+      'הצג תשובות קצרות, ברורות ומסודרות. השתמש בנקודות רשימה (•) כשיש מספר פרטים.';
 
   // ── Static context docs for screens with no Supabase text ────
 
@@ -221,40 +169,64 @@ class AiService {
   // ── חיפוש ישיר בטבלאות המקוריות לפי קטגוריה ─────────────
 
   static Future<List<KnowledgeDoc>> searchKnowledge(String question) async {
-    final category = _detectCategory(question);
+    final categories = _detectCategories(question);
     final docs = <KnowledgeDoc>[];
 
     try {
-      switch (category) {
-        case _Category.kashrus:
-          docs.addAll(await _fetchKlali('כשרות', 'כשרות'));
-        case _Category.shabbat:
-          docs.addAll(await _fetchShabbat());
-        case _Category.holidays:
-          docs.addAll(await _fetchHolidays(question));
-        case _Category.prayer:
-          docs.addAll(await _fetchPrayers());
-        case _Category.mikveh:
-          docs.addAll(await _fetchKlali('מקווה', 'מקווה'));
-        case _Category.niftarim:
-          docs.addAll(await _fetchKlali('נפטרים', 'נפטרים'));
-        case _Category.halacha:
-          docs.addAll(await _fetchKlali('טומאת כהנים', 'הלכה'));
-          docs.addAll(await _fetchKlali('שאילת תפילין', 'הלכה'));
-        case _Category.contacts:
-          docs.addAll(await _fetchKlali('אנשי קשר', 'אנשי קשר'));
-        case _Category.unknown:
-          docs.addAll(await _fetchKlali('כשרות', 'כשרות'));
-          docs.addAll(await _fetchShabbat());
-        default:
-          break;
+      // כשקטגוריה לא זוהתה — שולפים מכל הטבלאות
+      if (categories.contains(_Category.unknown)) {
+        final results = await Future.wait([
+          _fetchKlali('כשרות', 'כשרות'),
+          _fetchShabbat(),
+          _fetchHolidays(question),
+          _fetchPrayers(),
+          _fetchKlali('מקווה', 'מקווה'),
+          _fetchKlali('נפטרים', 'נפטרים'),
+          _fetchKlali('טומאת כהנים', 'הלכה'),
+          _fetchKlali('אנשי קשר', 'אנשי קשר'),
+        ]);
+        for (final r in results) {
+          docs.addAll(r);
+        }
+      } else {
+        // שולפים במקביל מכל הקטגוריות שזוהו
+        final futures = <Future<List<KnowledgeDoc>>>[];
+        for (final cat in categories) {
+          switch (cat) {
+            case _Category.kashrus:
+              futures.add(_fetchKlali('כשרות', 'כשרות'));
+            case _Category.shabbat:
+              futures.add(_fetchShabbat());
+            case _Category.holidays:
+              futures.add(_fetchHolidays(question));
+            case _Category.prayer:
+              futures.add(_fetchPrayers());
+            case _Category.mikveh:
+              futures.add(_fetchKlali('מקווה', 'מקווה'));
+            case _Category.niftarim:
+              futures.add(_fetchKlali('נפטרים', 'נפטרים'));
+            case _Category.halacha:
+              futures.add(_fetchKlali('טומאת כהנים', 'הלכה'));
+              futures.add(_fetchKlali('שאילת תפילין', 'הלכה'));
+            case _Category.contacts:
+              futures.add(_fetchKlali('אנשי קשר', 'אנשי קשר'));
+            default:
+              break;
+          }
+        }
+        final results = await Future.wait(futures);
+        for (final r in results) {
+          docs.addAll(r);
+        }
       }
     } catch (e) {
       debugPrint('⚠️ searchKnowledge error: $e');
     }
 
-    // Always guarantee a navigation doc — runs even if DB query failed/empty
-    _ensureNavDoc(category, docs);
+    // מבטיח doc ניווט לכל קטגוריה שזוהתה
+    for (final cat in categories) {
+      _ensureNavDoc(cat, docs);
+    }
 
     return docs;
   }
@@ -287,11 +259,11 @@ class AiService {
           );
         }
       case _Category.zmanim:
-        docs.add(_zmanimDoc);
+        if (lacks('זמני היום')) docs.add(_zmanimDoc);
       case _Category.videos:
-        docs.add(_videosDoc);
+        if (lacks('סרטוני הרב')) docs.add(_videosDoc);
       case _Category.consultation:
-        docs.add(_consultationDoc);
+        if (lacks('ייעוץ הלכתי רפואי')) docs.add(_consultationDoc);
       case _Category.kashrus:
         if (lacks('כשרות')) {
           docs.add(

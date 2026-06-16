@@ -14,10 +14,21 @@ class AnnouncementBellIcon extends StatefulWidget {
 class _AnnouncementBellIconState extends State<AnnouncementBellIcon> {
   bool _hasUnread = false;
 
+  void _handleRefreshTick() {
+    _checkUnread();
+  }
+
   @override
   void initState() {
     super.initState();
+    AnnouncementService.refreshTick.addListener(_handleRefreshTick);
     _checkUnread();
+  }
+
+  @override
+  void dispose() {
+    AnnouncementService.refreshTick.removeListener(_handleRefreshTick);
+    super.dispose();
   }
 
   Future<void> _checkUnread() async {

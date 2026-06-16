@@ -7,6 +7,11 @@ const _kLastReadKey = 'last_read_announcement_id';
 
 class AnnouncementService {
   static final _client = Supabase.instance.client;
+  static final ValueNotifier<int> refreshTick = ValueNotifier<int>(0);
+
+  static void _notifyBadgeRefresh() {
+    refreshTick.value++;
+  }
 
   // Fetch all announcements, newest first
   static Future<List<Map<String, dynamic>>> fetchAll() async {
@@ -52,6 +57,7 @@ class AnnouncementService {
       if (latestId == null) return;
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_kLastReadKey, latestId);
+      _notifyBadgeRefresh();
     } catch (e) {
       debugPrint('AnnouncementService.markAllRead error: $e');
     }
@@ -69,18 +75,29 @@ class AnnouncementService {
       'content': content,
     });
 
-    // 2. Call the Edge Function — it broadcasts the announcement to push subscribers
-    final response = await _client.functions.invoke(
-      'send-announcement',
-      body: {'title': title, 'body': content},
-      headers: {'Authorization': 'Bearer $supabaseAccessToken'},
-    );
+    _notifyBadgeRefresh();
 
-    if (response.status != 200) {
-      throw Exception(
-        'Edge Function error ${response.status}: ${response.data}',
+    // 2. Call the Edge Function — it broadcasts the announcement to push subscribers
+    try {
+      final response = await _client.functions.invoke(
+        'send-announcement',
+        body: {'title': title, 'body': content},
+        headers: {'Authorization': 'Bearer $supabaseAccessToken'},
       );
+
+      if (response.status < 200 || response.status >= 300) {
+        debugPrint(
+          'AnnouncementService.sendAnnouncement broadcast failed: '
+          'status=${response.status}, data=${response.data}',
+        );
+      }
+    } catch (e) {
+      debugPrint('AnnouncementService.sendAnnouncement broadcast error: $e');
     }
+  }
+
+  static void refreshUnreadBadge() {
+    _notifyBadgeRefresh();
   }
 
   // Permanently delete an announcement by its ID

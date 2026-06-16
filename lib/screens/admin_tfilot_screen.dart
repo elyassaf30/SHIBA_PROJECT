@@ -1,10 +1,12 @@
 // lib/screens/admin_tefilot_screen.dart
 
+import 'dart:async' show unawaited;
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rabbi_shiba/screens/entrance_screen.dart';
 import 'package:rabbi_shiba/screens/admin_notification_screen.dart';
+import 'package:rabbi_shiba/services/announcement_service.dart';
 import 'package:rabbi_shiba/utils/theme_helpers.dart';
 
 class AdminTefilotScreen extends StatefulWidget {
@@ -155,31 +157,61 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen> {
     );
   }
 
+  String _formatTimeDisplay(String time) {
+    if (time.length >= 5) return time.substring(0, 5);
+    return time;
+  }
+
   Future<void> _saveTefilotData() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSaving = true);
+
+    // Snapshot original times before saving
+    final Map<String, String> originalTimes = {
+      for (var item in _tefilotData)
+        if (_safeIdAsString(item['id']).isNotEmpty)
+          _safeIdAsString(item['id']): item['שעה'] as String? ?? '',
+    };
+
+    final List<String> changeDescriptions = [];
 
     try {
       for (var item in _tefilotData) {
         final idStr = _safeIdAsString(item['id']);
         if (idStr.isEmpty) continue;
+        final newTime = _timeControllers[idStr]?.text.trim() ?? '';
+        final oldTime = originalTimes[idStr] ?? '';
+
         await supabase
             .from('זמני תפילות ימי חול')
             .update({
-              'שעה': _timeControllers[idStr]?.text.trim() ?? '',
+              'שעה': newTime,
               'הערות': _notesControllers[idStr]?.text.trim() ?? '',
               'סוג תפילה': item['סוג תפילה'],
             })
             .eq('id', idStr);
+
+        if (newTime.isNotEmpty && newTime != oldTime) {
+          final type = item['סוג תפילה'] as String? ?? '';
+          changeDescriptions.add(
+            'עודכנה תפילת $type מהשעה ${_formatTimeDisplay(oldTime)} לשעה ${_formatTimeDisplay(newTime)}',
+          );
+        }
       }
 
       if (_selectedNewTefilaType != null &&
           _newTefilaTimeDisplayController.text.trim().isNotEmpty) {
+        final newType = _selectedNewTefilaType!;
+        final newTime = _newTefilaTimeDisplayController.text.trim();
+
         await supabase.from('זמני תפילות ימי חול').insert({
-          'שעה': _newTefilaTimeDisplayController.text.trim(),
+          'שעה': newTime,
           'הערות': _newTefilaNotesController.text.trim(),
-          'סוג תפילה': _selectedNewTefilaType!,
+          'סוג תפילה': newType,
         });
+
+        changeDescriptions.add('נוספה תפילת $newType בשעה ${_formatTimeDisplay(newTime)}');
+
         setState(() => _selectedNewTefilaType = null);
         _newTefilaTimeDisplayController.clear();
         _newTefilaNotesController.clear();
@@ -188,7 +220,18 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('tefilot_data_cache');
       _showSnackBar('נשמר בהצלחה!', isError: false);
-      _fetchTefilotData();
+      unawaited(_fetchTefilotData());
+
+      if (changeDescriptions.isNotEmpty) {
+        final session = Supabase.instance.client.auth.currentSession;
+        if (session != null) {
+          await AnnouncementService.sendAnnouncement(
+            title: 'עודכן זמני התפילות',
+            content: changeDescriptions.join('\n'),
+            supabaseAccessToken: session.accessToken,
+          );
+        }
+      }
     } on PostgrestException catch (e) {
       _showSnackBar('שגיאה: ${e.message}', isError: true);
     } finally {
@@ -198,6 +241,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen> {
 
   Future<void> _signOut() async {
     await Supabase.instance.client.auth.signOut();
+    if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => EntranceScreen()),
       (_) => false,
@@ -230,6 +274,7 @@ class _AdminTefilotScreenState extends State<AdminTefilotScreen> {
       if (res != null) current = res['מידע'] ?? '';
     } catch (_) {}
 
+    if (!mounted) return;
     final controller = TextEditingController(text: current);
     final result = await showDialog<String?>(
       context: context,

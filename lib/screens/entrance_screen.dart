@@ -15,6 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'AdminLoginScreen.dart';
 import 'package:rabbi_shiba/utils/theme_helpers.dart';
 import 'package:rabbi_shiba/widgets/announcement_bell_icon.dart';
@@ -25,7 +26,9 @@ import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 // conditional import — dart:ui_web קיים רק בווב
 // ignore: uri_does_not_exist
-import '../stubs/stub_ui_web.dart' if (dart.library.ui_web) 'dart:ui_web' as ui_web;
+import '../stubs/stub_ui_web.dart'
+    if (dart.library.ui_web) 'dart:ui_web'
+    as ui_web;
 import '../stubs/stub_ui_html.dart' if (dart.library.html) 'dart:html' as html;
 
 // ─────────────────────────────────────────────
@@ -60,14 +63,17 @@ class _NoNetworkBanner extends StatefulWidget {
   State<_NoNetworkBanner> createState() => _NoNetworkBannerState();
 }
 
-class _NoNetworkBannerState extends State<_NoNetworkBanner> with SingleTickerProviderStateMixin {
+class _NoNetworkBannerState extends State<_NoNetworkBanner>
+    with SingleTickerProviderStateMixin {
   late AnimationController _dotController;
 
   @override
   void initState() {
     super.initState();
-    _dotController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))
-      ..repeat();
+    _dotController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
   }
 
   @override
@@ -194,7 +200,10 @@ class _HebrewDateBannerState extends State<HebrewDateBanner> {
             const SizedBox(
               width: 12,
               height: 12,
-              child: CircularProgressIndicator(strokeWidth: 1.5, color: _AppColors.blue),
+              child: CircularProgressIndicator(
+                strokeWidth: 1.5,
+                color: _AppColors.blue,
+              ),
             ),
             const SizedBox(width: 8),
             Text(
@@ -289,14 +298,22 @@ class _NextZmanBannerState extends State<NextZmanBanner> {
 
   void _startZmanCheck() {
     _fetchNextZman();
-    _zmanCheckTimer = Timer.periodic(const Duration(minutes: 5), (timer) => _fetchNextZman());
+    _zmanCheckTimer = Timer.periodic(
+      const Duration(minutes: 5),
+      (timer) => _fetchNextZman(),
+    );
   }
 
   void _fetchNextZman() async {
     try {
       final now = DateTime.now();
       final currentMinutes = now.hour * 60 + now.minute;
-      final geoLocation = GeoLocation.setLocation('ירושלים', 31.7683, 35.2137, now);
+      final geoLocation = GeoLocation.setLocation(
+        'ירושלים',
+        31.7683,
+        35.2137,
+        now,
+      );
       final zmanimCalendar = ComplexZmanimCalendar.intGeoLocation(geoLocation);
       final dateFormat = intl.DateFormat('HH:mm');
       final tzais20 = _getTzais20MinutesAfterSunset(zmanimCalendar.getSunset());
@@ -323,12 +340,21 @@ class _NextZmanBannerState extends State<NextZmanBanner> {
 
       Map<String, dynamic>? nextZman;
       if (candidates.isNotEmpty) {
-        candidates.sort((a, b) => (a['minutes'] as int).compareTo(b['minutes'] as int));
+        candidates.sort(
+          (a, b) => (a['minutes'] as int).compareTo(b['minutes'] as int),
+        );
         nextZman = candidates.first;
       } else {
         final tomorrow = now.add(const Duration(days: 1));
-        final tomorrowGeo = GeoLocation.setLocation('ירושלים', 31.7683, 35.2137, tomorrow);
-        final tomorrowCalendar = ComplexZmanimCalendar.intGeoLocation(tomorrowGeo);
+        final tomorrowGeo = GeoLocation.setLocation(
+          'ירושלים',
+          31.7683,
+          35.2137,
+          tomorrow,
+        );
+        final tomorrowCalendar = ComplexZmanimCalendar.intGeoLocation(
+          tomorrowGeo,
+        );
         final tomorrowAlos = tomorrowCalendar.getAlos72();
         final tomorrowSunrise = tomorrowCalendar.getSunrise();
 
@@ -388,7 +414,10 @@ class _NextZmanBannerState extends State<NextZmanBanner> {
             const TextSpan(text: 'הזמן הבא: '),
             TextSpan(
               text: _nextZmanLabel,
-              style: const TextStyle(fontWeight: FontWeight.w700, color: _AppColors.amber),
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                color: _AppColors.amber,
+              ),
             ),
             TextSpan(text: ' — $_nextZman'),
           ],
@@ -449,7 +478,9 @@ class _NextPrayerBannerState extends State<NextPrayerBanner> {
       _handleConnectivityState(results);
     });
 
-    _connectivitySubscription = connectivity.onConnectivityChanged.listen((results) {
+    _connectivitySubscription = connectivity.onConnectivityChanged.listen((
+      results,
+    ) {
       if (!mounted) return;
       _handleConnectivityState(results);
     });
@@ -506,7 +537,10 @@ class _NextPrayerBannerState extends State<NextPrayerBanner> {
       if (decoded is! List) return;
 
       final cachedData =
-          decoded.whereType<Map>().map((item) => Map<String, dynamic>.from(item)).toList();
+          decoded
+              .whereType<Map>()
+              .map((item) => Map<String, dynamic>.from(item))
+              .toList();
 
       final cachedNextPrayer = _determineNextPrayerFromData(cachedData);
       if (!mounted || cachedNextPrayer == null) return;
@@ -520,7 +554,9 @@ class _NextPrayerBannerState extends State<NextPrayerBanner> {
     }
   }
 
-  Map<String, dynamic>? _determineNextPrayerFromData(List<Map<String, dynamic>> data) {
+  Map<String, dynamic>? _determineNextPrayerFromData(
+    List<Map<String, dynamic>> data,
+  ) {
     final now = DateTime.now();
     final currentMinutes = now.hour * 60 + now.minute;
     Map<String, dynamic>? nextPrayer;
@@ -532,7 +568,8 @@ class _NextPrayerBannerState extends State<NextPrayerBanner> {
       final timeString = item['שעה']?.toString() ?? '';
       final parts = timeString.split(':');
       if (parts.length < 2) continue;
-      final prayerMinutes = (int.tryParse(parts[0]) ?? 0) * 60 + (int.tryParse(parts[1]) ?? 0);
+      final prayerMinutes =
+          (int.tryParse(parts[0]) ?? 0) * 60 + (int.tryParse(parts[1]) ?? 0);
       if (prayerMinutes > currentMinutes) {
         nextPrayer = item;
         break;
@@ -619,7 +656,10 @@ class _NextPrayerBannerState extends State<NextPrayerBanner> {
             const TextSpan(text: 'תפילה הבאה: '),
             TextSpan(
               text: '$type',
-              style: const TextStyle(fontWeight: FontWeight.w700, color: _AppColors.teal),
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                color: _AppColors.teal,
+              ),
             ),
             TextSpan(text: ' — $displayTime'),
           ],
@@ -644,13 +684,17 @@ class _LoadingDots extends StatefulWidget {
   State<_LoadingDots> createState() => _LoadingDotsState();
 }
 
-class _LoadingDotsState extends State<_LoadingDots> with SingleTickerProviderStateMixin {
+class _LoadingDotsState extends State<_LoadingDots>
+    with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))..repeat();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat();
   }
 
   @override
@@ -686,7 +730,9 @@ class _LoadingDotsState extends State<_LoadingDots> with SingleTickerProviderSta
                 height: active == i ? 6 : 4,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: widget.color.withValues(alpha: active == i ? 0.9 : 0.35),
+                  color: widget.color.withValues(
+                    alpha: active == i ? 0.9 : 0.35,
+                  ),
                 ),
               );
             }),
@@ -901,13 +947,15 @@ class _EntranceScreenState extends State<EntranceScreen>
     Connectivity().checkConnectivity().then((results) {
       if (!mounted) return;
       setState(() {
-        _noNetwork = results.isEmpty || results.contains(ConnectivityResult.none);
+        _noNetwork =
+            results.isEmpty || results.contains(ConnectivityResult.none);
       });
     });
 
     _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
       if (!mounted) return;
-      final hasNet = results.isNotEmpty && !results.contains(ConnectivityResult.none);
+      final hasNet =
+          results.isNotEmpty && !results.contains(ConnectivityResult.none);
       setState(() => _noNetwork = !hasNet);
       if (hasNet) _refreshMainScreen();
     });
@@ -932,7 +980,10 @@ class _EntranceScreenState extends State<EntranceScreen>
   }
 
   void _initializeAnimations() {
-    _mainController = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
+    _mainController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
     _quoteController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
@@ -960,18 +1011,15 @@ class _EntranceScreenState extends State<EntranceScreen>
         curve: const Interval(0.0, 1.0, curve: Curves.easeOutCubic),
       ),
     );
-    _quoteOpacityAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _quoteController, curve: Curves.easeOutCubic));
-    _panelSlideAnimation = Tween<double>(
-      begin: 8.0,
-      end: 0.0,
-    ).animate(CurvedAnimation(parent: _panelController, curve: Curves.easeOutCubic));
-    _panelFadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _panelController, curve: Curves.easeOutCubic));
+    _quoteOpacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _quoteController, curve: Curves.easeOutCubic),
+    );
+    _panelSlideAnimation = Tween<double>(begin: 8.0, end: 0.0).animate(
+      CurvedAnimation(parent: _panelController, curve: Curves.easeOutCubic),
+    );
+    _panelFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _panelController, curve: Curves.easeOutCubic),
+    );
   }
 
   // ── Video Player Logic ──────────────────────
@@ -1060,7 +1108,10 @@ class _EntranceScreenState extends State<EntranceScreen>
         showControls: true,
         allowedScreenSleep: false,
         placeholder: Container(
-          decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(16)),
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
         materialProgressColors: ChewieProgressColors(
           playedColor: _AppColors.blue,
@@ -1107,12 +1158,27 @@ class _EntranceScreenState extends State<EntranceScreen>
     }
   }
 
+  Future<void> _openVideoExternally(String videoUrl) async {
+    try {
+      await launchUrl(
+        Uri.parse(videoUrl),
+        mode: LaunchMode.externalApplication,
+      );
+    } catch (e) {
+      debugPrint('שגיאה בפתיחת וידאו חיצונית: $e');
+    }
+  }
   // ── Data Fetching ───────────────────────────
 
   Future<void> _fetchRabbiData() async {
     try {
       final response =
-          await supabase.from('כללי').select('מידע').eq('סוג', 'דבר הרב').limit(1).maybeSingle();
+          await supabase
+              .from('כללי')
+              .select('מידע')
+              .eq('סוג', 'דבר הרב')
+              .limit(1)
+              .maybeSingle();
       if (!mounted) return;
       setState(() {
         rabbiQuote =
@@ -1126,13 +1192,45 @@ class _EntranceScreenState extends State<EntranceScreen>
     }
   }
 
+  Future<List<Map<String, dynamic>>> _listAllVideosForLatest(
+    String path,
+  ) async {
+    final items = await supabase.storage.from('videos').list(path: path);
+    final result = <Map<String, dynamic>>[];
+    for (final f in items) {
+      if (f.name.startsWith('.') || f.name == 'emptyFolderPlaceholder')
+        continue;
+      if (_isVideoFileName(f.name)) {
+        final filePath = path.isEmpty ? f.name : '$path/${f.name}';
+        result.add({
+          'name': f.name,
+          'url': supabase.storage.from('videos').getPublicUrl(filePath),
+          'created_at': f.createdAt,
+        });
+      } else {
+        final subPath = path.isEmpty ? f.name : '$path/${f.name}';
+        result.addAll(await _listAllVideosForLatest(subPath));
+      }
+    }
+    return result;
+  }
+
+  bool _isVideoFileName(String name) {
+    final lowerName = name.toLowerCase();
+    return lowerName.endsWith('.mp4') ||
+        lowerName.endsWith('.mov') ||
+        lowerName.endsWith('.m4v') ||
+        lowerName.endsWith('.webm') ||
+        lowerName.endsWith('.mkv');
+  }
+
   Future<void> _fetchLatestVideo() async {
     try {
-      // Fetch all video files from Supabase Storage bucket 'videos'
-      final files = await supabase.storage.from('videos').list();
+      // Fetch all video files from Supabase Storage bucket 'videos' (supports subfolders)
+      final allFiles = await _listAllVideosForLatest('');
       if (!mounted) return;
 
-      if (files.isEmpty) {
+      if (allFiles.isEmpty) {
         setState(() {
           latestVideo = null;
           videoLoading = false;
@@ -1141,17 +1239,17 @@ class _EntranceScreenState extends State<EntranceScreen>
       }
 
       // Sort files by createdAt descending to get the latest
-      files.sort((a, b) {
-        final aTime = a.createdAt ?? '';
-        final bTime = b.createdAt ?? '';
+      allFiles.sort((a, b) {
+        final aTime = (a['created_at'] as String?) ?? '';
+        final bTime = (b['created_at'] as String?) ?? '';
         return bTime.compareTo(aTime);
       });
-      final latestFile = files.first;
-      final videoFileName = latestFile.name;
+      final latestEntry = allFiles.first;
+      final videoFileName = latestEntry['name'] as String;
       final videoId = videoFileName; // Use filename as ID
 
       // Generate public URL for the video
-      final videoUrl = supabase.storage.from('videos').getPublicUrl(videoFileName);
+      final videoUrl = latestEntry['url'] as String;
 
       // Get the weekly parsha title
       String parashaTitle = 'פרשת השבוע';
@@ -1161,7 +1259,8 @@ class _EntranceScreenState extends State<EntranceScreen>
               ..hebrewFormat = true
               ..useGershGershayim = true;
         final jewishCalendar = JewishCalendar()..inIsrael = true;
-        final fetchedParasha = formatter.formatWeeklyParsha(jewishCalendar).trim();
+        final fetchedParasha =
+            formatter.formatWeeklyParsha(jewishCalendar).trim();
 
         if (fetchedParasha.isNotEmpty) {
           parashaTitle =
@@ -1211,7 +1310,8 @@ class _EntranceScreenState extends State<EntranceScreen>
 
     // שם העמודה שמכיל את ה-URL הישיר מ-Supabase Storage
     // (לשנות בהתאם לשם העמודה בטבלה שלך)
-    final videoUrl = latestVideo!['קישור_וידאו'] ?? latestVideo!['קישור_גוגל_דרייב'] ?? '';
+    final videoUrl =
+        latestVideo!['קישור_וידאו'] ?? latestVideo!['קישור_גוגל_דרייב'] ?? '';
 
     return GestureDetector(
       onTap: () {
@@ -1266,7 +1366,10 @@ class _EntranceScreenState extends State<EntranceScreen>
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
                   gradient: LinearGradient(
-                    colors: [Colors.transparent, Colors.black.withValues(alpha: 0.5)],
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.5),
+                    ],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),
@@ -1290,7 +1393,11 @@ class _EntranceScreenState extends State<EntranceScreen>
                         ],
                       ),
                       padding: const EdgeInsets.all(10),
-                      child: const Icon(Icons.play_arrow_rounded, size: 22, color: _AppColors.navy),
+                      child: const Icon(
+                        Icons.play_arrow_rounded,
+                        size: 22,
+                        color: _AppColors.navy,
+                      ),
                     ),
                     // כותרת ותיאור
                     Padding(
@@ -1316,7 +1423,10 @@ class _EntranceScreenState extends State<EntranceScreen>
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               textDirection: TextDirection.rtl,
-                              style: GoogleFonts.alef(fontSize: 12, color: Colors.white70),
+                              style: GoogleFonts.alef(
+                                fontSize: 12,
+                                color: Colors.white70,
+                              ),
                             ),
                           ],
                         ],
@@ -1332,7 +1442,10 @@ class _EntranceScreenState extends State<EntranceScreen>
                 top: 10,
                 right: 10,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFD62B2B).withValues(alpha: 0.92),
                     borderRadius: BorderRadius.circular(20),
@@ -1374,7 +1487,11 @@ class _EntranceScreenState extends State<EntranceScreen>
                   color: _AppColors.lightBlue,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.close_rounded, size: 18, color: _AppColors.blue),
+                child: const Icon(
+                  Icons.close_rounded,
+                  size: 18,
+                  color: _AppColors.blue,
+                ),
               ),
             ),
             Expanded(
@@ -1408,7 +1525,10 @@ class _EntranceScreenState extends State<EntranceScreen>
               ),
             ],
           ),
-          child: ClipRRect(borderRadius: BorderRadius.circular(16), child: _buildVideoContent()),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: _buildVideoContent(),
+          ),
         ),
       ],
     );
@@ -1425,7 +1545,10 @@ class _EntranceScreenState extends State<EntranceScreen>
             children: [
               CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
               SizedBox(height: 12),
-              Text('טוען סרטון...', style: TextStyle(color: Colors.white70, fontSize: 13)),
+              Text(
+                'טוען סרטון...',
+                style: TextStyle(color: Colors.white70, fontSize: 13),
+              ),
             ],
           ),
         ),
@@ -1440,7 +1563,11 @@ class _EntranceScreenState extends State<EntranceScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline_rounded, color: Colors.white54, size: 36),
+              const Icon(
+                Icons.error_outline_rounded,
+                color: Colors.white54,
+                size: 36,
+              ),
               const SizedBox(height: 10),
               Text(
                 'לא ניתן לטעון את הסרטון',
@@ -1450,6 +1577,23 @@ class _EntranceScreenState extends State<EntranceScreen>
               Text(
                 'בדוק שה-URL תקין ונגיש',
                 style: GoogleFonts.alef(color: Colors.white38, fontSize: 11),
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton(
+                onPressed: () {
+                  final videoUrl =
+                      latestVideo?['קישור_וידאו'] ??
+                      latestVideo?['קישור_גוגל_דרייב'] ??
+                      '';
+                  if (videoUrl.isNotEmpty) {
+                    _openVideoExternally(videoUrl);
+                  }
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: const BorderSide(color: Colors.white24),
+                ),
+                child: const Text('פתח בנגן חיצוני'),
               ),
             ],
           ),
@@ -1510,7 +1654,9 @@ class _EntranceScreenState extends State<EntranceScreen>
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         shadowColor: Colors.transparent,
-        iconTheme: IconThemeData(color: _AppColors.navy.withValues(alpha: 0.85)),
+        iconTheme: IconThemeData(
+          color: _AppColors.navy.withValues(alpha: 0.85),
+        ),
         // Bell icon in the top-right corner; shows red dot when there are unread announcements
         actions: const [AnnouncementBellIcon()],
       ),
@@ -1519,24 +1665,33 @@ class _EntranceScreenState extends State<EntranceScreen>
           Positioned.fill(child: ThemeHelpers.buildDefaultBackground()),
           Column(
             children: [
-              if (_noNetwork) SafeArea(bottom: false, child: const _NoNetworkBanner()),
+              if (_noNetwork)
+                SafeArea(bottom: false, child: const _NoNetworkBanner()),
               Expanded(
                 child: SafeArea(
                   top: !_noNetwork,
                   child: Padding(
-                    padding: EdgeInsets.fromLTRB(screenWidth * 0.048, 0, screenWidth * 0.048, 0),
+                    padding: EdgeInsets.fromLTRB(
+                      screenWidth * 0.048,
+                      0,
+                      screenWidth * 0.048,
+                      0,
+                    ),
                     child: LayoutBuilder(
                       builder: (context, constraints) {
                         return SingleChildScrollView(
                           child: ConstrainedBox(
-                            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                            constraints: BoxConstraints(
+                              minHeight: constraints.maxHeight,
+                            ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 Transform.translate(
                                   offset: const Offset(0, -36),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
                                     children: [
                                       _buildScreenHeader(),
                                       SizedBox(height: safeAreaHeight * 0.008),
@@ -1545,7 +1700,10 @@ class _EntranceScreenState extends State<EntranceScreen>
                                         child: AnimatedBuilder(
                                           animation: _quoteController,
                                           builder:
-                                              (context, child) => FadeTransition(
+                                              (
+                                                context,
+                                                child,
+                                              ) => FadeTransition(
                                                 opacity: _quoteOpacityAnimation,
                                                 child:
                                                     isLoading
@@ -1558,13 +1716,18 @@ class _EntranceScreenState extends State<EntranceScreen>
                                       AnimatedBuilder(
                                         animation: _panelController,
                                         builder:
-                                            (context, child) => Transform.translate(
-                                              offset: Offset(0, _panelSlideAnimation.value),
-                                              child: FadeTransition(
-                                                opacity: _panelFadeAnimation,
-                                                child: child,
-                                              ),
-                                            ),
+                                            (context, child) =>
+                                                Transform.translate(
+                                                  offset: Offset(
+                                                    0,
+                                                    _panelSlideAnimation.value,
+                                                  ),
+                                                  child: FadeTransition(
+                                                    opacity:
+                                                        _panelFadeAnimation,
+                                                    child: child,
+                                                  ),
+                                                ),
                                         child: _buildQuickInfoPanel(),
                                       ),
                                       SizedBox(height: safeAreaHeight * 0.01),
@@ -1593,6 +1756,22 @@ class _EntranceScreenState extends State<EntranceScreen>
                   _fabOffsetY += dy;
                 });
               },
+            ),
+          ),
+          Positioned(
+            bottom: 6,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Text(
+                '© Elyassaf Okanin · Software Developer · All rights reserved',
+                style: GoogleFonts.alef(
+                  fontSize: 12,
+                  color: const Color.fromARGB(255, 21, 43, 76).withValues(alpha: 0.58),
+                  letterSpacing: 0.2,
+                ),
+                textAlign: TextAlign.center,
+              ),
             ),
           ),
         ],
@@ -1715,122 +1894,155 @@ class _EntranceScreenState extends State<EntranceScreen>
                   _adminTapCount++;
                   if (_adminTapCount >= 5) {
                     _adminTapCount = 0;
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => AdminLoginScreen()));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => AdminLoginScreen()),
+                    );
                   }
                 },
-                child: Container(
-                  width: double.infinity,
-                  height: double.infinity,
-                  constraints: const BoxConstraints(maxWidth: 560),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.42),
-                    borderRadius: BorderRadius.circular(28),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.35), width: 1),
-                    boxShadow: [
-                      BoxShadow(
-                        color: _AppColors.navy.withValues(alpha: 0.09),
-                        blurRadius: 24,
-                        offset: const Offset(0, 6),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: kIsWeb ? 480 : 560,
+                      maxHeight: kIsWeb ? 420 : double.infinity,
+                    ),
+                    child: Container(
+                      width: double.infinity,
+                      height: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.42),
+                        borderRadius: BorderRadius.circular(28),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.35),
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _AppColors.navy.withValues(alpha: 0.09),
+                            blurRadius: 24,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: LayoutBuilder(
-                    builder: (context, cardConstraints) {
-                      final cardWidth = cardConstraints.maxWidth;
-                      final cardPadding = (cardWidth * 0.045).clamp(12.0, 24.0).toDouble();
-                      final avatarSize = (cardWidth * 0.155).clamp(88.0, 132.0).toDouble();
-                      final quoteTextSize = (cardWidth * 0.041).clamp(15.0, 20.0).toDouble();
-                      final rabbiNameSize = (cardWidth * 0.04).clamp(13.0, 17.0).toDouble();
+                      child: LayoutBuilder(
+                        builder: (context, cardConstraints) {
+                          final cardWidth = cardConstraints.maxWidth;
+                          final cardPadding =
+                              (cardWidth * 0.045).clamp(12.0, 24.0).toDouble();
+                          final avatarSize =
+                              (cardWidth * 0.155).clamp(88.0, 132.0).toDouble();
+                          final quoteTextSize =
+                              (cardWidth * 0.041).clamp(15.0, 20.0).toDouble();
+                          final rabbiNameSize =
+                              (cardWidth * 0.04).clamp(13.0, 17.0).toDouble();
 
-                      return Padding(
-                        padding: EdgeInsets.all(cardPadding),
-                        child: Column(
-                          children: [
-                            Container(
-                              width: avatarSize,
-                              height: avatarSize,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.8),
-                                  width: 2,
+                          return Padding(
+                            padding: EdgeInsets.all(cardPadding),
+                            child: Column(
+                              children: [
+                                Container(
+                                  width: avatarSize,
+                                  height: avatarSize,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.8,
+                                      ),
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: ClipOval(
+                                    child: Image.asset(
+                                      'assets/hrav.png',
+                                      fit: BoxFit.cover,
+                                      alignment: Alignment.topCenter,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              child: ClipOval(
-                                child: Image.asset(
-                                  'assets/hrav.png',
-                                  fit: BoxFit.cover,
-                                  alignment: Alignment.topCenter,
+                                const SizedBox(height: 6),
+                                Icon(
+                                  Icons.format_quote_rounded,
+                                  size: 22,
+                                  color: _AppColors.blue.withValues(alpha: 0.7),
                                 ),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Icon(
-                              Icons.format_quote_rounded,
-                              size: 22,
-                              color: _AppColors.blue.withValues(alpha: 0.7),
-                            ),
-                            const SizedBox(height: 3),
-                            Expanded(
-                              child: LayoutBuilder(
-                                builder: (context, constraints) {
-                                  return SingleChildScrollView(
-                                    physics: const BouncingScrollPhysics(),
-                                    child: ConstrainedBox(
-                                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                                      child: Container(
-                                        width: double.infinity,
-                                        alignment: Alignment.center,
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 8,
+                                const SizedBox(height: 3),
+                                Expanded(
+                                  child: LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      return SingleChildScrollView(
+                                        physics: const BouncingScrollPhysics(),
+                                        child: ConstrainedBox(
+                                          constraints: BoxConstraints(
+                                            minHeight: constraints.maxHeight,
+                                          ),
+                                          child: Container(
+                                            width: double.infinity,
+                                            alignment: Alignment.center,
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 8,
+                                            ),
+                                            child:
+                                                _shouldReplaceRabbiTextWithVideo()
+                                                    ? (_videoPlayerVisible
+                                                        ? _buildInlineVideoPlayer()
+                                                        : _buildLatestVideoCard())
+                                                    : Text(
+                                                      rabbiQuote,
+                                                      style: GoogleFonts.alef(
+                                                        fontSize: quoteTextSize,
+                                                        height: 1.7,
+                                                        color:
+                                                            _AppColors
+                                                                .textPrimary,
+                                                        fontWeight:
+                                                            FontWeight.w400,
+                                                      ),
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      textDirection:
+                                                          TextDirection.rtl,
+                                                    ),
+                                          ),
                                         ),
-                                        child:
-                                            _shouldReplaceRabbiTextWithVideo()
-                                                ? (_videoPlayerVisible
-                                                    ? _buildInlineVideoPlayer()
-                                                    : _buildLatestVideoCard())
-                                                : Text(
-                                                  rabbiQuote,
-                                                  style: GoogleFonts.alef(
-                                                    fontSize: quoteTextSize,
-                                                    height: 1.7,
-                                                    color: _AppColors.textPrimary,
-                                                    fontWeight: FontWeight.w400,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                  textDirection: TextDirection.rtl,
-                                                ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 18,
+                                    vertical: 7,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.32),
+                                    borderRadius: BorderRadius.circular(24),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.5,
                                       ),
                                     ),
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.32),
-                                borderRadius: BorderRadius.circular(24),
-                                border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
-                              ),
-                              child: Text(
-                                'הרב יואב חנניה אוקנין',
-                                style: GoogleFonts.alef(
-                                  fontSize: rabbiNameSize,
-                                  fontWeight: FontWeight.w500,
-                                  color: _AppColors.textPrimary,
+                                  ),
+                                  child: Text(
+                                    'הרב יואב חנניה אוקנין',
+                                    style: GoogleFonts.alef(
+                                      fontSize: rabbiNameSize,
+                                      fontWeight: FontWeight.w500,
+                                      color: _AppColors.textPrimary,
+                                    ),
+                                    textDirection: TextDirection.rtl,
+                                  ),
                                 ),
-                                textDirection: TextDirection.rtl,
-                              ),
+                              ],
                             ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
+                          );
+                        },
+                      ),
+                    ), // closes Container
+                  ), // closes ConstrainedBox
+                ), // closes Center
               ),
             ),
           ),
@@ -1855,12 +2067,18 @@ class _EntranceScreenState extends State<EntranceScreen>
               child: SizedBox(
                 width: 28,
                 height: 28,
-                child: CircularProgressIndicator(color: _AppColors.blue, strokeWidth: 2.5),
+                child: CircularProgressIndicator(
+                  color: _AppColors.blue,
+                  strokeWidth: 2.5,
+                ),
               ),
             ),
           ),
           const SizedBox(height: 16),
-          Text('...טוען', style: GoogleFonts.alef(fontSize: 15, color: _AppColors.textMuted)),
+          Text(
+            '...טוען',
+            style: GoogleFonts.alef(fontSize: 15, color: _AppColors.textMuted),
+          ),
         ],
       ),
     );
@@ -1874,7 +2092,12 @@ class _EntranceScreenState extends State<EntranceScreen>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFFF0FAFA), Color(0xFFE8F5F2), Color(0xFFEAF3F8), Color(0xFFE4EFF8)],
+            colors: [
+              Color(0xFFF0FAFA),
+              Color(0xFFE8F5F2),
+              Color(0xFFEAF3F8),
+              Color(0xFFE4EFF8),
+            ],
             stops: [0.0, 0.35, 0.68, 1.0],
           ),
         ),
@@ -1932,11 +2155,17 @@ class _EntranceScreenState extends State<EntranceScreen>
                             Navigator.push(
                               context,
                               PageRouteBuilder(
-                                pageBuilder: (_, animation, __) => bubble['screenBuilder'](),
+                                pageBuilder:
+                                    (_, animation, __) =>
+                                        bubble['screenBuilder'](),
                                 transitionsBuilder:
-                                    (_, animation, __, child) =>
-                                        FadeTransition(opacity: animation, child: child),
-                                transitionDuration: const Duration(milliseconds: 300),
+                                    (_, animation, __, child) => FadeTransition(
+                                      opacity: animation,
+                                      child: child,
+                                    ),
+                                transitionDuration: const Duration(
+                                  milliseconds: 300,
+                                ),
                               ),
                             ).then((_) {
                               if (!mounted) return;
@@ -1967,7 +2196,12 @@ class _DrawerHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.fromLTRB(24, MediaQuery.of(context).padding.top + 20, 24, 24),
+      padding: EdgeInsets.fromLTRB(
+        24,
+        MediaQuery.of(context).padding.top + 20,
+        24,
+        24,
+      ),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [Color(0xFF2E8FA0), Color(0xFF3A7FC1)],
@@ -1978,7 +2212,13 @@ class _DrawerHeader extends StatelessWidget {
           bottomLeft: Radius.circular(28),
           bottomRight: Radius.circular(28),
         ),
-        boxShadow: [BoxShadow(color: Color(0x443A7FC1), blurRadius: 18, offset: Offset(0, 6))],
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x443A7FC1),
+            blurRadius: 18,
+            offset: Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -1992,9 +2232,16 @@ class _DrawerHeader extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.3),
+                    width: 1,
+                  ),
                 ),
-                child: const Icon(Icons.menu_book_rounded, size: 22, color: Colors.white),
+                child: const Icon(
+                  Icons.menu_book_rounded,
+                  size: 22,
+                  color: Colors.white,
+                ),
               ),
               const SizedBox(width: 14),
               Text(
@@ -2028,7 +2275,10 @@ class _DrawerHeader extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 0.8),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.2),
+                width: 0.8,
+              ),
             ),
             child: Text(
               'כשרות דת והלכה — מרכז רפואי שיבא',
@@ -2054,7 +2304,11 @@ class _DrawerItem extends StatelessWidget {
   final int index;
   final VoidCallback onTap;
 
-  const _DrawerItem({required this.bubble, required this.index, required this.onTap});
+  const _DrawerItem({
+    required this.bubble,
+    required this.index,
+    required this.onTap,
+  });
 
   static const _accentColors = [
     Color(0xFF3A9BAA),
@@ -2084,7 +2338,10 @@ class _DrawerItem extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.55),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: accent.withValues(alpha: 0.15), width: 0.8),
+            border: Border.all(
+              color: accent.withValues(alpha: 0.15),
+              width: 0.8,
+            ),
             boxShadow: [
               BoxShadow(
                 color: accent.withValues(alpha: 0.07),
@@ -2102,12 +2359,18 @@ class _DrawerItem extends StatelessWidget {
                   height: 38,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [accent.withValues(alpha: 0.18), accent.withValues(alpha: 0.08)],
+                      colors: [
+                        accent.withValues(alpha: 0.18),
+                        accent.withValues(alpha: 0.08),
+                      ],
                       begin: Alignment.topRight,
                       end: Alignment.bottomLeft,
                     ),
                     borderRadius: BorderRadius.circular(11),
-                    border: Border.all(color: accent.withValues(alpha: 0.22), width: 0.8),
+                    border: Border.all(
+                      color: accent.withValues(alpha: 0.22),
+                      width: 0.8,
+                    ),
                   ),
                   child: Icon(bubble['icon'], color: accent, size: 19),
                 ),
@@ -2129,7 +2392,10 @@ class _DrawerItem extends StatelessWidget {
                       if (badgeText != null) ...[
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.redAccent,
                             borderRadius: BorderRadius.circular(999),
@@ -2147,7 +2413,11 @@ class _DrawerItem extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_left_rounded, size: 18, color: accent.withValues(alpha: 0.5)),
+                Icon(
+                  Icons.chevron_left_rounded,
+                  size: 18,
+                  color: accent.withValues(alpha: 0.5),
+                ),
               ],
             ),
           ),
@@ -2170,7 +2440,8 @@ class _AiRobotFab extends StatefulWidget {
   State<_AiRobotFab> createState() => _AiRobotFabState();
 }
 
-class _AiRobotFabState extends State<_AiRobotFab> with SingleTickerProviderStateMixin {
+class _AiRobotFabState extends State<_AiRobotFab>
+    with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
@@ -2181,10 +2452,9 @@ class _AiRobotFabState extends State<_AiRobotFab> with SingleTickerProviderState
       vsync: this,
       duration: const Duration(milliseconds: 1800),
     )..repeat(reverse: true);
-    _pulseAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.08,
-    ).animate(CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut));
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.08).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
   }
 
   @override
@@ -2201,10 +2471,9 @@ class _AiRobotFabState extends State<_AiRobotFab> with SingleTickerProviderState
           return FadeTransition(
             opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
             child: ScaleTransition(
-              scale: Tween<double>(
-                begin: 0.85,
-                end: 1.0,
-              ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut)),
+              scale: Tween<double>(begin: 0.85, end: 1.0).animate(
+                CurvedAnimation(parent: animation, curve: Curves.easeOut),
+              ),
               child: child,
             ),
           );
@@ -2239,13 +2508,21 @@ class _AiRobotFabState extends State<_AiRobotFab> with SingleTickerProviderState
                     gradient: LinearGradient(
                       colors: [
                         _AppColors.skyBlue.withValues(alpha: 0.96),
-                        const Color.fromARGB(255, 16, 73, 57).withValues(alpha: 0.96),
+                        const Color.fromARGB(
+                          255,
+                          16,
+                          73,
+                          57,
+                        ).withValues(alpha: 0.96),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.34), width: 1.1),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.34),
+                      width: 1.1,
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: _AppColors.skyBlue.withValues(alpha: 0.34),
@@ -2259,7 +2536,11 @@ class _AiRobotFabState extends State<_AiRobotFab> with SingleTickerProviderState
                       ),
                     ],
                   ),
-                  child: const Icon(Icons.smart_toy_outlined, color: Colors.white, size: 28),
+                  child: const Icon(
+                    Icons.smart_toy_outlined,
+                    color: Colors.white,
+                    size: 28,
+                  ),
                 ),
               ),
               Positioned(left: -14, bottom: 44, child: _buildSpeechBubble()),
@@ -2279,7 +2560,10 @@ class _AiRobotFabState extends State<_AiRobotFab> with SingleTickerProviderState
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.9),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _AppColors.skyBlue.withValues(alpha: 0.28), width: 1.1),
+            border: Border.all(
+              color: _AppColors.skyBlue.withValues(alpha: 0.28),
+              width: 1.1,
+            ),
             boxShadow: [
               BoxShadow(
                 color: _AppColors.navy.withValues(alpha: 0.12),
@@ -2315,7 +2599,10 @@ class _DrawerFooter extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF5BBCB0).withValues(alpha: 0.2), width: 0.8),
+        border: Border.all(
+          color: const Color(0xFF5BBCB0).withValues(alpha: 0.2),
+          width: 0.8,
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
@@ -2337,7 +2624,11 @@ class _DrawerFooter extends StatelessWidget {
               color: const Color(0xFF3A9BAA).withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(7),
             ),
-            child: const Icon(Icons.local_hospital_outlined, size: 13, color: Color(0xFF3A9BAA)),
+            child: const Icon(
+              Icons.local_hospital_outlined,
+              size: 13,
+              color: Color(0xFF3A9BAA),
+            ),
           ),
         ],
       ),

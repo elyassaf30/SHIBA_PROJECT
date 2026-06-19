@@ -250,17 +250,6 @@ class _GeneralDetailScreenState extends State<GeneralDetailScreen> {
               constraints: BoxConstraints(
                 minHeight: MediaQuery.of(context).size.height,
               ),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    const Color.fromARGB(255, 0, 0, 0),
-                  ],
-                  stops: [0.3, 0.5], // התחלת מעבר צבע מהשליש העליון
-                ),
-              ),
               padding: EdgeInsets.only(
                 top: 100, // מרווח לכותרת
                 left: 24,

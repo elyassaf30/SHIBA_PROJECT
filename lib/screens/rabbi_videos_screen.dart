@@ -33,19 +33,14 @@ class _RabbiVideosScreenState extends State<RabbiVideosScreen> {
   }
 
   Future<void> _loadVideos() async {
-    if (mounted) setState(() { _loading = true; _error = null; });
+    if (mounted)
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
 
     try {
-      final files = await _supabase.storage.from('videos').list();
-
-      final videos = files
-          .where((f) => !f.name.startsWith('.') && f.name != 'emptyFolderPlaceholder')
-          .map((f) => {
-                'name': f.name,
-                'url': _supabase.storage.from('videos').getPublicUrl(f.name),
-                'created_at': f.createdAt,
-              })
-          .toList();
+      final videos = await _fetchAllVideoFiles('');
 
       // Sort oldest-first so index 0 = video #1
       videos.sort((a, b) {
@@ -54,11 +49,54 @@ class _RabbiVideosScreenState extends State<RabbiVideosScreen> {
         return aDate.compareTo(bDate);
       });
 
-      if (mounted) setState(() { _videos = videos; _loading = false; });
+      if (mounted)
+        setState(() {
+          _videos = videos;
+          _loading = false;
+        });
     } catch (e) {
       debugPrint('Error loading videos from storage: $e');
-      if (mounted) setState(() { _error = e.toString(); _loading = false; });
+      if (mounted)
+        setState(() {
+          _error = e.toString();
+          _loading = false;
+        });
     }
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchAllVideoFiles(String path) async {
+    final items = await _supabase.storage.from('videos').list(path: path);
+    final result = <Map<String, dynamic>>[];
+
+    for (final f in items) {
+      if (f.name.startsWith('.') || f.name == 'emptyFolderPlaceholder')
+        continue;
+
+      final isVideoFile = _isVideoFileName(f.name);
+      if (isVideoFile) {
+        final filePath = path.isEmpty ? f.name : '$path/${f.name}';
+        result.add({
+          'name': f.name,
+          'url': _supabase.storage.from('videos').getPublicUrl(filePath),
+          'created_at': f.createdAt,
+        });
+      } else {
+        // תיקייה — כנס אליה רקורסיבית
+        final subPath = path.isEmpty ? f.name : '$path/${f.name}';
+        result.addAll(await _fetchAllVideoFiles(subPath));
+      }
+    }
+
+    return result;
+  }
+
+  bool _isVideoFileName(String name) {
+    final lowerName = name.toLowerCase();
+    return lowerName.endsWith('.mp4') ||
+        lowerName.endsWith('.mov') ||
+        lowerName.endsWith('.m4v') ||
+        lowerName.endsWith('.webm') ||
+        lowerName.endsWith('.mkv');
   }
 
   void _closePlayer() {
@@ -153,7 +191,10 @@ class _RabbiVideosScreenState extends State<RabbiVideosScreen> {
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF4A9EFF).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
@@ -363,7 +404,9 @@ class _RabbiVideosScreenState extends State<RabbiVideosScreen> {
             name: video['name'] as String,
             isSelected: isSelected,
             displayNumber: displayNumber,
-            onTap: () => setState(() => _selectedVideoUrl = video['url'] as String),
+            onTap:
+                () =>
+                    setState(() => _selectedVideoUrl = video['url'] as String),
           );
         },
       ),
@@ -457,21 +500,24 @@ class _VideoItemWidgetState extends State<VideoItemWidget> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         decoration: BoxDecoration(
-          color: widget.isSelected
-              ? Colors.white.withValues(alpha: 0.62)
-              : Colors.white.withValues(alpha: 0.48),
+          color:
+              widget.isSelected
+                  ? Colors.white.withValues(alpha: 0.62)
+                  : Colors.white.withValues(alpha: 0.48),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: widget.isSelected
-                ? primary.withValues(alpha: 0.55)
-                : Colors.white.withValues(alpha: 0.65),
+            color:
+                widget.isSelected
+                    ? primary.withValues(alpha: 0.55)
+                    : Colors.white.withValues(alpha: 0.65),
             width: widget.isSelected ? 1.5 : 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: widget.isSelected
-                  ? primary.withValues(alpha: 0.22)
-                  : const Color(0xFF0C2D5E).withValues(alpha: 0.10),
+              color:
+                  widget.isSelected
+                      ? primary.withValues(alpha: 0.22)
+                      : const Color(0xFF0C2D5E).withValues(alpha: 0.10),
               blurRadius: widget.isSelected ? 18 : 10,
               offset: const Offset(0, 4),
             ),
@@ -517,9 +563,10 @@ class _VideoItemWidgetState extends State<VideoItemWidget> {
                   height: 52,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: widget.isSelected
-                        ? primary
-                        : Colors.white.withValues(alpha: 0.9),
+                    color:
+                        widget.isSelected
+                            ? primary
+                            : Colors.white.withValues(alpha: 0.9),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.25),
@@ -543,7 +590,10 @@ class _VideoItemWidgetState extends State<VideoItemWidget> {
                 top: 10,
                 right: 10,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.32),
                     borderRadius: BorderRadius.circular(8),
@@ -619,18 +669,19 @@ class _ThumbnailPlaceholder extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
       ),
-      child: showSpinner
-          ? Center(
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: primary.withValues(alpha: 0.6),
+      child:
+          showSpinner
+              ? Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: primary.withValues(alpha: 0.6),
+                  ),
                 ),
-              ),
-            )
-          : null,
+              )
+              : null,
     );
   }
 }

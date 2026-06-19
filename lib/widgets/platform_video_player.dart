@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:rabbi_shiba/utils/app_colors.dart';
 // ignore: uri_does_not_exist
-import '../stubs/stub_ui_web.dart' if (dart.library.ui_web) 'dart:ui_web' as ui_web;
+import '../stubs/stub_ui_web.dart'
+    if (dart.library.ui_web) 'dart:ui_web'
+    as ui_web;
 // ignore: uri_does_not_exist
 import '../stubs/stub_ui_html.dart' if (dart.library.html) 'dart:html' as html;
 
@@ -76,16 +79,26 @@ class _PlatformVideoPlayerState extends State<PlatformVideoPlayer> {
           video.crossOrigin = 'anonymous';
           return video;
         });
-        if (mounted) setState(() { _webViewId = viewId; _loading = false; });
+        if (mounted)
+          setState(() {
+            _webViewId = viewId;
+            _loading = false;
+          });
       } catch (e) {
         debugPrint('Web video error: $e');
-        if (mounted) setState(() { _loading = false; _error = true; });
+        if (mounted)
+          setState(() {
+            _loading = false;
+            _error = true;
+          });
       }
       return;
     }
 
     try {
-      _videoController = VideoPlayerController.networkUrl(Uri.parse(widget.url));
+      _videoController = VideoPlayerController.networkUrl(
+        Uri.parse(widget.url),
+      );
       await _videoController!.initialize();
       _chewieController = ChewieController(
         videoPlayerController: _videoController!,
@@ -101,10 +114,26 @@ class _PlatformVideoPlayerState extends State<PlatformVideoPlayer> {
           bufferedColor: Colors.white38,
         ),
       );
-      if (mounted) setState(() { _loading = false; });
+      if (mounted)
+        setState(() {
+          _loading = false;
+        });
     } catch (e) {
       debugPrint('Mobile video error: $e');
-      if (mounted) setState(() { _loading = false; _error = true; });
+      if (mounted)
+        setState(() {
+          _loading = false;
+          _error = true;
+        });
+    }
+  }
+
+  Future<void> _openExternally() async {
+    final uri = Uri.parse(widget.url);
+    try {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      debugPrint('External video launch error: $e');
     }
   }
 
@@ -148,6 +177,15 @@ class _PlatformVideoPlayerState extends State<PlatformVideoPlayer> {
               Text(
                 'לא ניתן לטעון את הסרטון',
                 style: GoogleFonts.alef(color: Colors.white38, fontSize: 13),
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton(
+                onPressed: _openExternally,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: const BorderSide(color: Colors.white24),
+                ),
+                child: const Text('פתח בנגן חיצוני'),
               ),
             ],
           ),

@@ -96,9 +96,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
       body: Stack(
         children: [
           Positioned.fill(child: ThemeHelpers.buildDefaultBackground()),
-          SafeArea(
-            child: _buildBody(),
-          ),
+          SafeArea(child: _buildBody()),
         ],
       ),
     );
@@ -106,9 +104,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: _C.blue),
-      );
+      return const Center(child: CircularProgressIndicator(color: _C.blue));
     }
 
     if (_error != null) {
@@ -118,7 +114,11 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.cloud_off_rounded, size: 48, color: _C.textMuted),
+              const Icon(
+                Icons.cloud_off_rounded,
+                size: 48,
+                color: _C.textMuted,
+              ),
               const SizedBox(height: 14),
               Text(
                 _error!,
@@ -143,7 +143,11 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.notifications_none_rounded, size: 56, color: _C.textMuted.withValues(alpha: 0.6)),
+            Icon(
+              Icons.notifications_none_rounded,
+              size: 56,
+              color: _C.textMuted.withValues(alpha: 0.6),
+            ),
             const SizedBox(height: 14),
             Text(
               'אין עדכונים כרגע',
@@ -198,9 +202,7 @@ class _AnnouncementCard extends StatelessWidget {
           color: Colors.white.withValues(alpha: 0.82),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isFirst
-                ? _C.blue.withValues(alpha: 0.35)
-                : _C.divider,
+            color: isFirst ? _C.blue.withValues(alpha: 0.35) : _C.divider,
             width: isFirst ? 1.2 : 0.8,
           ),
           boxShadow: [
@@ -235,11 +237,17 @@ class _AnnouncementCard extends StatelessWidget {
                   if (isFirst) ...[
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: _C.blue.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: _C.blue.withValues(alpha: 0.3), width: 0.8),
+                        border: Border.all(
+                          color: _C.blue.withValues(alpha: 0.3),
+                          width: 0.8,
+                        ),
                       ),
                       child: Text(
                         'חדש',
